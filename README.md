@@ -17,7 +17,7 @@ Please Consider to go through all these Important papers [Papers](data_augmentat
 ![](images/Proposal_method_pipeline.png)
 
 
-1. **SECTION 2  Multi-Augment Strategies + Regularization ** 
+### 1. **SECTION 2  Multi-Augment Strategies + Regularization** 
 
 - Implementation **Two Views** Multi-Augment --> Multi-Augment + Regularization
 
@@ -55,7 +55,7 @@ The Flow pipeline of Multi-Views is Similar to Two-Views --> Modify for Multiple
 
  
 
-2. **SECTION Two different contrastive Frameworks Multi-Augment Strategies + Regularization ** 
+### 2. **SECTION Two different contrastive Frameworks Multi-Augment Strategies + Regularization** 
 
 ![](images/Mixed_and_contrastive_framework.png)
 
