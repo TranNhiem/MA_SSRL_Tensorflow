@@ -9,7 +9,7 @@ Before you start to contribute for this repository, please quick go through [Gui
 ## List of Literature Overviews For Deep Understanding Project Method. 
 
 Supervised + Self-Supervised Literatures > > 
-Please Consider to go through all these Important papers [Papers](data_augmentation_regularization_literature_overviews.md).
+Please!! go through all these Important papers [Papers](data_augmentation_regularization_literature_overviews.md).
 
 
 ## Our Project Proposal Methods
