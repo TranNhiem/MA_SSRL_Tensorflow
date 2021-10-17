@@ -4,12 +4,12 @@
 ## First Checkout Guideline for Contribution
 
 Awesome! Thank You for being a part this project > > 
-Before you start to contribute for this repository, please quick go through [Guidelines] (contribution_guideline.md).
+Before you start to contribute for this repository, please quick go through [Guidelines](contribution_guideline.md).
 
 ## List of Literature Overviews For Deep Understanding Project Method. 
 
 Supervised + Self-Supervised Literatures > > 
-Please Consider to go through all these Important papers [Papers] (data_augmentation_regularization_literature_overviews.md).
+Please Consider to go through all these Important papers [Papers](data_augmentation_regularization_literature_overviews.md).
 
 
 ## Our Project Proposal Methods
