@@ -28,7 +28,9 @@ Please Consider to go through all these Important papers [Papers](data_augmentat
 Detail How to Implement 
 
 **/Augmentation_strategies/Simclr_augment_random/**
+
 **/Augmentation_strategies/Auto_Augment/**
+
 **/Augmentation_strategies/Rand_Augment/**
 
 **Fast_Auto_Augment Under Development**
@@ -39,6 +41,7 @@ Detail How to Implement
  Details How to Implement CutMix & Mixup can find as following directory
 
 **/Regularization_Technique/Mixup/**
+
 **/Regularization_Technique/CutMix/**
 
 **Manifold Mixup Under Development**
@@ -58,18 +61,24 @@ The Flow pipeline of Multi-Views is Similar to Two-Views --> Modify for Multiple
 
 
 + Conventional Contrastive Framework implementation
+
 **Positive Pair and Negative Pairs**
+
 **Positive Pair only**
 
 Detail Implementation can be found 
+
 **self_supervised_learning_frameworks/contrastive_framework/**
+
 **self_supervised_learning_frameworks/Non-contrastive_framework/**
 
 
 + Conventional Contrastive Framework implementation with Regularization 
+
 **Mixup+Contrastive Framework**
 
 Detail Implementation can be found 
+
 **self_supervised_learning_frameworks/mix_contrastive_framework/**
 
 **CutMix+Contrastive Framework is Under development**
