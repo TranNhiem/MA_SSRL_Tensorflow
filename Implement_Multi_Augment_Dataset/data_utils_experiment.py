@@ -15,7 +15,7 @@ import tensorflow_probability as tfp
 
 
 AUTO = tf.data.AUTOTUNE
-
+args.
 
 class dataset_pipeline():
 
@@ -41,6 +41,12 @@ class dataset_pipeline():
        no_aug: If True, overrides cfg and returns images as they are. Requires cfg object 
             to determine batch_size, image_size, etc.
     """
+
+    def __init__(self, args, no_aug=False):
+    
+        self.tfrecs_filepath = args.tfrecs_filepath
+        self.batch_size = args.batch_size
+        self.image_size = args.image_size
 
     # this function Corresponding reading TFRecord dataset example
     def decode_example(self, example_: tf.Tensor) -> dict:
@@ -70,8 +76,11 @@ class dataset_pipeline():
             "synset": synset,
         }
 
+    
     # Taking the file_paths reading parsing image return Image_Batch
+
     def _read_tfrecs(self) -> Type[tf.data.Dataset]:
+
         """ Function for reading and loading TFRecords into a tf.data.Dataset.
         Args: None.
         Returns:
@@ -82,10 +91,10 @@ class dataset_pipeline():
         ds = files.interleave(
             tf.data.TFRecordDataset, num_parallel_calls=AUTO, deterministic=False
         )
-
         ds = ds.map(self.decode_example, num_parallel_calls=AUTO)
 
         ds = ds.batch(self.batch_size, drop_remainder=True)
         ds = ds.prefetch(AUTO)
 
         return ds
+

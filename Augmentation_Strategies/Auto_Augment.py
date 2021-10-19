@@ -14,6 +14,7 @@ Auto Augmentation Policy Focus on Object Detection Task
 import tensorflow as tf
 from official.vision.image_classification.augment import AutoAugment
 
+
 '''
 AutoAugment Policy V0-- implementation 
   V0-->   policy = [
@@ -114,13 +115,13 @@ def tfa_AutoAugment_rand_distribe_crop_global_local_views_flip(image, crop_size,
     if high_resol:
         image_shape = tf.cast((crop_size * 1.4), dtype=tf.int32)
         image_shape = tf.cast(image_shape, tf.float32)
-        # print(image_shape)
         image = tf.image.resize(image, (image_shape, image_shape))
     else:
         image_shape = tf.cast(crop_size * 0.8, dtype=tf.int32)
         image_shape = tf.cast(image_shape, tf.float32)
-        # print(image_shape)
         image = tf.image.resize(image, (image_shape, image_shape))
+
+        
     size = tf.random.uniform(shape=(
         1,), minval=min_scale*image_shape, maxval=max_scale*image_shape, dtype=tf.float32)
     size = tf.cast(size, tf.int32)[0]
