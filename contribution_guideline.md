@@ -1,6 +1,6 @@
 Awesome! 
 
-Code writtent by filing some requirements
+Code writtent should filing some requirements
 
 1. **Code writtent** for each module should be **tested** - before committing to the repository 
 + **Fixing all bugs --> Tetsing all modules** . 
