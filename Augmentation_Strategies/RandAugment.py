@@ -18,7 +18,7 @@ RandAug Augmentation
           'Color', 'Contrast', 'Brightness', 'Sharpness', 'ShearX', 'ShearY',
           'TranslateX', 'TranslateY', 'Cutout', 'SolarizeAdd']
 '''
-# Aplly Original
+# Apply Original
 
 
 def tfa_randaug(image, num_transform, magnitude):
@@ -37,7 +37,7 @@ def tfa_randaug(image, num_transform, magnitude):
 
     return image
 
-# Aplly Stragey with default Croping and Flipping
+# Apply Stragey with default Croping and Flipping
 
 
 def tfa_randaug_rand_crop_fliping(image, num_transform, magnitude, crop_size):
