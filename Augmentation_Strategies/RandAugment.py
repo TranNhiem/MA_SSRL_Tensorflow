@@ -12,14 +12,18 @@ import tensorflow as tf
 import numpy as np
 
 '''
+Version 1
 RandAug Augmentation
-  available_ops = [
+available_ops = [
           'AutoContrast', 'Equalize', 'Invert', 'Rotate', 'Posterize', 'Solarize',
           'Color', 'Contrast', 'Brightness', 'Sharpness', 'ShearX', 'ShearY',
           'TranslateX', 'TranslateY', 'Cutout', 'SolarizeAdd']
 '''
-# Apply Original
 
+## Helper Function implementation Random selection (RandAug --> TFA API) 
+#tf.random.uniform
+
+# Aplly Original
 
 def tfa_randaug(image, num_transform, magnitude):
     '''
@@ -68,7 +72,7 @@ def tfa_randaug_rand_ditris_uniform_croping(image, num_transform, magnitude, cro
     Args:
      image: A tensor [ with, height, channels]
      crop_size: random crop_size of Image (base_one, Min-Max Scale, with Random_uniform_distri)
-     high_resol: Aim for Croping the Image at Global-- Local Views (True- Global views, False Local Views)
+     high_resol: Aim for Croping the Image at Global (True- Global views Else False Local Views)
      RandAugment: a function to apply Random transformation
     Return:
       Image: A tensor of Applied transformation [with, height, channels]
@@ -97,9 +101,18 @@ def tfa_randaug_rand_ditris_uniform_croping(image, num_transform, magnitude, cro
     return image
 
 
+
 '''Version2  RandAug Augmentation'''
 # rand_aug = iaa.RandAugment(n=2, m=7)
+'''
+Version 2
+Random Augmentation
+self.available Ops = [
+    Fliplr, KeepSizeByResize, Crop, Sequential, SomeOf, Identity,
+    Autocontrast, Equalize, Invert, Affine, Posterize, Solarize, EnhanceColor, 
+    EnhanceContrast,EnhanceBrightness, EnhanceSharpness, Cutout, FilterBlur, FilterSmooth]
 
+'''
 
 def imgaug_randaug(images, num_transform, magnitude):
     '''
@@ -119,3 +132,4 @@ def imgaug_randaug(images, num_transform, magnitude):
     # images = (images.astype(np.float32))/255.
     images = tf.cast(images, tf.float32)/255.
     return images
+

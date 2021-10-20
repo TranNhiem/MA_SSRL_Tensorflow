@@ -55,7 +55,6 @@ def gaussian_blur(image, kernel_size, sigma, padding='SAME'):
 
 # Random Apply with Probability
 
-
 def random_apply(func, x, p):
     if tf.random.uniform([], minval=0, maxval=1) < p:
         return func(x)
@@ -200,7 +199,6 @@ def flip_random_crop(image, crop_size):
     return image
 # Local Croping --Under experiment
 
-
 def random_crop_flip_resize(image, IMG_SIZE):
     # Random cropping
     h_crop = tf.cast(tf.random.uniform(shape=[], minval=13,
@@ -226,7 +224,6 @@ def random_crop_flip_resize(image, IMG_SIZE):
     return image
 
 # Inception Style Croping
-
 
 def inception_style_croping(image, height, width):
     """Make a random crop and resize it to height `height` and width `width`.
