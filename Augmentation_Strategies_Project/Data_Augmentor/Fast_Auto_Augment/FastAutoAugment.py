@@ -5,7 +5,6 @@ from torchvision.transforms import transforms
 from searched_policies import fa_reduced_cifar10, fa_resnet50_rimagenet, fa_reduced_svhn
 from transform_table import augment_list
 
-# As you saw.. it's pytorch code..
 
 class Augmentation(object):
     def __init__(self, policies):
@@ -63,10 +62,14 @@ class Fast_AutoAugment(object):
         return ds_policies
 
     def distort(self, image):
-        return self.trfs_cntr.transform(image)
+        return self.trfs_cntr(image)
 
 
 # sample code snippet..
 if __name__ == '__main__':
+    import numpy as np
+    img = np.random.random((14, 14, 3))
+
     fa = Fast_AutoAugment()
-    print(fa.prnt_policies()[0])
+    #print(fa.prnt_policies()[0])
+    print(fa.distort(img))

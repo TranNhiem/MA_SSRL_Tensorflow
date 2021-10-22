@@ -43,7 +43,8 @@ import numpy as np
 
 class Data_Augumentor(object):
     # static instance, declare once use everywhere!
-    DAS_dict = {"auto_aug":AutoAugment, "tf_rand_aug":RandAugment, "iaa_rand_aug":iaa.RandAugment}
+    DAS_dict = {"auto_aug":AutoAugment, "tf_rand_aug":RandAugment, 
+                "iaa_rand_aug":iaa.RandAugment, "fast_auto_aug":Fast_AutoAugment}
     # common method name to apply the data augmentation!!
     DA_METHOD = "distort"
     def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
@@ -154,10 +155,6 @@ class Data_Augumentor(object):
             Return: 
                 Image: A tensor of Applied transformation [with, height, channels]
         '''
-        def distort(pre_img):
-            if self.DAS_type == "iaa_rand_aug":
-                return self.aug_inst(pre_img)
-            return self.aug_inst.distort(pre_img)
         
         try:
             pre_img = self.pre_proc_dict[aug_type](image, crop_size, min_scale, 
