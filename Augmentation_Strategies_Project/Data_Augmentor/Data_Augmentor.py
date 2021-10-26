@@ -120,7 +120,7 @@ class Data_Augumentor(object):
         return rnd_flp_crp
 
 
-    def rand_distribe_crop_global_local_views_flip(image, crop_size, min_scale, max_scale, high_resol=True):
+    def rand_distribe_crop_global_local_views_flip(self, image, crop_size, min_scale, max_scale, high_resol=True):
         '''
             Args:
                 image: A tensor [ with, height, channels]
