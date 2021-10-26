@@ -1,10 +1,10 @@
 import unittest
 import numpy as np
-from ..Data_Augmentor.Data_Augmentor import Data_Augumentor
+from ..Data_Augmentor import Data_Augmentor
 
 class Test_Data_Augumentor(unittest.TestCase):
     def setUp(self):
-        self.da_inst = Data_Augumentor()
+        self.da_inst = Data_Augmentor.Data_Augumentor()
 
     def tearDown(self):
         del self.da_inst

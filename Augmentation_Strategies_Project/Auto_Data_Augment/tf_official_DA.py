@@ -344,7 +344,8 @@ def posterize(image: tf.Tensor, bits: int) -> tf.Tensor:
 
 def wrapped_rotate(image: tf.Tensor, degrees: float, replace: int) -> tf.Tensor:
   """Applies rotation with wrap/unwrap."""
-  image = rotate(wrap(image), degrees=degrees)
+  wrp_im = wrap(image)
+  image = rotate(wrp_im, degrees=degrees)
   return unwrap(image, replace)
 
 
@@ -603,7 +604,7 @@ def select_and_apply_random_policy(policies: Any, image: tf.Tensor):
         tf.equal(i, policy_to_select),
         lambda selected_policy=policy: selected_policy(image),
         lambda: image)
-  return image
+  return image, policy_to_select
 
 
 NAME_TO_FUNC = {
@@ -784,9 +785,9 @@ class AutoAugment(ImageAugment):
 
       tf_policies.append(make_final_policy(tf_policy))
 
-    image = select_and_apply_random_policy(tf_policies, image)
+    image, op_idxs = select_and_apply_random_policy(tf_policies, image)
     image = tf.cast(image, dtype=input_image_type)
-    return image
+    return image, self.policies[op_idxs]
 
   @staticmethod
   def policy_v0():
@@ -828,7 +829,7 @@ class AutoAugment(ImageAugment):
         [('Posterize', 0.8, 2), ('Solarize', 0.6, 10)],
         [('Solarize', 0.6, 8), ('Equalize', 0.6, 1)],
         [('Color', 0.8, 6), ('Rotate', 0.4, 5)],
-    ]
+    ]  # 0-24 policies
     return policy
 
   @staticmethod
@@ -889,10 +890,11 @@ class RandAugment(ImageAugment):
     self.cutout_const = float(cutout_const)
     self.translate_const = float(translate_const)
     self.available_ops = [
-        'AutoContrast', 'Equalize', 'Invert', 'Rotate', 'Posterize', 'Solarize',
-        'Color', 'Contrast', 'Brightness', 'Sharpness', 'ShearX', 'ShearY',
-        'TranslateX', 'TranslateY', 'Cutout', 'SolarizeAdd'
+        'AutoContrast', 'Equalize', 'Invert', 'Posterize', 'Solarize', 'Sharpness'
+        'Color', 'Contrast', 'Brightness', 'SolarizeAdd', 'Rotate', 
+        'ShearX', 'ShearY', 'TranslateX', 'TranslateY', 'Cutout'
     ]
+    self.select_op = []
 
   def distort(self, image: tf.Tensor) -> tf.Tensor:
     """Applies the RandAugment policy to `image`.
@@ -930,11 +932,12 @@ class RandAugment(ImageAugment):
             lambda selected_func=func, selected_args=args: selected_func(
                 image, *selected_args)))
         # pylint:enable=g-long-lambda
-
+      
+      print("op -> ", op_to_select)
       image = tf.switch_case(
           branch_index=op_to_select,
           branch_fns=branch_fns,
           default=lambda: tf.identity(image))
-
+    
     image = tf.cast(image, dtype=input_image_type)
     return image

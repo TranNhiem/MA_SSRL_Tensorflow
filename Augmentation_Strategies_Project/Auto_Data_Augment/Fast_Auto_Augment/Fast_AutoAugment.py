@@ -2,8 +2,8 @@
 import torch
 import torchvision
 from torchvision.transforms import transforms
-from searched_policies import fa_reduced_cifar10, fa_resnet50_rimagenet, fa_reduced_svhn
-from transform_table import augment_list
+from .searched_policies import fa_reduced_cifar10, fa_resnet50_rimagenet, fa_reduced_svhn
+from .transform_table import augment_list
 
 
 class Augmentation(object):

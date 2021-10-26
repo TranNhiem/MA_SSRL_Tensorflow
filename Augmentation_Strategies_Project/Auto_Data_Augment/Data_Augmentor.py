@@ -30,18 +30,22 @@ import tensorflow as tf
 from tensorflow.image import random_flip_left_right, random_crop
 
 # flexible policies implementation of AutoAugment, RandAugment
-from Fast_Auto_Augment import Fast_AutoAugment
+from .Fast_Auto_Augment import Fast_AutoAugment
 # tf-models-official 
-from tf_official_DA import AutoAugment, RandAugment
-import imgaug.augmenters as iaa
+from .tf_official_DA import AutoAugment, RandAugment
+#import imgaug.augmenters as iaa
 
 # For 'Type Hint' function, we replace the comment of code into type package.. 
 #from typing import Any, Dict, List, Optional, Text, Tuple
 from functools import partial
 import numpy as np
 
+class iaa:  # dummy class for replacing imgaug class
+    @staticmethod
+    def RandAugment():
+        ...
 
-class Data_Augumentor(object):
+class Data_Augmentor(object):
     # static instance, declare once use everywhere!
     DAS_dict = {"auto_aug":AutoAugment, "tf_rand_aug":RandAugment, 
                 "iaa_rand_aug":iaa.RandAugment, "fast_auto_aug":Fast_AutoAugment}
@@ -50,11 +54,11 @@ class Data_Augumentor(object):
     def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
         try:
             self.DAS_type = DAS_type
-            self.aug_inst = DAS_dict[DAS_type](*aug_args, **aug_kwarg)
+            self.aug_inst = Data_Augmentor.DAS_dict[DAS_type](*aug_args, **aug_kwarg)
         except KeyError as k_err:
             raise KeyError("Given vlaue {} of DAS_type, \
                             but the value should be one of that ({})".format(
-                            aug_type, DAS_dict.keys() )
+                            aug_type, Data_Augmentor.DAS_dict.keys() )
                           )
         except Exception as exc:
             print(exc)
@@ -70,14 +74,14 @@ class Data_Augumentor(object):
         if DAS_type == "auto_aug":
             print("AutoAugment Policy V0-- implementation : \n")
             print("V0--> policy = \n")
-            print(DAS_dict[DAS_type].policy_v0())
+            print(Data_Augmentor.DAS_dict[DAS_type].policy_v0())
             print("\n\n=================\n\n")
             print("Policy_simple = \n")
-            print(DAS_dict[DAS_type].policy_simple())
+            print(Data_Augmentor.DAS_dict[DAS_type].policy_simple())
 
         elif DAS_type == "tf_rand_aug":
             print("Tensorflow RandAugment avaliable ops : \n")
-            print(DAS_dict[DAS_type].available_ops)
+            print(Data_Augmentor.DAS_dict[DAS_type].available_ops)
 
         # GG.. ImageAug did not offer any public method to get the avaliable_ops
         elif DAS_type == "iaa_rand_aug": 
@@ -89,13 +93,13 @@ class Data_Augumentor(object):
         else:
             raise ValueError("Given vlaue {} of DAS_type, \
                             but the value should be one of that ({})".format(
-                            aug_type, DAS_dict.keys() )
+                            aug_type, Data_Augmentor.DAS_dict.keys() )
                           )
 
     # allow the augument instance have common method name to apply the data transformation
     def regist_common_distort(self):
         # the distort method already implemented in augument instance
-        if Data_Augumentor.DA_METHOD in dir(self.aug_inst):
+        if Data_Augmentor.DA_METHOD in dir(self.aug_inst):
             return
         # plz regist the correct method, which apply the data transformation.. 
         if self.DAS_type == "iaa_rand_aug":
@@ -145,7 +149,7 @@ class Data_Augumentor(object):
 
 
     def data_augment(self, image, aug_type="default", crop_size=None, 
-                min_scale=None, max_scale=None, high_resol=True):
+                min_scale=None, max_scale=None, high_resol=True, db_mod=False):
         '''
             The common interface for public user, which allow user only call this method 
             to augument the given image with the corresponding behavior setting by args. 
@@ -155,7 +159,17 @@ class Data_Augumentor(object):
             Return: 
                 Image: A tensor of Applied transformation [with, height, channels]
         '''
-        
+        ## HACKME : distort function can be designed in parallel pattern to improve the performance..
+        def _distort(img_tnsr_lst):
+            tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
+            img_lst = []
+            for img_tnsr in img_tnsr_lst:
+                aug_img, trfs_lst = self.aug_inst.distort(img_tnsr)
+                img_lst.append(aug_img)
+                if db_mod:
+                    print(trfs_lst)
+            return tf_cnvt(img_lst)
+
         try:
             pre_img = self.pre_proc_dict[aug_type](image, crop_size, min_scale, 
                                     max_scale, high_resol)
@@ -167,7 +181,7 @@ class Data_Augumentor(object):
         except Exception as exc:
             print(exc) ; return
 
-        aug_img = self.aug_inst.distort(pre_img)
+        aug_img = _distort(pre_img)
         return self.post_proc(aug_img)
 
 
@@ -175,7 +189,7 @@ if __name__ == '__main__':
     # simple test
     import numpy as np
 
-    da_inst = Data_Augumentor()
+    da_inst = Data_Augmentor()
     dummy_img = np.random.random((3, 3, 4))
     aug_img = da_inst.data_augment(dummy_img)
     print(aug_img)
