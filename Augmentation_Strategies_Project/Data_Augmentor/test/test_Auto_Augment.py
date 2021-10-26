@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from ..Augmentation_Strategies.Auto_Augment import Data_Augumentor
+from ..Data_Augmentor.Data_Augmentor import Data_Augumentor
 
 class Test_Data_Augumentor(unittest.TestCase):
     def setUp(self):
@@ -26,4 +26,5 @@ class Test_Data_Augumentor(unittest.TestCase):
         self.assertIsInstance(aug_img, np.array)
 
 if __name__ == '__main__':
-    unittest.main()
+    pass
+    #unittest.main()
