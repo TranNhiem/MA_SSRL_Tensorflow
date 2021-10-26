@@ -61,7 +61,9 @@ class Data_Augumentor(object):
 
         self.pre_proc_dict = {"default":lambda image, *_ : tf.cast(image, dtype=tf.float32),
                     "rnd_crp_flp":self.rand_crop_flip,
-                    "glb_loc_crp_flp":self.rand_distribe_crop_global_local_views_flip}
+                    "glb_loc_crp_flp":self.rand_distribe_crop_global_local_views_flip, 
+                    "inceptio_style_crop": self.inception_style_croping, 
+                    }
         self.post_proc = lambda image : tf.cast(image, dtype=tf.float32) / 255.
         self.regist_common_distort()
 
@@ -143,6 +145,29 @@ class Data_Augumentor(object):
         # Return image with Crop_size
         return tf.image.resize(rnd_flp_crp, (crop_size, crop_size))
 
+   
+    ## Inception Style Croping 
+    def inception_style_croping(self, image, height, width):
+        """Make a random crop and resizeA it to height `height` and width `width`.
+        Args:
+            image: Tensor representing the image.
+            height: Desired image height.
+            width: Desired image width.
+        Returns:
+            A `height` x `width` x channels Tensor holding a random crop of `image`.
+        """
+        bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+        aspect_ratio = width / height
+        image = distorted_bounding_box_crop(
+            image,
+            bbox,
+            min_object_covered=0.1,
+            aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),
+            area_range=(0.08, 1.0),
+            max_attempts=100,
+            scope=None)
+        return tf.image.resize([image], [height, width],
+                                method=tf.image.ResizeMethod.BICUBIC)[0]
 
     def data_augment(self, image, aug_type="default", crop_size=None, 
                 min_scale=None, max_scale=None, high_resol=True):
