@@ -201,10 +201,10 @@ def flip_random_crop(image, crop_size):
 
 def random_crop_flip_resize(image, IMG_SIZE):
     # Random cropping
-    h_crop = tf.cast(tf.random.uniform(shape=[], minval=13,
-                     maxval=33, dtype=tf.int32), tf.float32)
+    h_crop = tf.cast(tf.random.uniform(shape=[], minval=30,
+                     maxval=224, dtype=tf.int32), tf.float32)
 
-    w_crop = h_crop * tf.random.uniform(shape=[], minval=0.67, maxval=1.0)
+    w_crop = h_crop * tf.random.uniform(shape=[], minval=0.4, maxval=1.0)
     h_crop, w_crop = tf.cast(h_crop, tf.int32), tf.cast(w_crop, tf.int32)
 
     opposite_aspectratio = tf.random.uniform(shape=[])
