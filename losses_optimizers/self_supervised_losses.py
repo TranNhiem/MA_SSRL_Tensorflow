@@ -73,7 +73,6 @@ def nt_xent_asymetrize_loss(z,  temperature):
 
     ij_indices = tf.reshape(tf.range(z.shape[0]), shape=[-1, 2])
     ji_indices = tf.reverse(ij_indices, axis=[1])
-
     # [[0, 1], [1, 0], [2, 3], [3, 2], ...]
     positive_indices = tf.reshape(tf.concat(
         [ij_indices, ji_indices], axis=1), shape=[-1, 2])  # Indice positive pair
@@ -82,7 +81,6 @@ def nt_xent_asymetrize_loss(z,  temperature):
     # 2N-1 (sample)
     # mask that discards self-similarity
     negative_mask = 1 - tf.eye(z.shape[0])
-
     # compute sume across dimensions of Tensor (Axis is important in this case)
     # None sum all element scalar, 0 sum all the row, 1 sum all column -->1D metric
     denominators = tf.reduce_sum(
@@ -124,25 +122,21 @@ def nt_xent_asymetrize_loss_v2(p, z, temperature, batch_size):  # negative_mask
     z_l2 = tf.math.l2_normalize(z, axis=1)
 
     # Cosine Similarity distance loss
-
     # pos_loss = consie_sim_1d(p_l2, z_l2)
     pos_loss = tf.matmul(tf.expand_dims(p_l2, 1), tf.expand_dims(z_l2, 2))
-
     pos_loss = tf.reshape(pos_loss, (batch_size, 1))
     pos_loss /= temperature
+
     negatives = tf.concat([p_l2, z_l2], axis=0)
     # Mask out the positve mask from batch of Negative sample
     negative_mask = get_negative_mask(batch_size)
-
     loss = 0
     for positives in [p_l2, z_l2]:
-
         # negative_loss = cosine_sim_2d(positives, negatives)
         negative_loss = tf.tensordot(tf.expand_dims(
             positives, 1), tf.expand_dims(tf.transpose(negatives), 0), axes=2)
         l_labels = tf.zeros(batch_size, dtype=tf.int32)
         l_neg = tf.boolean_mask(negative_loss, negative_mask)
-
         l_neg = tf.reshape(l_neg, (batch_size, -1))
         l_neg /= temperature
 
@@ -195,19 +189,75 @@ def nt_xent_symmetrize_keras(p, z, temperature):
 
 
 def byol_symetrize_loss(p, z):
-    z = tf.stop_gradient(z)
+
     p = tf.math.l2_normalize(p, axis=1)  # (2*bs, 128)
     z = tf.math.l2_normalize(z, axis=1)  # (2*bs, 128)
 
     similarities = tf.reduce_sum(tf.multiply(p, z), axis=1)
     return 2 - 2 * tf.reduce_mean(similarities)
 
+def binary_byol_symetrize_loss(p, z, p_1, z_1): 
+    
+    ## L2 Norm feature Vectors
+    p = tf.math.l2_normalize(p, axis=1)  # (2*bs, 128)
+    z = tf.math.l2_normalize(z, axis=1)  # (2*bs, 128)
+    p_1 = tf.math.l2_normalize(p_1, axis=1)  # (2*bs, 128)
+    z_2 = tf.math.l2_normalize(z_1, axis=1)  # (2*bs, 128)
+
+    ## Object + Background Loss
+    similarities_object = tf.reduce_sum(tf.multiply(p, z), axis=1)
+    similarities_backgroud = tf.reduce_sum(tf.multiply(p_1, z_1), axis=1)
+    loss_1= 2 - 2 * tf.reduce_mean(similarities_object)
+    loss_2=2 - 2 * tf.reduce_mean(similarities_backgroud)
+    total_loss = loss_1 + loss_2
+    
+    return total_loss
+
+
+def semantic_byol_symetrize_loss(p, z): 
+    '''
+    Args: 
+        P: array of Semantic features
+        Z: array of sematinc features 
+    '''
+    total_loss=0
+    ## Get the total number of semantic features
+    for i in range(len(p)): 
+        p_norm =tf.math.l2_normalize(p[i], axis=1)
+        z_norm =tf.math.l2_normalize(z[i], axis=1)
+
+        similarities_object = tf.reduce_sum(tf.multiply(p_norm, z_norm), axis=1)
+        loss= 2 - 2 * tf.reduce_mean(similarities_object)
+        total_loss +=loss
+
+    return total_loss
+
+
+
+
+def binary_byol_symetrize_loss(p, z, p_1, z_1): 
+    
+    ## L2 Norm feature Vectors
+    p = tf.math.l2_normalize(p, axis=1)  # (2*bs, 128)
+    z = tf.math.l2_normalize(z, axis=1)  # (2*bs, 128)
+    p_1 = tf.math.l2_normalize(p_1, axis=1)  # (2*bs, 128)
+    z_2 = tf.math.l2_normalize(z_1, axis=1)  # (2*bs, 128)
+
+    ## Object + Background Loss
+    similarities_object = tf.reduce_sum(tf.multiply(p, z), axis=1)
+    similarities_backgroud = tf.reduce_sum(tf.multiply(p_1, z_1), axis=1)
+    loss_1= 2 - 2 * tf.reduce_mean(similarities_object)
+    loss_2=2 - 2 * tf.reduce_mean(similarities_backgroud)
+    total_loss = loss_1 + loss_2
+    
+    return total_loss
+
+
+
 
 '''Loss 2 SimSiam Model'''
 # Asymetric LOSS
 # offical Implementation
-
-
 def simsam_loss(p, z):
     # The authors of SimSiam emphasize the impact of
     # the `stop_gradient` operator in the paper as it
@@ -218,7 +268,6 @@ def simsam_loss(p, z):
     # Negative cosine similarity (minimizing this is
     # equivalent to maximizing the similarity).
     return -tf.reduce_mean(tf.reduce_sum((p * z), axis=1))
-
 # Experimental testing Collapse Situation
 
 
