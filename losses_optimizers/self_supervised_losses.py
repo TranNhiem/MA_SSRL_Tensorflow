@@ -36,7 +36,6 @@ def multi_class_npair_loss_temperature(z, y, temperature):
 
 '''N-Pair Loss'''
 
-
 def multiclass_N_pair_loss(p, z):
     x_i = tf.math.l2_normalize(p, axis=1)
     x_j = tf.math.l2_normalize(z, axis=1)
