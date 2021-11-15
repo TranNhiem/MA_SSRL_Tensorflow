@@ -3,7 +3,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import numpy as np
 from Auto_Data_Augment.test.test_Data_Augmentor import Test_Data_Augumentor
 from Auto_Data_Augment.Data_Augmentor import Data_Augmentor
-#from Auto_Data_Augment.tf_official_DA import RandAugment
 import tensorflow_datasets as tfds
 from vis_tool import imshow_imgs
 
@@ -33,7 +32,7 @@ def get_toy_dataset(dataset_name, split='train', shuffle_files=True, with_info=T
 
 
 if __name__ == "__main__":
-    cifar_ds, info = get_toy_dataset("cifar10")
-    vis_data_aug(cifar_ds)
-    #test_report()
+    #cifar_ds, info = get_toy_dataset("cifar10")
+    #vis_data_aug(cifar_ds)
+    test_report()
     

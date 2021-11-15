@@ -26,5 +26,4 @@ class Test_Data_Augumentor(unittest.TestCase):
         self.assertIsInstance(aug_img, np.array)
 
 if __name__ == '__main__':
-    pass
-    #unittest.main()
+    unittest.main(verbosity=2)
