@@ -33,24 +33,20 @@ from tensorflow.image import random_flip_left_right, random_crop
 from .Fast_Auto_Augment import Fast_AutoAugment
 # tf-models-official 
 from .tf_official_DA import AutoAugment, RandAugment
-#import imgaug.augmenters as iaa
 
 # For 'Type Hint' function, we replace the comment of code into type package.. 
 #from typing import Any, Dict, List, Optional, Text, Tuple
 from functools import partial
 import numpy as np
 
-class iaa:  # dummy class for replacing imgaug class
-    @staticmethod
-    def RandAugment():
-        ...
-
 class Data_Augmentor(object):
     # static instance, declare once use everywhere!
-    DAS_dict = {"auto_aug":AutoAugment, "tf_rand_aug":RandAugment, 
-                "iaa_rand_aug":iaa.RandAugment, "fast_auto_aug":Fast_AutoAugment}
+    DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment}
     # common method name to apply the data augmentation!!
     DA_METHOD = "distort"
+    def_preproc = lambda image, *_ : tf.cast(image, dtype=tf.float32)
+    def_postproc = lambda image : tf.cast(image, dtype=tf.float32) / 255.
+
     def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
         try:
             self.DAS_type = DAS_type
@@ -63,15 +59,16 @@ class Data_Augmentor(object):
         except Exception as exc:
             print(exc)
 
-        self.pre_proc_dict = {"default":lambda image, *_ : tf.cast(image, dtype=tf.float32),
-                    "rnd_crp_flp":self.rand_crop_flip,
-                    "glb_loc_crp_flp":self.rand_distribe_crop_global_local_views_flip}
-        self.post_proc = lambda image : tf.cast(image, dtype=tf.float32) / 255.
+        self.pre_proc_dict = {"default":Data_Augmentor.def_preproc}
+        self.post_proc_dict = {"default":Data_Augmentor.def_postproc}
         self.regist_common_distort()
+
 
     @staticmethod
     def prnt_policies(DAS_type):
-        if DAS_type == "auto_aug":
+        # please refer the DAS_dict keys
+        da_lst = Data_Augmentor.DAS_dict.keys()
+        if DAS_type == da_lst[0]:
             print("AutoAugment Policy V0-- implementation : \n")
             print("V0--> policy = \n")
             print(Data_Augmentor.DAS_dict[DAS_type].policy_v0())
@@ -79,22 +76,20 @@ class Data_Augmentor(object):
             print("Policy_simple = \n")
             print(Data_Augmentor.DAS_dict[DAS_type].policy_simple())
 
-        elif DAS_type == "tf_rand_aug":
-            print("Tensorflow RandAugment avaliable ops : \n")
+        elif DAS_type == da_lst[1]:
+            print("RandAugment avaliable ops : \n")
             print(Data_Augmentor.DAS_dict[DAS_type].available_ops)
 
-        # GG.. ImageAug did not offer any public method to get the avaliable_ops
-        elif DAS_type == "iaa_rand_aug": 
-            print("ImageAug RandAugment avaliable ops : \n")
-            aug_str = '''[ Fliplr, KeepSizeByResize, Crop, Sequential, SomeOf, Identity, \
-                            Autocontrast, Equalize, Invert, Affine, Posterize, Solarize, EnhanceColor, \
-                            EnhanceContrast,EnhanceBrightness, EnhanceSharpness, Cutout, FilterBlur, FilterSmooth]'''
-            print(aug_str)
+        elif DAS_type == da_lst[2]: 
+            print("FastAutoAugment avaliable ops : \n")
+            print(Data_Augmentor.DAS_dict[DAS_type]().prnt_policies)
+            
         else:
             raise ValueError("Given vlaue {} of DAS_type, \
                             but the value should be one of that ({})".format(
                             aug_type, Data_Augmentor.DAS_dict.keys() )
                           )
+
 
     # allow the augument instance have common method name to apply the data transformation
     def regist_common_distort(self):
@@ -102,60 +97,16 @@ class Data_Augmentor(object):
         if Data_Augmentor.DA_METHOD in dir(self.aug_inst):
             return
         # plz regist the correct method, which apply the data transformation.. 
-        if self.DAS_type == "iaa_rand_aug":
-            self.aug_inst.distort = self.aug_inst.__call__
 
 
-    def rand_crop_flip(self, image, crop_size):
-        '''
-            Args: 
-                image: A tensor [ with, height, channels]
-                crop_size: Apply Random Crop_Flip Image before Apply AutoAugment
-                AutoAugment: a function to apply Policy transformation [v0, policy_simple]
-
-            Return: 
-                Image: A tensor of Applied transformation [with, height, channels]
-        '''
-        crp_shap = (crop_size, crop_size, 3)
-        flp_img = tf.image.random_flip_left_right(image)
-        rnd_flp_crp = tf.image.random_crop(flp_img, crp_shap)
-        return rnd_flp_crp
-
-
-    def rand_distribe_crop_global_local_views_flip(image, crop_size, min_scale, max_scale, high_resol=True):
-        '''
-            Args:
-                image: A tensor [ with, height, channels]
-                crop_size: Rand --> Flipping --> random_distribute_uniform (min_scale, max_scale) 
-                high_resol --> True: For Global crop_view, False: For Local crop views
-                AutoAugment: a function to apply AutoAugment transformation 
-
-            Return: 
-                Image: A tensor of Applied transformation [with, height, channels]
-        '''
-        flp_img = tf.image.random_flip_left_right(image)
-        crp_ratio = crop_size * 1.4 if high_resol else crop_size * 0.8  
-        image_shape = tf.cast(crp_ratio, dtype=tf.int32)
-        image_shape = tf.cast(image_shape, tf.float32)
-        resz_flp_img = tf.image.resize(flp_img, (image_shape, image_shape))
-
-        size = tf.random.uniform(shape=(1,), minval=min_scale*image_shape, 
-                        maxval=max_scale*image_shape, dtype=tf.float32)
-        size = tf.cast(size, tf.int32)[0]
-        # Get crop_size
-        rnd_flp_crp = tf.image.random_crop(resz_flp_img, (size, size, 3))
-        # Return image with Crop_size
-        return tf.image.resize(rnd_flp_crp, (crop_size, crop_size))
-
-
-    def data_augment(self, image, aug_type="default", crop_size=None, 
-                min_scale=None, max_scale=None, high_resol=True, db_mod=False):
+    def data_augment(self, image, preproc_lst=["default"], postproc_lst=["default"], db_mod=False):
         '''
             The common interface for public user, which allow user only call this method 
             to augument the given image with the corresponding behavior setting by args. 
             Args:
                 image: A tensor [ with, height, channels]
-                other args for various augumentation
+                db_mod : Boolean, turn debug mode on/off (True/False) 
+                other args will be removed in next commit
             Return: 
                 Image: A tensor of Applied transformation [with, height, channels]
         '''
@@ -170,19 +121,45 @@ class Data_Augmentor(object):
                     print(trfs_lst)
             return tf_cnvt(img_lst)
 
+        def _img_proc(img_tnsr_lst, preproc):
+            tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
+            img_lst = []
+            for img_tnsr in img_tnsr_lst:
+                img_lst.append( preproc(img_tnsr) )
+            return img_lst #tf_cnvt(img_lst)
+
+        # 1. image pre-processing 
         try:
-            pre_img = self.pre_proc_dict[aug_type](image, crop_size, min_scale, 
-                                    max_scale, high_resol)
+            pre_img = image
+            for proc_typ in preproc_lst:
+                preproc = self.pre_proc_dict[proc_typ]
+                pre_img = _img_proc(pre_img, preproc)
         except KeyError as k_err:
-            raise KeyError("Given vlaue {} of aug_type, \
-            but the value should be one of that ({})".format(
-                aug_type, self.pre_proc_dict.keys() )
+            raise KeyError("Given preprocess type {} has not be registered in the pre_proc_dict, \
+            the registered preprocess type : ({})".format(
+                proc_typ, self.pre_proc_dict.keys() )
             )
         except Exception as exc:
-            print(exc) ; return
-
+            raise Exception(exc)
+        
+        # 2. apply the data augmentation of the image
         aug_img = _distort(pre_img)
-        return self.post_proc(aug_img)
+
+        # 3. image post-processing 
+        try:
+            post_img = aug_img
+            for proc_typ in postproc_lst:
+                postproc = self.post_proc_dict[proc_typ]
+                post_img = _img_proc(post_img, postproc)
+        except KeyError as k_err:
+            raise KeyError("Given postprocess type {} has not be registered in the post_proc_dict, \
+            the registered postprocess type : ({})".format(
+                proc_typ, self.post_proc_dict.keys() )
+            )
+        except Exception as exc:
+            raise Exception(exc)
+        
+        return post_img
 
 
 if __name__ == '__main__':
