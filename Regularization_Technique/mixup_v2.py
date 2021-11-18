@@ -12,7 +12,7 @@ import tensorflow_probability as tfp
 tfd = tfp.distribution
 
 
-def _mixup(self, image, label) -> Tuple:
+def _mixup( image, label) -> Tuple:
     """
     Function to apply mixup augmentation. To be applied after
     one hot encoding and before batching.
