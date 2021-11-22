@@ -101,7 +101,6 @@ def get_centralized_gradients(optimizer, loss, params):
                  for g in grads]
     return grads
 
-
 def centralized_gradients_for_optimizer(optimizer):
     """Create a centralized gradients functions for a specified optimizer.
 
@@ -121,7 +120,6 @@ def centralized_gradients_for_optimizer(optimizer):
         return get_centralized_gradients(optimizer, loss, params)
 
     return get_centralized_gradients_for_optimizer
-
 
 def get_train_steps(num_examples, train_epochs, gloabl_batch_size, train_steps=None):
     """Determine the number of training steps."""
