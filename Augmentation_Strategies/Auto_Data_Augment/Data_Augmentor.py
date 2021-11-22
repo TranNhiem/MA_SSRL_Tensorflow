@@ -41,7 +41,7 @@ import numpy as np
 
 class Data_Augmentor(object):
     # static instance, declare once use everywhere!
-    DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment}
+    DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment, "simCLR":None}
     # common method name to apply the data augmentation!!
     DA_METHOD = "distort"
     def_preproc = lambda image, *_ : tf.cast(image, dtype=tf.float32)
@@ -112,21 +112,22 @@ class Data_Augmentor(object):
         '''
         ## HACKME : distort function can be designed in parallel pattern to improve the performance..
         def _distort(img_tnsr_lst):
-            tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
             img_lst = []
             for img_tnsr in img_tnsr_lst:
                 aug_img, trfs_lst = self.aug_inst.distort(img_tnsr)
                 img_lst.append(aug_img)
                 if db_mod:
                     print(trfs_lst)
-            return tf_cnvt(img_lst)
+            return img_lst
 
-        def _img_proc(img_tnsr_lst, preproc):
-            tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
+        def _img_proc(img_tnsr_lst, proc_func):
             img_lst = []
             for img_tnsr in img_tnsr_lst:
-                img_lst.append( preproc(img_tnsr) )
-            return img_lst #tf_cnvt(img_lst)
+                img_lst.append( proc_func(img_tnsr) )
+            return img_lst
+
+        #def customer_to_unmix():
+           #...
 
         # 1. image pre-processing 
         try:
@@ -158,8 +159,9 @@ class Data_Augmentor(object):
             )
         except Exception as exc:
             raise Exception(exc)
-        
-        return post_img
+        # convert numpy dtype into the tf.Tensor for tf.Model processing..
+        tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
+        return tf_cnvt(post_img)
 
 
 if __name__ == '__main__':

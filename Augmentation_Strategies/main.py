@@ -20,12 +20,12 @@ def vis_data_aug(ds, da_type="auto_aug", batch_size=4):
     local_crp = partial(rand_distribe_crop_global_local_views_flip, min_scale=0.5, max_scale=0.5)
     da.pre_proc_dict["incpt_crp"] = incpt_crp
     da.pre_proc_dict["loc_crp"] = local_crp
-
+    
     ds = ds.batch(batch_size, drop_remainder=True)
     for example in ds:
         bh_img, lab = example["image"], example["label"]
         imshow_imgs( bh_img.numpy() )
-        da_bh_img = da.data_augment(bh_img, ["default", "incpt_crp"], db_mod=True)
+        da_bh_img = da.data_augment(bh_img, ["loc_crp"], db_mod=True)
         imshow_imgs( da_bh_img.numpy() )
 
 

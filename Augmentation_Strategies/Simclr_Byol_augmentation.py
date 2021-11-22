@@ -223,7 +223,7 @@ def random_crop_flip_resize(image, IMG_SIZE):
     return image
 
 ## Random Global and Local Croping 
-def rand_distribe_crop_global_local_views_flip(image, crop_size, min_scale, max_scale, high_resol=True):
+def rand_distribe_crop_global_local_views_flip(image, min_scale, max_scale, high_resol=True):
     '''
         Args:
             image: A tensor [ with, height, channels]
@@ -234,7 +234,7 @@ def rand_distribe_crop_global_local_views_flip(image, crop_size, min_scale, max_
         Return: 
             Image: A tensor of Applied transformation [with, height, channels]
     '''
-    crop_size = image.shape
+    crop_size = image.shape[0]
     
     flp_img = tf.image.random_flip_left_right(image)
     crp_ratio = crop_size * 1.4 if high_resol else crop_size * 0.8  
