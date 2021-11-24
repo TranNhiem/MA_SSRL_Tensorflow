@@ -44,7 +44,7 @@ class Data_Augmentor(object):
     DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment, "simCLR":None}
     # common method name to apply the data augmentation!!
     DA_METHOD = "distort"
-    def_preproc = lambda image, *_ : tf.cast(image, dtype=tf.float32)
+    def_preproc = lambda image : tf.cast(image, dtype=tf.float32)
     def_postproc = lambda image : tf.cast(image, dtype=tf.float32) / 255.
 
     def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
@@ -97,9 +97,9 @@ class Data_Augmentor(object):
         if Data_Augmentor.DA_METHOD in dir(self.aug_inst):
             return
         # plz regist the correct method, which apply the data transformation.. 
+        
 
-
-    def data_augment(self, image, preproc_lst=["default"], postproc_lst=["default"], db_mod=False):
+    def data_augment(self, image, preproc_lst=[], postproc_lst=[], db_mod=False):
         '''
             The common interface for public user, which allow user only call this method 
             to augument the given image with the corresponding behavior setting by args. 
@@ -125,9 +125,6 @@ class Data_Augmentor(object):
             for img_tnsr in img_tnsr_lst:
                 img_lst.append( proc_func(img_tnsr) )
             return img_lst
-
-        #def customer_to_unmix():
-           #...
 
         # 1. image pre-processing 
         try:
@@ -161,7 +158,9 @@ class Data_Augmentor(object):
             raise Exception(exc)
         # convert numpy dtype into the tf.Tensor for tf.Model processing..
         tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
-        return tf_cnvt(post_img)
+        post_img = tf_cnvt(post_img)
+
+        return post_img
 
 
 if __name__ == '__main__':

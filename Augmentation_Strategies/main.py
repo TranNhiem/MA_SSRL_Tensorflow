@@ -25,7 +25,7 @@ def vis_data_aug(ds, da_type="auto_aug", batch_size=4):
     for example in ds:
         bh_img, lab = example["image"], example["label"]
         imshow_imgs( bh_img.numpy() )
-        da_bh_img = da.data_augment(bh_img, ["loc_crp"], db_mod=True)
+        da_bh_img = da.data_augment(bh_img, ["incpt_crp"], db_mod=True)
         imshow_imgs( da_bh_img.numpy() )
 
 
