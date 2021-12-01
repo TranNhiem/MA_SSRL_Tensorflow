@@ -1,42 +1,66 @@
-# Apply the mock flag
-#from utility.absl_mock import flags
-#FLAGS = flags.FLAGS
+from Simclr_Byol_augmentation import distorted_bounding_box_crop
+from collections import namedtuple
+import tensorflow as tf
+import numpy as np
+
 
 class Multi_viewer(object):
-    two_view = {"glb":(260, 224), "loc":(160, 96)}
-    
-    def __init__(self, view_spec_dict=None):
-        self.view_spec = view_spec_dict if view_spec_dict \
+    View_spec = namedtuple("view_spec", "n_crp, re_siz, viw_siz, min_scale, max_scale")
+    two_view = { "glb":View_spec(n_crp=2, re_siz=260, viw_siz=224, min_scale=0.5, max_scale=1),
+                 "loc":View_spec(n_crp=3, re_siz=160, viw_siz=96, min_scale=0.14, max_scale=0.5) }
+    def_da = lambda im : im
+
+    def __init__(self, multi_view_spec=None, da_inst=None):
+        self.multi_view_spec = multi_view_spec if multi_view_spec \
                             else Multi_viewer.two_view
         self.util = {'cnvt_typ':lambda x : tf.image.convert_image_dtype(x, tf.float32),
-                        'cast':lambda x : tf.cast(x, tf.int32)[0] }
+                        'cast':lambda x : tf.cast(x, tf.int32)[0],
+                        'incpt_crp':lambda x, **_ : self.__inception_style_crop(x),
+                        'rnd_crp':lambda x, **args : self.__random_resize_crop(x, **args) }
+        self.da_inst = da_inst if da_inst else Multi_viewer.def_da
 
-    # color distortion
-    def __custom_augment(self, image):
-        # Random flips
-        image = random_apply(tf.image.flip_left_right, image, p=0.5)
-        # Randomly apply gausian blur
-        image = random_apply(gaussian_blur, image, p=0.5)
-        # Randomly apply transformation (color distortions) with probability p.
-        image = random_apply(color_jitter, image, p=0.8)
-        # Randomly apply grayscale
-        image = random_apply(color_drop, image, p=0.2)
+
+    # for global view only : inception style cropping
+    def __inception_style_crop(self, image):
+        batch_siz, height, width, channel = image.shape
+        bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+        aspect_ratio = width / height
+        image = distorted_bounding_box_crop(
+            image,
+            bbox,
+            min_object_covered=0.1,
+            aspect_ratio_range=(3. / 4. * aspect_ratio, 4. / 3. * aspect_ratio),
+            area_range=(0.08, 1.0),
+            max_attempts=100,
+            scope=None)
+        return tf.image.resize([image], [height, width],
+                            method=tf.image.ResizeMethod.BICUBIC)[0]
+
+    # for local and global view
+    def __random_resize_crop(self, image, re_siz, viw_siz, min_scale, max_scale):
+        image = tf.image.resize(image, (re_siz, re_siz))
+        # get the crop size for given min and max scale
+        crp_siz = tf.random.uniform(shape=(1,), minval=min_scale*re_siz, 
+                                    maxval=max_scale*re_siz, dtype=tf.float32)
+        crp_siz = self.util['cast'](crp_siz)
+        # get the crop from the rgb image
+        crp_im = tf.image.random_crop( image, (crp_siz, crp_siz, 3) )
+        im_view = tf.image.resize(crp_im, (viw_siz, viw_siz))
+        return im_view
+
+    def multi_view(self, batch_image, incpt_crp=False):
+        bth_im = self.util['cnvt_typ'](batch_image)
+        bth_im_buff = []
+        for viw_name, vs in self.multi_view_spec.items():
+            crp_key = "incpt_crp" if viw_name == "glb" and incpt_crp \
+                                else "rnd_crp"
+            for num in range(vs.n_crp):
+                im_buff = []
+                kwargs = {"re_siz":vs.re_siz, "viw_siz":vs.viw_siz, 
+                        "min_scale":vs.min_scale, "max_scale":vs.max_scale}
+                for im in bth_im:
+                    im_buff.append( self.util[crp_key](im, **kwargs) )
+                # data augment perform batch image transformations
+                bth_im_buff.append( self.da_inst.data_augment(im_buff, ["default"], ["default"]).numpy() )
         
-
-    def multi_view(self, image, label, view_spec={"glb":(260, 224), "loc":(160, 96)},
-                min_scal_rng=[0.5, 0.14], max_scal_rng=[1., 0.5], db_mod=False):
-        im_lst = []
-        image = self.util['cnvt_typ'](image)
-        for view_name, (re_siz, viw_siz) in self.view_spec.items():
-            image = tf.image.resize(image, (re_siz, re_siz))
-            # get the crop size for given min and max scale
-            crp_siz = tf.random.uniform(shape=(1,), minval=min_scale*re_siz, maxval=max_scale*re_siz, dtype=tf.float32)
-            crp_siz = self.util['cast'](crp_siz)
-            # get the crop from the image
-            crp_shp = (crp_siz, crp_siz, 3)
-            crp_im = tf.image.random_crop(image, crp_shp)
-            im_view = tf.image.resize(crp_im, (viw_siz, viw_siz))
-            distored_image = self.__custom_augment(im_view)
-
-        return distored_image, label  # bypass label 
-    
+        return bth_im_buff

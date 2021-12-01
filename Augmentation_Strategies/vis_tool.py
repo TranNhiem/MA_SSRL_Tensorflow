@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 from math import sqrt, ceil
 import numpy as np
 
-def imshow_imgs(img_arr:np.ndarray, *args, **kwargs):
+def imshow_imgs(img_arr:np.ndarray, sup_title:str="", *args, **kwargs):
     def chk_args():
         assert isinstance(img_arr, np.ndarray)
         #assert img_arr.shape[-1] == len(titles)
@@ -23,6 +23,6 @@ def imshow_imgs(img_arr:np.ndarray, *args, **kwargs):
         axes[row_idx, col_idx].imshow(img_arr[idx], *args, **kwargs)
         axes[row_idx, col_idx].set_title(titles[idx])
         axes[row_idx, col_idx].axis('on')
-    
+
+    fig.suptitle(sup_title)
     plt.show()
-    
