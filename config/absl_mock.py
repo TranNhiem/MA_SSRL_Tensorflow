@@ -20,28 +20,28 @@ class Mock_Flag(object):
         return self.flag_spec
 
     def DEFINE_string(self, var_name, value, helper_str):
-        if isinstance(value, string_types):
+        if isinstance(value, string_types) or value == None:
             self.flag_spec.__dict__[var_name] = value
         else:
             raise TypeError("The input value should be string type")
     
     def DEFINE_boolean(self, var_name, value, helper_str):
-        if isinstance(value, bool):
+        if isinstance(value, bool) or value == None:
             self.flag_spec.__dict__[var_name] = value
         else:
-            raise TypeError("The input value should be string type")
+            raise TypeError("The input value should be boolean type")
 
     def DEFINE_integer(self, var_name, value, helper_str):
-        if isinstance(value, int):
+        if isinstance(value, int) or value == None:
             self.flag_spec.__dict__[var_name] = value
         else:
-            raise TypeError("The input value should be string type")
+            raise TypeError("The input value should be interger type")
     
     def DEFINE_float(self, var_name, value, helper_str):
-        if isinstance(value, float):
+        if isinstance(value, float) or isinstance(value, int) or value == None:
             self.flag_spec.__dict__[var_name] = value
         else:
-            raise TypeError("The input value should be string type")
+            raise TypeError("The input value should be float type")
     
     def DEFINE_enum(self, var_name, value, choice_lst, helper_str):
         assert len(choice_lst) > 0, "The enum type should give the choice list"
@@ -51,7 +51,7 @@ class Mock_Flag(object):
             raise TypeError("The input value should be belong into the choice list")
 
     def DEFINE_dict(self, var_name, value, helper_str):
-        if isinstance(value, dict):
+        if isinstance(value, dict) or value == None:
             self.flag_spec.__dict__[var_name] = value
         else:
             raise TypeError("The input value should be dict type")
