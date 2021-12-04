@@ -48,6 +48,7 @@ class Multi_viewer(object):
         im_view = tf.image.resize(crp_im, (viw_siz, viw_siz))
         return im_view
 
+    
     def multi_view(self, batch_image, incpt_crp=False):
         bth_im = self.util['cnvt_typ'](batch_image)
         bth_im_buff = []
@@ -60,7 +61,8 @@ class Multi_viewer(object):
                         "min_scale":vs.min_scale, "max_scale":vs.max_scale}
                 for im in bth_im:
                     im_buff.append( self.util[crp_key](im, **kwargs) )
+                    
                 # data augment perform batch image transformations
-                bth_im_buff.append( self.da_inst.data_augment(im_buff, ["default"], ["default"]).numpy() )
+                bth_im_buff.append( self.da_inst.data_augment(im_buff, ["default"], ["default"]) )
         
         return bth_im_buff
