@@ -169,7 +169,7 @@ def byol_symetrize_loss(p, z, temperature):
     loss = 2 - 2 * tf.reduce_mean(similarities)
     return loss, logits_ab, labels
 
-def byol_symetrize_mixed_loss(p, z, , lamda, temperature ): 
+def byol_symetrize_mixed_loss(p, z, lamda, temperature ): 
     '''
     Arg: 
         p, z : Augmented Feature from img_1, img_2 
@@ -178,8 +178,19 @@ def byol_symetrize_mixed_loss(p, z, , lamda, temperature ):
     Return:  the mixed loss 
 
     '''
-    pass 
-
+    p = tf.math.l2_normalize(p, axis=1)  # (2*bs, 128)
+    z = tf.math.l2_normalize(z, axis=1)  # (2*bs, 128)
+    # Calculate contrastive Loss
+    batch_size = tf.shape(p)[0]
+    
+    for i in range(len(lamda)): 
+        # Measure similarity
+        similarities = tf.reduce_sum((lamda[i]*(tf.multiply(p[i], z[i]))), axis=1)
+        loss = 2 - 2 * tf.reduce_mean(similarities)
+    #
+    labels = tf.one_hot(tf.range(batch_size), batch_size * 2)
+    logits_ab = tf.matmul(p, z, transpose_b=True) / temperature
+ 
 
 
 '''Loss 2 SimSiam Model'''
