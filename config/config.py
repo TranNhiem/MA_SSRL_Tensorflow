@@ -1,17 +1,19 @@
 from config.absl_mock import Mock_Flag
 
-
 def read_cfg(mod="non_contrastive"):
-    flags = Mock_Flag()
-    base_cfg()
+    set_base_cfg()
 
     if(mod == "non_contrastive"):
         non_contrastive_cfg()
     else:
         contrastive_cfg()
 
-def base_cfg():
-    flags = Mock_Flag() 
+    return Mock_Flag()
+
+
+def set_base_cfg(flag=None):
+    flag = flag if flag else Mock_Flag()
+    
     flags.DEFINE_integer(
     'IMG_height', 224,
     'image height.')
@@ -76,6 +78,7 @@ def base_cfg():
     'val_label', "ILSVRC2012_validation_ground_truth.txt",
     'val_label.')
 
+
 def Linear_Evaluation():
     flags = Mock_Flag()
     flags.DEFINE_enum(
@@ -94,6 +97,7 @@ def Linear_Evaluation():
     flags.DEFINE_float(
         'randaug_magnitude', 7,
         'Number of augmentation transformations.')
+
 
 def Learning_Rate_Optimizer_and_Training_Strategy():
     flags = Mock_Flag() 
@@ -139,6 +143,7 @@ def Learning_Rate_Optimizer_and_Training_Strategy():
 
     flags.DEFINE_float('weight_decay', 1e-6, 'Amount of weight decay to use.')
 
+
 def Encoder():
     flags = Mock_Flag() 
     flags.DEFINE_boolean(
@@ -164,6 +169,7 @@ def Encoder():
     flags.DEFINE_float(
         'se_ratio', 0.,
         'If it is bigger than 0, it will enable SE.')
+
 
 def Projection_and_Prediction_head():
     
@@ -214,6 +220,7 @@ def Projection_and_Prediction_head():
         'downsample_mod', 'space_to_depth', ['space_to_depth', 'maxpooling','averagepooling'],
         'How the head upsample is done.')
 
+
 def Configure_Model_Training():
     # Self-Supervised training and Supervised training mode
     flags = Mock_Flag() 
@@ -260,6 +267,7 @@ def Configure_Model_Training():
         'everything. 0 means fine-tuning after stem block. 4 means fine-tuning '
         'just the linear head.')
 
+
 def Configure_Saving_and_Restore_Model():
     # Saving Model
     flags = Mock_Flag()
@@ -302,8 +310,8 @@ def non_contrastive_cfg():
     Configure_Model_Training()
     Configure_Saving_and_Restore_Model()
 
+
 def contrastive_cfg():
-    
     flags = Mock_Flag() 
     # ------------------------------------------
     # Define for Linear Evaluation
