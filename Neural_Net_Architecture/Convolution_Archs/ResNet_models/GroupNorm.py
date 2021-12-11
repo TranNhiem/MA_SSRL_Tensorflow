@@ -5,7 +5,6 @@ from tensorflow.keras import constraints
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import get_custom_objects
 
-
 class GroupNormalization(Layer): 
     """
     Noted GN devides channels into groups and computes within each group
