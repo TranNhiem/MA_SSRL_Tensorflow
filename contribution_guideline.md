@@ -1,5 +1,10 @@
 Awesome! 
 
+It's an aweson work, but we need to do something before development..
+Please exe the following commend to solve the import issue :
+> `pip install -e .`
+<br>
+
 Code writtent should filing some requirements
 
 1. **Code writtent** for each module should be **tested** - before committing to the repository 

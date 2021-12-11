@@ -225,7 +225,7 @@ def Configure_Model_Training():
         'train_mode', 'pretrain', ['pretrain', 'finetune'],
         'The train mode controls different objectives and trainable components.')
 
-    flags.DEFINE_bool('lineareval_while_pretraining', True,
+    flags.DEFINE_boolean('lineareval_while_pretraining', True,
                     'Whether to finetune supervised head while pretraining.')
 
     flags.DEFINE_enum(
@@ -250,7 +250,7 @@ def Configure_Model_Training():
     )
     # Fine Tuning configure
 
-    flags.DEFINE_bool(
+    flags.DEFINE_boolean(
         'zero_init_logits_layer', False,
         'If True, zero initialize layers after avg_pool for supervised learning.')
 
@@ -435,7 +435,7 @@ def contrastive_cfg():
         'train_mode', 'pretrain', ['pretrain', 'finetune'],
         'The train mode controls different objectives and trainable components.')
 
-    flags.DEFINE_bool('lineareval_while_pretraining', True,
+    flags.DEFINE_boolean('lineareval_while_pretraining', True,
                     'Whether to finetune supervised head while pretraining.')
 
     flags.DEFINE_enum(
@@ -481,7 +481,7 @@ def contrastive_cfg():
 
     # Fine Tuning configure
 
-    flags.DEFINE_bool(
+    flags.DEFINE_boolean(
         'zero_init_logits_layer', False,
         'If True, zero initialize layers after avg_pool for supervised learning.')
 

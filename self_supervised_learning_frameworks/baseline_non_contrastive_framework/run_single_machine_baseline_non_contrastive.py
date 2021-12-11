@@ -1,3 +1,4 @@
+'''
 import os
 import json
 import math
@@ -16,6 +17,8 @@ from self_supervised_losses import byol_symetrize_loss
 import model_for_non_contrastive_framework as all_model
 import objective as obj_lib
 from imutils import paths
+'''
+import tensorflow as tf
 
 # Setting GPU
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -29,7 +32,8 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-from config.config_v0 import read_cfg
+
+from config.config import read_cfg
 read_cfg()
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
@@ -365,5 +369,6 @@ def main():
 
     # Pre-Training and Finetune
 if __name__ == '__main__':
-
-    main()
+    # test 
+    from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
+    da = Data_Augmentor()
