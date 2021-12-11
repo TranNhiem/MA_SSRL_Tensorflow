@@ -52,6 +52,7 @@ import math
 import tensorflow as tf
 import tensorflow_addons as tfa
 from math import floor, cos, pi
+
 def get_centralized_gradients(optimizer, loss, params):
     """Compute the centralized gradients.
 
@@ -239,7 +240,7 @@ class CosineAnnealingDecayRestarts(tf.keras.optimizers.schedules.LearningRateSch
         self._t_mul = t_mul
         self._m_mul = m_mul
         self.alpha = alpha
-        self.Batch_size= batch_size
+        self.Batch_size = batch_size
         self.learning_rate_scale = scale_lr
         self.name = name
 
