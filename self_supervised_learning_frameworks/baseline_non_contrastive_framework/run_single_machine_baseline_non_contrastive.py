@@ -10,16 +10,19 @@ import wandb
 import tensorflow as tf
 from tensorflow.distribute import MirroredStrategy
 from tensorflow.config.experimental import list_physical_devices, set_memory_growth, set_visible_devices, list_logical_devices
+from tensorflow.keras.metrics import Mean
 
 ## our pkgs
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay
+from byol_simclr_imagenet_data_harry import imagenet_dataset_single_machine
+from losses_optimizers.self_supervised_losses import byol_symetrize_loss
+from config.absl_mock import Mock_Flag
+
+# not upload yet.. (cp from github)
+import model_for_non_contrastive_framework as all_model
 import metrics  
 from helper_functions import *
-from byol_simclr_imagenet_data_harry import imagenet_dataset_single_machine
-from self_supervised_losses import byol_symetrize_loss
-import model_for_non_contrastive_framework as all_model
 import objective as obj_lib
-from config.absl_mock import Mock_Flag
     
 
 def main(flag=Mock_Flag()):
@@ -29,13 +32,12 @@ def main(flag=Mock_Flag()):
                             instead of the type {shw_name(flag)}")
     FLAGS = flag.FLAGS
 
-    dispatcher = {'train', 'eval', 'train_then_eval'}
-
     ## 1. Preparing dataset
     # Imagenet path prepare localy
+    strategy = MirroredStrategy()
     ds_kwargs = {"img_size":FLAGS.image_size, "train_batch":FLAGS.train_batch_size, "val_batch":FLAGS.val_global_batch, 
                 "train_path":FLAGS.train_path, "val_path":FLAGS.val_path, "train_label":FLAGS.train_label,
-                       "val_label":FLAGS.val_label, "subset_class_num":FLAGS.num_classes, "strategy":MirroredStrategy()}
+                       "val_label":FLAGS.val_label, "subset_class_num":FLAGS.num_classes, "strategy":strategy}
     train_dataset = imagenet_dataset_single_machine(**ds_kwargs)
     tra_ds = train_dataset.simclr_inception_style_crop()
     val_ds = train_dataset.supervised_validation()
@@ -45,6 +47,9 @@ def main(flag=Mock_Flag()):
         n_tra_example * FLAGS.train_epochs // FLAGS.train_batch_size)*2
     eval_steps = FLAGS.eval_steps or int(
         math.ceil(n_evl_example / val_global_batch))
+    epoch_steps = round(n_tra_example / FLAGS.train_batch_size)
+    checkpoint_steps = (FLAGS.checkpoint_steps or (FLAGS.checkpoint_epochs * epoch_steps))
+    
     # record dataset related information
     logging.info(f"# Subset_training class {FLAGS.num_classes}")
     logging.info(f"# train examples: {n_tra_example}")
@@ -52,9 +57,6 @@ def main(flag=Mock_Flag()):
     logging.info(f"# train_steps: {train_steps}")
     logging.info(f"# eval steps: {eval_steps}")
     
-    epoch_steps = round(n_tra_example / FLAGS.train_batch_size)
-    checkpoint_steps = (FLAGS.checkpoint_steps or (FLAGS.checkpoint_epochs * epoch_steps))
-
     ## 2. Configure the Encoder Architecture.
     with strategy.scope():
         online_model = all_model.online_model(FLAGS.num_classes)
@@ -62,121 +64,32 @@ def main(flag=Mock_Flag()):
         target_model = all_model.online_model(FLAGS.num_classes)
 
     ## 3. running phase (train/eval or train & eval)
-
-    
-    if FLAGS.mode == "eval":
-        # can choose different min_interval
-        for ckpt in tf.train.checkpoints_iterator(FLAGS.model_dir, min_interval_secs=15):
-            result = perform_evaluation(
-                online_model, val_ds, eval_steps, ckpt, strategy)
-            # global_step from ckpt
-            if result['global_step'] >= train_steps:
-                logging.info('Evaluation complete. Existing-->')
-
-    # *****************************************************************
-    # Pre-Training and Evaluate
-    # *****************************************************************
-    else:
+    if "train" in FLAGS.mode:
         summary_writer = tf.summary.create_file_writer(FLAGS.model_dir)
         with strategy.scope():
-
             # Configure the learning rate
-            base_lr = FLAGS.base_lr
-            scale_lr = FLAGS.lr_rate_scaling
-            warmup_epochs = FLAGS.warmup_epochs
-            train_epochs = FLAGS.train_epochs
-            lr_schedule = WarmUpAndCosineDecay(
-                base_lr, train_global_batch, n_tra_example, scale_lr, warmup_epochs,
-                train_epochs=train_epochs, train_steps=train_steps)
-
-            # Current Implement the Mixpercision optimizer
+            lr_schedule = WarmUpAndCosineDecay(FLAGS.base_lr, FLAGS.train_batch, n_tra_example, 
+                                                FLAGS.lr_rate_scaling, FLAGS.warmup_epochs, 
+                                                    train_epochs=FLAGS.train_epochs, train_steps=train_steps)
             optimizer = all_model.build_optimizer(lr_schedule)
-
-            # Build tracking metrics
-            all_metrics = []
-            # Linear classfiy metric
-            weight_decay_metric = tf.keras.metrics.Mean('train/weight_decay')
-            total_loss_metric = tf.keras.metrics.Mean('train/total_loss')
-            all_metrics.extend([weight_decay_metric, total_loss_metric])
-
-            if FLAGS.train_mode == 'pretrain':
-                # for contrastive metrics
-                contrast_loss_metric = tf.keras.metrics.Mean(
-                    'train/non_contrast_loss')
-                contrast_acc_metric = tf.keras.metrics.Mean(
-                    "train/non_contrast_acc")
-                contrast_entropy_metric = tf.keras.metrics.Mean(
-                    'train/non_contrast_entropy')
-                all_metrics.extend(
-                    [contrast_loss_metric, contrast_acc_metric, contrast_entropy_metric])
-
-            if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
-                logging.info(
-                    "Apllying pre-training and Linear evaluation at the same time")
-                # Fine-tune architecture metrics
-                supervised_loss_metric = tf.keras.metrics.Mean(
-                    'train/supervised_loss')
-                supervised_acc_metric = tf.keras.metrics.Mean(
-                    'train/supervised_acc')
-                all_metrics.extend(
-                    [supervised_loss_metric, supervised_acc_metric])
-
+            # Build tracking metrics ( Linear classfiy metric )
+            all_metrics = set_metrics(FLAGS)
             # Check and restore Ckpt if it available
-            # Restore checkpoint if available.
-            checkpoint_manager = try_restore_from_checkpoint(
-                online_model, optimizer.iterations, optimizer)
-
-            # Scale loss  --> Aggregating all Gradients
-            def distributed_loss(x1, x2):
-
-                # each GPU loss per_replica batch loss
-                per_example_loss, logits_ab, labels = byol_symetrize_loss(
-                    x1, x2,  temperature=FLAGS.temperature)
-
-                # total sum loss //Global batch_size
-                loss = tf.reduce_sum(per_example_loss) * \
-                    (1./train_global_batch)
-                return loss, logits_ab, labels
-
-            # def tra  step
+            checkpoint_manager = try_restore_from_checkpoint(online_model, optimizer.iterations, optimizer)
 
             global_step = optimizer.iterations
             for epoch in range(FLAGS.train_epochs):
-
-                total_loss = 0.0
-                num_batches = 0
-
-                for _, (ds_one, ds_two) in enumerate(tra_ds):
-
+                total_loss, num_batches = 0.0, 0
+                
+                for ds_one, ds_two in tra_ds:
                     total_loss += distributed_train_step(ds_one, ds_two)
                     num_batches += 1
-
                     # Update weight of Target Encoder Every Step
-                    beta = 0.99
-                    target_encoder_weights = target_model.get_weights()
-                    online_encoder_weights = online_model.get_weights()
-
-                    for i in range(len(online_encoder_weights)):
-                        target_encoder_weights[i] = beta * target_encoder_weights[i] + (
-                            1-beta) * online_encoder_weights[i]
-                    target_model.set_weights(target_encoder_weights)
-
-                    # if (global_step.numpy()+ 1) % checkpoint_steps==0:
+                    mean_teacher_update(target_model, online_model)
 
                     ## summary the training info
-                    with summary_writer.as_default():
-                        cur_step = global_step.numpy()
-                        checkpoint_manager.save(cur_step)
-                        logging.info('Completed: %d / %d steps',
-                                     cur_step, train_steps)
-                        metrics.log_and_write_metrics_to_summary(
-                            all_metrics, cur_step)
-                        tf.summary.scalar('learning_rate', lr_schedule(tf.cast(global_step, dtype=tf.float32)),
-                                          global_step)
-                        summary_writer.flush()
-
+                    summary_train_info(summary_writer)   
                 epoch_loss = total_loss/num_batches
-
 
                 # Wandb Configure for Visualize the Model Training
                 wandb.log({
@@ -189,10 +102,9 @@ def main(flag=Mock_Flag()):
                     "train/supervised_loss":    supervised_loss_metric.result(),
                     "train/supervised_acc": supervised_acc_metric.result()
                 })
-
-
-                for metric in all_metrics:
-                    metric.reset_states()
+                # reset metrics states
+                [ metric.reset_states() for metric in all_metrics ]
+                
                 # Saving Entire Model
                 if epoch + 1 == 50:
                     save_ = './model_ckpt/resnet_byol/baseline_encoder_resnet50_mlp' + \
@@ -201,14 +113,102 @@ def main(flag=Mock_Flag()):
 
             logging.info('Training Complete ...')
 
+
+    if "eval" in FLAGS.mode:
+        # can choose different min_interval
+        for ckpt in tf.train.checkpoints_iterator(FLAGS.model_dir, min_interval_secs=15):
+            result = perform_evaluation(online_model, val_ds, eval_steps, ckpt, strategy)
+            # global_step from ckpt
+            if result['global_step'] >= train_steps:
+                logging.info('Evaluation complete. Existing-->')
+ 
+
+
+
+    
+
+
+            
+
         if FLAGS.mode == 'train_then_eval':
             perform_evaluation(online_model, val_ds, eval_steps,
                                checkpoint_manager.latest_checkpoint, strategy)
 
 
+def set_metrics():
+    all_metrics = []
+    weight_decay_metric, total_loss_metric = Mean('train/weight_decay'), Mean('train/total_loss')
+    all_metrics.extend([weight_decay_metric, total_loss_metric])
+
+    if FLAGS.train_mode == 'pretrain':
+        # for contrastive metrics
+        contrast_loss_metric = tf.keras.metrics.Mean(
+            'train/non_contrast_loss')
+        contrast_acc_metric = tf.keras.metrics.Mean(
+            "train/non_contrast_acc")
+        contrast_entropy_metric = tf.keras.metrics.Mean(
+            'train/non_contrast_entropy')
+        all_metrics.extend(
+            [contrast_loss_metric, contrast_acc_metric, contrast_entropy_metric])
+
+    if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
+        logging.info(
+            "Apllying pre-training and Linear evaluation at the same time")
+        # Fine-tune architecture metrics
+        supervised_loss_metric = tf.keras.metrics.Mean(
+            'train/supervised_loss')
+        supervised_acc_metric = tf.keras.metrics.Mean(
+            'train/supervised_acc')
+        all_metrics.extend(
+            [supervised_loss_metric, supervised_acc_metric])
+
+    return all_metrics
+
+
+def mean_teacher_update(target_model, online_model):
+    beta = 0.99
+    target_encoder_weights = target_model.get_weights()
+    online_encoder_weights = online_model.get_weights()
+
+    for idx in range(len(online_encoder_weights)):
+        target_encoder_weights[idx] = beta * target_encoder_weights[i] + (
+            1-beta) * online_encoder_weights[idx]
+    # shallow copy without return model
+    target_model.set_weights(target_encoder_weights) 
+
+
+def summary_train_info(summary_writer):
+    with summary_writer.as_default():
+        cur_step = global_step.numpy()
+        checkpoint_manager.save(cur_step)
+        metrics.log_and_write_metrics_to_summary(
+            all_metrics, cur_step)
+        tf.summary.scalar('learning_rate', lr_schedule(tf.cast(global_step, dtype=tf.float32)),
+                            global_step)
+        summary_writer.flush()
+        logging.info("Completed: {cur_step} / {train_steps} steps")
+        
+
+@tf.function
+def distributed_train_step(ds_one, ds_two):
+    per_replica_losses = strategy.run(
+        train_step, args=(ds_one, ds_two))
+    return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                            axis=None)
 
 @tf.function
 def train_step(ds_one, ds_two):
+    # Scale loss  --> Aggregating all Gradients
+    def distributed_loss(x1, x2):
+        # each GPU loss per_replica batch loss
+        per_example_loss, logits_ab, labels = byol_symetrize_loss(
+            x1, x2,  temperature=FLAGS.temperature)
+
+        # total sum loss //Global batch_size
+        loss = tf.reduce_sum(per_example_loss) * \
+            (1./train_global_batch)
+        return loss, logits_ab, labels
+
     # Get the data from
     images_one, lable_one = ds_one
     images_two, lable_two = ds_two
@@ -316,8 +316,6 @@ def train_step(ds_one, ds_two):
     return loss
 
 
-
-
 def set_gpu_env(n_gpu=8):
     gpus = list_physical_devices('GPU')
     if gpus:
@@ -360,21 +358,3 @@ if __name__ == '__main__':
     record_wandb()    # record the args of flag into wandb
 
     main(flag)
-
-
-
-
-# remove code :
-'''
-@tf.function
-def distributed_train_step(ds_one, ds_two):
-    per_replica_losses = strategy.run(
-        train_step, args=(ds_one, ds_two))
-    return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                            axis=None)
-
-
-
-'''
-
-
