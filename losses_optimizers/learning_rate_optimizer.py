@@ -45,7 +45,7 @@ in SimCLR & BYOL with warmup steps =10
 
 
 
-from  lars_optimizer import LARSOptimizer as LARS_optimzer
+from  .lars_optimizer import LARSOptimizer as LARS_optimzer
 import tensorflow.keras.backend as K
 import numpy as np
 import math

@@ -7,7 +7,7 @@ from absl import logging
 from absl import app
 
 import tensorflow as tf
-from learning_rate_optimizer import WarmUpAndCosineDecay
+from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay
 import metrics
 from helper_functions import *
 from byol_simclr_imagenet_data_harry import imagenet_dataset
@@ -116,7 +116,7 @@ def main():
             # global_step from ckpt
             if result['global_step'] >= train_steps:
                 logging.info('Evaluation complete. Existing-->')
-    
+
     # *****************************************************************
     # Pre-Training and Evaluate
     # *****************************************************************
