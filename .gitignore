@@ -1,0 +1,5 @@
+# sys generated tmp file
+__pycache__
+*.tmp
+*.egg-info
+.DS_Store
