@@ -1,4 +1,4 @@
-from Simclr_Byol_augmentation import distorted_bounding_box_crop
+from .Simclr_Byol_augmentation import distorted_bounding_box_crop
 from collections import namedtuple
 import tensorflow as tf
 import numpy as np

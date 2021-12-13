@@ -1,44 +1,45 @@
-import os
-#from absl import flags
-import tensorflow as tf
-from imutils import paths
-from "DA_Object" import simclr_augment_randcrop_global_views, simclr_augment_inception_style, \
-    supervised_augment_eval, simclr_augment_randcrop_global_view_image_mask, simclr_augment_inception_style_image_mask
+# PEP8. alphabet order for std or 3 part pkg
 from absl import logging
+from imutils import paths
 import numpy as np
+import os
 import random
 import re
 
+import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 
-#FLAGS = flags.FLAGS
+from Augmentation_Strategies.Auto_Data_Augment import Data_Augmentor
+from Augmentation_Strategies.Multi_Viewer import Multi_Viewer
+from .Simclr_Byol_augmentation import simclr_augment_inception_style, simclr_augment_randcrop_global_views
 
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
+# temporary rename to imagenet_dataset, single/multiple machine will become an option.
+class Imagenet_dataset():
+    # The cropping strategy can be applied
+    crop_dict = {"incpt_style":simclr_augment_inception_style, "rand_glb":simclr_augment_randcrop_global_views}
+    # The crop strategy is 'incpt_style' in global view
+    default_view = { "glb":Multi_viewer.View_spec(n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1) }
 
-class imagenet_dataset_single_machine():
-
-    def __init__(self, img_size, train_batch, val_batch, strategy, train_path=None,train_label = None, val_path=None,val_label = None, bi_mask=False,
-                 mask_path=None,subset_class_num = None):
+    def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None, 
+                        val_path=None, val_label=None, strategy=None, subset_class_num = None):
         '''
-        args: 
-        img_size: Image training size
-        train_batch: Distributed Batch_size for training multi-GPUs
+        Args: 
+            img_size: Image training size
+            train_batch: Distributed Batch_size for training multi-GPUs
 
-        image_path: Directory to train data 
-        val_path:   Directory to validation or testing data
-        subset_class_num: subset class 
-
+            image_path: Directory to train data 
+            val_path:   Directory to validation or testing data
+            subset_class_num: subset class 
         '''
-
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch
         self.val_batch = val_batch
         self.strategy = strategy
         self.seed = FLAGS.SEED
-        self.bi_mask = []
 
         self.label, self.class_name = self.get_label(train_label)
         numeric_train_cls = []
@@ -102,21 +103,11 @@ class imagenet_dataset_single_machine():
             self.x_val = x_val_sub
             numeric_val_cls = numeric_val_cls_sub
         
-
-        if bi_mask:
-            for p in self.x_train:
-                self.bi_mask.append(p.replace("train", mask_path).replace("JPEG", "png"))
-
         # Path for loading all Images
         # For training
-
         self.x_train_lable = tf.one_hot(numeric_train_cls, depth = len(self.class_name) if subset_class_num==None else subset_class_num)
         self.x_val_lable = tf.one_hot(numeric_val_cls, depth = len(self.class_name) if subset_class_num==None else subset_class_num)
 
-        if bi_mask:
-            self.x_train_image_mask = np.stack(
-                (np.array(self.x_train), np.array(self.bi_mask)), axis=-1)
-            print(self.x_train_image_mask.shape)
         
     def get_label(self, label_txt_path=None):
         class_name = []
@@ -145,209 +136,116 @@ class imagenet_dataset_single_machine():
         return class_number
 
     @classmethod
-    def parse_images(self, image_path):
-        # Loading and reading Image
-        img = tf.io.read_file(image_path)
-        img = tf.io.decode_jpeg(img, channels=3)
-        img = tf.image.convert_image_dtype(img, tf.float32)
-        return img
+    def parse_images_lable_pair(self, image_path, lable=None):
+        def parse_images(image_path):
+            # Loading and reading Image
+            img = tf.io.read_file(image_path)
+            img = tf.io.decode_jpeg(img, channels=3)
+            img = tf.image.convert_image_dtype(img, tf.float32)
+            return img
 
-    @classmethod
-    def parse_images_lable_pair(self, image_path, lable):
-        # Loading and reading Image
-        img = tf.io.read_file(image_path)
-        img = tf.io.decode_jpeg(img, channels=3)
-        img = tf.image.convert_image_dtype(img, tf.float32)
+        label = label if label else tf.strings.split(image_path, os.path.sep)[4]
+        return parse_images(image_path), lable
 
-        return img, lable
 
-    @classmethod
-    def parse_images_mask_lable_pair(self, image_mask_path, lable, IMG_SIZE):
-        # Loading and reading Image
-        # print(image_mask_path[0])
-        # print(image_mask_path[1])
-        image_path, mask_path = image_mask_path[0], image_mask_path[1]
-        img = tf.io.read_file(image_path)
-        img = tf.io.decode_jpeg(img, channels=3)
-        img = tf.image.convert_image_dtype(img, tf.float32)
-        img = tf.image.resize(img, (IMG_SIZE, IMG_SIZE))
+    def __wrap_ds(self, img_folder, labels):
+        # data_info record the path of imgs, it should be parsed
+        img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+                            .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+        return img_lab_ds
 
-        bi_mask = tf.io.read_file(mask_path)
-        bi_mask = tf.io.decode_jpeg(bi_mask, channels=1)
-        bi_mask = tf.image.resize(bi_mask, (IMG_SIZE, IMG_SIZE))
-        return img, bi_mask, lable
+    def __wrap_da(self, ds, trfs, wrap_type="cropping"):
+        # wrap into a tuple
+        if wrap_type == "cropping": 
+            map_func = lambda x, y : ( trfs(x, self.IMG_SIZE), y ) 
+        elif wrap_type == "validate":
+            map_func = lambda x, y : ( trfs(x, FLAGS.IMG_height, FLAGS.IMG_width, 
+                                            FLAGS.randaug_transform, FLAGS.randaug_magnitude), y )
+        else:
+            map_func = lambda x, y : ( trfs(x), y ) 
 
-    @classmethod
-    def parse_images_label(self, image_path):
-        img = tf.io.read_file(image_path)
-        # img = tf.image.decode_jpeg(img, channels=3) # decode the image back to proper format
-        img = tf.io.decode_jpeg(img, channels=3)
-        label = tf.strings.split(image_path, os.path.sep)[4]
-        # print(label)
-        return img, label
+        img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+        data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
+                        .map(map_func, num_parallel_calls=AUTO) \
+                            .batch(self.BATCH_SIZE).prefetch(AUTO)
+        return data_aug_ds
 
+
+    # This for Supervised validation training
     def supervised_validation(self):
-        '''This for Supervised validation training'''
+        raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
+        val_ds = self.__wrap_crop(raw_ds, supervised_augment_eval, "validate")
+        return self.strategy.experimental_distribute_dataset(val_ds)
 
-        val_ds = (tf.data.Dataset.from_tensor_slices((self.x_val, self.x_val_lable))
-                  .shuffle(self.val_batch * 100, seed=self.seed)
-                  .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+    def simclr_crop_da(self, crop_type):
+        if not crop_type in Imagenet_dataset.crop_dict.keys():
+            raise ValueError(f"The given cropping strategy {crop_type} is not supported")
+        
+        ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
+        train_ds_one = self.__wrap_crop(ds_one, self.crop_dict[crop_type])
 
-                  .map(lambda x, y: (tf.image.resize(x, (self.IMG_SIZE, self.IMG_SIZE)), y),
-                       num_parallel_calls=AUTO, )
-                  .map(lambda x, y: (
-        supervised_augment_eval(x, FLAGS.IMG_height, FLAGS.IMG_width, FLAGS.randaug_transform, FLAGS.randaug_magnitude),
-        y), num_parallel_calls=AUTO)
-                  .batch(self.BATCH_SIZE)
-                  .prefetch(AUTO)
-                  )
-
-        val_ds = self.strategy.experimental_distribute_dataset(val_ds)
-
-        return val_ds
-
-    def simclr_inception_style_crop(self):
-        '''
-        This class property return self-supervised training data
-        '''
-        train_ds_one = (tf.data.Dataset.from_tensor_slices((self.x_train, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
-                        .map(lambda x, y: (tf.image.resize(x, (self.IMG_SIZE, self.IMG_SIZE)), y),
-                             num_parallel_calls=AUTO,
-                             )
-                        .map(lambda x, y: (simclr_augment_inception_style(x, self.IMG_SIZE), y),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-        # train_ds_one= self.strategy.experimental_distribute_dataset(train_ds_one)
-
-        train_ds_two = (tf.data.Dataset.from_tensor_slices((self.x_train, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
-                        .map(lambda x, y: (tf.image.resize(x, (self.IMG_SIZE, self.IMG_SIZE)), y),
-                             num_parallel_calls=AUTO,
-                             )
-                        .map(lambda x, y: (simclr_augment_inception_style(x, self.IMG_SIZE), y),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-        # train_ds_one= self.strategy.experimental_distribute_dataset(train_ds_two)
+        ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
+        train_ds_two = self.__wrap_crop(ds_two, self.crop_dict[crop_type])
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
-        train_ds = self.strategy.experimental_distribute_dataset(train_ds)
-        # train_ds = train_ds.batch(self.BATCH_SIZE)
-        # # 2. modify dataset with prefetch
-        # train_ds = train_ds.prefetch(AUTO)
+        return self.strategy.experimental_distribute_dataset(train_ds)
 
-        return train_ds
+    # HACKME : add the multi_view into the auto data augmentation
+    def auto_data_aug(self, da_type=None):   # multi_view=Imagenet_dataset.default_view):
+        # default da type is auto data_augment
+        da_inst = Data_Augmentor(da_type=da_type) if da_type else Data_Augmentor()
+        
+        ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
+        train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
 
-    def simclr_random_global_crop(self):
-
-        train_ds_one = (tf.data.Dataset.from_tensor_slices((self.x_train, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
-                        .map(lambda x, y: (tf.image.resize(x, (self.IMG_SIZE, self.IMG_SIZE)), y),
-                             num_parallel_calls=AUTO,
-                             )
-                        .map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-
-        train_ds_two = (tf.data.Dataset.from_tensor_slices((self.x_train, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
-                        .map(lambda x, y: (tf.image.resize(x, (self.IMG_SIZE, self.IMG_SIZE)), y),
-                             num_parallel_calls=AUTO,
-                             )
-                        .map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
+        ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
+        train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
-        # adding the distribute data to GPUs
-        train_ds = self.strategy.experimental_distribute_dataset(train_ds)
+        return self.strategy.experimental_distribute_dataset(train_ds)
 
-        return train_ds
+    # DEPRECATE : it will be replaced by the auto_data_aug with setup multi-view option
+    def multi_view_data_aug(self, da_type=None):
+        da = Data_Augmentor(da_type=da_type) if da_type else Data_Augmentor()
+        da.pre_proc_dict["default"] = lambda x : tf.cast(x, dtype=tf.float32) * 255.0 
+        mv = Multi_viewer(da_inst=da)
+        out_typ_lst = [tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]
+        py_flow_wrap = lambda x : tf.py_function(mv.multi_view, [x], Tout=out_typ_lst)
 
-    def simclr_inception_style_crop_image_mask(self):
-
-        train_ds_one = (tf.data.Dataset.from_tensor_slices((self.x_train_image_mask, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_mask_lable_pair(x, y, self.IMG_SIZE)),
-                             num_parallel_calls=AUTO)
-                        .map(lambda x, y, z: (simclr_augment_inception_style_image_mask(x, y, self.IMG_SIZE), z),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-
-        train_ds_two = (tf.data.Dataset.from_tensor_slices((self.x_train_image_mask, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_mask_lable_pair(x, y, self.IMG_SIZE)),
-                             num_parallel_calls=AUTO)
-                        .map(lambda x, y, z: (simclr_augment_inception_style_image_mask(x, y, self.IMG_SIZE), z),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-        # train_ds_one= self.strategy.experimental_distribute_dataset(train_ds_two)
-
-        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
-        # train_ds=train_ds.batch(self.BATCH_SIZE)
-        # train_ds=train_ds.prefetch(AUTO)
-        train_ds = self.strategy.experimental_distribute_dataset(train_ds)
-        # train_ds = train_ds.batch(self.BATCH_SIZE)
-        # # 2. modify dataset with prefetch
-        # train_ds = train_ds.prefetch(AUTO)
-
-        return train_ds
-
-    def simclr_random_global_crop_image_mask(self):
-
-        train_ds_one = (tf.data.Dataset.from_tensor_slices((self.x_train_image_mask, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_mask_lable_pair(x, y, self.IMG_SIZE)),
-                             num_parallel_calls=AUTO)
-                        .map(lambda x, y, z: (simclr_augment_randcrop_global_view_image_mask(x, y, self.IMG_SIZE), z),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-
-        train_ds_two = (tf.data.Dataset.from_tensor_slices((self.x_train_image_mask, self.x_train_lable))
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)
-                        # .map(self.parse_images_label,  num_parallel_calls=AUTO)
-                        .map(lambda x, y: (self.parse_images_mask_lable_pair(x, y, self.IMG_SIZE)),
-                             num_parallel_calls=AUTO)
-                        .map(lambda x, y, z: (simclr_augment_randcrop_global_view_image_mask(x, y, self.IMG_SIZE), z),
-                             num_parallel_calls=AUTO)
-                        .batch(self.BATCH_SIZE)
-                        .prefetch(AUTO)
-                        )
-        # train_ds_one= self.strategy.experimental_distribute_dataset(train_ds_two)
-
-        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
-        train_ds = self.strategy.experimental_distribute_dataset(train_ds)
-
-        return train_ds
+        raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
+        tra_ds_lst = self.__wrap_da(raw_ds, py_flow_wrap, "data_aug")
+        train_ds = tf.data.Dataset.zip(tra_ds_lst)
+        return self.strategy.experimental_distribute_dataset(train_ds)
 
     def get_data_size(self):
         return len(self.x_train) , len(self.x_val)
 
 
+if __name__ == '__main__':
+    note_str = ''' Data augmentation dev Note : 
+    # all of func without label except super-vised valid..
+    # step 1. test da :
+    #   cropping only 2 view -> data_aug, (auto_aug)  :=> find best da strategy
+    # step 2. multi-view :
+    #   cropping with different view -> auto_aug (fine-tuned auto_aug) :=> find best crop_size to each view
+    # step 3. mixing-view :
+    #   cropping with different view -> auto_aug -> mixing (smoothing label) ( fixed pair for mixing )
+    # step 4. benchmark :
+    #   :=> cmp with baseline, give suggestion to da design 
 
+    # Method 1.
+    def train_loop():
 
+        @tf.function
+        def un_zip(zip_ds, ds_typ):
+            if ds_typ == multi_view:
+                return zip_ds[0][0], zip_ds[0][1], zip_ds[1][0], zip_ds[1][1], zip_ds[1][2]
+            elif ds_typ == :
+                
+        for ds1, ds2, ds3, ds4, ds5 in multi_view(ds):
+            mix12, lambd_lst = mix_batch(ds_1, ds_2)
+            ... 
+            loss()
+    '''
+    print(note_str)

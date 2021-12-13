@@ -1,10 +1,8 @@
-'''
 import os
 import json
 import math
 import wandb
 import random
-from absl import flags
 from absl import logging
 from absl import app
 
@@ -12,12 +10,12 @@ import tensorflow as tf
 from learning_rate_optimizer import WarmUpAndCosineDecay
 import metrics
 from helper_functions import *
-from byol_simclr_imagenet_data_harry import imagenet_dataset_single_machine
+from byol_simclr_imagenet_data_harry import imagenet_dataset
 from self_supervised_losses import byol_symetrize_loss
 import model_for_non_contrastive_framework as all_model
 import objective as obj_lib
 from imutils import paths
-'''
+
 import tensorflow as tf
 
 # Setting GPU
@@ -49,14 +47,12 @@ def main():
     strategy = tf.distribute.MirroredStrategy()
     train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
     val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
-    train_dataset = imagenet_dataset_single_machine(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
-                                                    strategy=strategy,train_path=FLAGS.train_path,
-                                                    val_path=FLAGS.val_path,
-                                                    mask_path=FLAGS.mask_path, bi_mask=False,
-                                                    train_label=FLAGS.train_label, val_label=FLAGS.val_label,subset_class_num=FLAGS.num_classes )
+    train_dataset = imagenet_dataset(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
+                                        strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
+                                        train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )
 
     train_ds = train_dataset.simclr_inception_style_crop()
-
+    # for performing Linea-protocol
     val_ds = train_dataset.supervised_validation()
 
     num_train_examples, num_eval_examples = train_dataset.get_data_size()
@@ -120,7 +116,7 @@ def main():
             # global_step from ckpt
             if result['global_step'] >= train_steps:
                 logging.info('Evaluation complete. Existing-->')
-
+    
     # *****************************************************************
     # Pre-Training and Evaluate
     # *****************************************************************
