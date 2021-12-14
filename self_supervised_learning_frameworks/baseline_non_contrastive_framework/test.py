@@ -1,6 +1,8 @@
 from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 import tensorflow as tf
 
+
+# for testing the cross-folder import, and it's pass!
 if __name__ == "__main__":
     strategy = tf.distribute.MirroredStrategy()
     train_dataset = Imagenet_dataset(img_size=2, train_batch=1,  val_batch=1,
