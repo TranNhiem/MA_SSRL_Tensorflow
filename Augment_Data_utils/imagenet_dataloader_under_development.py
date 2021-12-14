@@ -1,4 +1,8 @@
 # PEP8. alphabet order for std or 3 part pkg
+from config.absl_mock import Mock_Flag
+from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, simclr_augment_inception_style
+from Augmentation_Strategies.Multi_Viewer.Multi_Viewer import Multi_viewer
+from Augmentation_Strategies.Auto_Data_Augment import Data_Augmentor
 from absl import logging
 from imutils import paths
 import numpy as np
@@ -9,23 +13,23 @@ import re
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 
-from Augmentation_Strategies.Auto_Data_Augment import Data_Augmentor
-from Augmentation_Strategies.Multi_Viewer.Multi_Viewer import Multi_viewer
-from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, simclr_augment_inception_style
 
-from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
 # temporary rename to imagenet_dataset, single/multiple machine will become an option.
+
+
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
-    crop_dict = {"incpt_style":simclr_augment_inception_style, "rand_glb":simclr_augment_randcrop_global_views}
+    crop_dict = {"incpt_style": simclr_augment_inception_style,
+                 "rand_glb": simclr_augment_randcrop_global_views}
     # The crop strategy is 'incpt_style' in global view
-    default_view = { "glb":Multi_viewer.View_spec(n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1) }
+    default_view = {"glb": Multi_viewer.View_spec(
+        n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1)}
 
-    def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None, 
-                        val_path=None, val_label=None, strategy=None, subset_class_num = None):
+    def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None,
+                 val_path=None, val_label=None, strategy=None, subset_class_num=None):
         '''
         Args: 
             img_size: Image training size
@@ -44,34 +48,35 @@ class Imagenet_dataset(object):
         self.label, self.class_name = self.get_label(train_label)
         numeric_train_cls = []
         numeric_val_cls = []
-        print("train_path:",train_path)
-        print("val_path:",val_path)
+        print("train_path:", train_path)
+        print("val_path:", val_path)
 
         if train_path is None and val_path is None:
-            raise ValueError(f'The train_path and val_path is None, please cheeek')
+            raise ValueError(
+                f'The train_path and val_path is None, please cheeek')
         elif val_path is None:
             dataset = list(paths.list_images(train_path))
-            dataset_len =  len(dataset)
+            dataset_len = len(dataset)
             random.Random(FLAGS.SEED_data_split).shuffle(dataset)
             self.x_val = dataset[0:int(dataset_len * 0.2)]
             self.x_train = dataset[len(self.x_val) + 1:]
             for image_path in self.x_train:
-                label = re.split(r"/|\|//|\\",image_path)[-2]
+                label = re.split(r"/|\|//|\\", image_path)[-2]
                 #label = image_path.split("/")[-2]
                 numeric_train_cls.append(self.label[label])
             for image_path in self.x_val:
-                label = re.split(r"/|\|//|\\",image_path)[-2]
+                label = re.split(r"/|\|//|\\", image_path)[-2]
                 numeric_val_cls.append(self.label[label])
 
         else:
             self.x_train = list(paths.list_images(train_path))
-            
+
             self.x_val = list(paths.list_images(val_path))
             random.Random(FLAGS.SEED_data_split).shuffle(self.x_train)
             random.Random(FLAGS.SEED_data_split).shuffle(self.x_val)
 
             for image_path in self.x_train:
-                label = re.split(r"/|\|//|\\",image_path)[-2]
+                label = re.split(r"/|\|//|\\", image_path)[-2]
                 numeric_train_cls.append(self.label[label])
 
             val_label_map = self.get_val_label(val_label)
@@ -83,32 +88,32 @@ class Imagenet_dataset(object):
                 label = int(label.split(".")[0])
                 numeric_val_cls.append(val_label_map[label-1])
 
-
         if subset_class_num != None:
             x_train_sub = []
             numeric_train_cls_sub = []
-            for file_path,numeric_cls in zip(self.x_train,numeric_train_cls):
-                if numeric_cls<subset_class_num:
+            for file_path, numeric_cls in zip(self.x_train, numeric_train_cls):
+                if numeric_cls < subset_class_num:
                     x_train_sub.append(file_path)
                     numeric_train_cls_sub.append(numeric_cls)
             self.x_train = x_train_sub
             numeric_train_cls = numeric_train_cls_sub
-            
+
             x_val_sub = []
             numeric_val_cls_sub = []
-            for file_path,numeric_cls in zip(self.x_val,numeric_val_cls):
-                if numeric_cls<subset_class_num:
+            for file_path, numeric_cls in zip(self.x_val, numeric_val_cls):
+                if numeric_cls < subset_class_num:
                     x_val_sub.append(file_path)
                     numeric_val_cls_sub.append(numeric_cls)
             self.x_val = x_val_sub
             numeric_val_cls = numeric_val_cls_sub
-        
+
         # Path for loading all Images
         # For training
-        self.x_train_lable = tf.one_hot(numeric_train_cls, depth = len(self.class_name) if subset_class_num==None else subset_class_num)
-        self.x_val_lable = tf.one_hot(numeric_val_cls, depth = len(self.class_name) if subset_class_num==None else subset_class_num)
+        self.x_train_lable = tf.one_hot(numeric_train_cls, depth=len(
+            self.class_name) if subset_class_num == None else subset_class_num)
+        self.x_val_lable = tf.one_hot(numeric_val_cls, depth=len(
+            self.class_name) if subset_class_num == None else subset_class_num)
 
-        
     def get_label(self, label_txt_path=None):
         class_name = []
         class_ID = []
@@ -144,35 +149,35 @@ class Imagenet_dataset(object):
             img = tf.image.convert_image_dtype(img, tf.float32)
             return img
 
-        label = label if label else tf.strings.split(image_path, os.path.sep)[4]
+        label = label if label else tf.strings.split(
+            image_path, os.path.sep)[4]
         return parse_images(image_path), lable
-
 
     def __wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                        .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                            .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+            .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+            .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
         # wrap into a tuple
-        if wrap_type == "cropping": 
-            map_func = lambda x, y : ( trfs(x, self.IMG_SIZE), y ) 
+        if wrap_type == "cropping":
+            def map_func(x, y): return (trfs(x, self.IMG_SIZE), y)
         elif wrap_type == "validate":
-            map_func = lambda x, y : ( trfs(x, FLAGS.IMG_height, FLAGS.IMG_width, 
-                                            FLAGS.randaug_transform, FLAGS.randaug_magnitude), y )
+            def map_func(x, y): return (trfs(x, FLAGS.IMG_height, FLAGS.IMG_width,
+                                             FLAGS.randaug_transform, FLAGS.randaug_magnitude), y)
         else:
-            map_func = lambda x, y : ( trfs(x), y ) 
+            def map_func(x, y): return (trfs(x), y)
 
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
         data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
                         .map(map_func, num_parallel_calls=AUTO) \
-                            .batch(self.BATCH_SIZE).prefetch(AUTO)
+            .batch(self.BATCH_SIZE).prefetch(AUTO)
         return data_aug_ds
 
-
     # This for Supervised validation training
+
     def supervised_validation(self):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         val_ds = self.__wrap_crop(raw_ds, supervised_augment_eval, "validate")
@@ -180,8 +185,9 @@ class Imagenet_dataset(object):
 
     def simclr_crop_da(self, crop_type):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
-            raise ValueError(f"The given cropping strategy {crop_type} is not supported")
-        
+            raise ValueError(
+                f"The given cropping strategy {crop_type} is not supported")
+
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
         train_ds_one = self.__wrap_crop(ds_one, self.crop_dict[crop_type])
 
@@ -192,10 +198,12 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # HACKME : add the multi_view into the auto data augmentation
-    def auto_data_aug(self, da_type=None):   # multi_view=Imagenet_dataset.default_view):
+    # multi_view=Imagenet_dataset.default_view):
+    def auto_data_aug(self, da_type=None):
         # default da type is auto data_augment
-        da_inst = Data_Augmentor(da_type=da_type) if da_type else Data_Augmentor()
-        
+        da_inst = Data_Augmentor(
+            da_type=da_type) if da_type else Data_Augmentor()
+
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
 
@@ -208,10 +216,14 @@ class Imagenet_dataset(object):
     # DEPRECATE : it will be replaced by the auto_data_aug with setup multi-view option
     def multi_view_data_aug(self, da_type=None):
         da = Data_Augmentor(da_type=da_type) if da_type else Data_Augmentor()
-        da.pre_proc_dict["default"] = lambda x : tf.cast(x, dtype=tf.float32) * 255.0 
+        da.pre_proc_dict["default"] = lambda x: tf.cast(
+            x, dtype=tf.float32) * 255.0
         mv = Multi_viewer(da_inst=da)
-        out_typ_lst = [tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]
-        py_flow_wrap = lambda x : tf.py_function(mv.multi_view, [x], Tout=out_typ_lst)
+        out_typ_lst = [tf.float32, tf.float32,
+                       tf.float32, tf.float32, tf.float32]
+
+        def py_flow_wrap(x): return tf.py_function(
+            mv.multi_view, [x], Tout=out_typ_lst)
 
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         tra_ds_lst = self.__wrap_da(raw_ds, py_flow_wrap, "data_aug")
@@ -219,7 +231,7 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def get_data_size(self):
-        return len(self.x_train) , len(self.x_val)
+        return len(self.x_train), len(self.x_val)
 
 
 if __name__ == '__main__':

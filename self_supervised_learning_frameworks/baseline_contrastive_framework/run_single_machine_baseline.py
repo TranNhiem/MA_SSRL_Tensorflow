@@ -12,7 +12,7 @@ from absl import app
 import tensorflow as tf
 from loss_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay
 import objectives.metrics as metrics
-from byol_simclr_imagenet_data_harry import imagenet_dataset_single_machine
+from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from loss_optimizers.self_supervised_losses import nt_xent_symetrize_loss_simcrl, nt_xent_asymetrize_loss_v2
 import model as all_model
 import objectives.objective as obj_lib
@@ -46,10 +46,10 @@ def main(argv):
     train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
     val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
 
-    train_dataset = imagenet_dataset_single_machine(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
-                                                    strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
-                                                    train_label=FLAGS.train_label, val_label=FLAGS.val_label,
-                                                    mask_path=FLAGS.mask_path, bi_mask=False)
+    train_dataset = Imagenet_dataset(img_size, train_batch, val_batch)(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
+                                                                       strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
+                                                                       train_label=FLAGS.train_label, val_label=FLAGS.val_label,
+                                                                       mask_path=FLAGS.mask_path, bi_mask=False)
 
     train_ds = train_dataset.simclr_random_global_crop()
 
@@ -339,7 +339,6 @@ def main(argv):
         if FLAGS.mode == 'train_then_eval':
             perform_evaluation(model, val_ds, eval_steps,
                                checkpoint_manager.latest_checkpoint, strategy)
-
 
     # Pre-Training and Finetune
 if __name__ == '__main__':
