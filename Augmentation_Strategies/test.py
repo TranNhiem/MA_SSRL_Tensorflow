@@ -10,7 +10,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE  # global define var for ds.map paralle
 
 # self-def pkg
 from Auto_Data_Augment.Data_Augmentor import Data_Augmentor
-from Multi_Viewer.Multi_viewer import Multi_viewer
+from Multi_Viewer.Multi_Viewer import Multi_viewer
 from View_Mixer.View_mixer import mix_up_batch
 from vis_tool import imshow_imgs
 

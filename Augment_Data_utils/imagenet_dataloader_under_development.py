@@ -10,15 +10,15 @@ import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 
 from Augmentation_Strategies.Auto_Data_Augment import Data_Augmentor
-from Augmentation_Strategies.Multi_Viewer import Multi_Viewer
-from .Simclr_Byol_augmentation import simclr_augment_inception_style, simclr_augment_randcrop_global_views
+from Augmentation_Strategies.Multi_Viewer.Multi_Viewer import Multi_viewer
+from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, simclr_augment_inception_style
 
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
 # temporary rename to imagenet_dataset, single/multiple machine will become an option.
-class Imagenet_dataset():
+class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_style":simclr_augment_inception_style, "rand_glb":simclr_augment_randcrop_global_views}
     # The crop strategy is 'incpt_style' in global view
