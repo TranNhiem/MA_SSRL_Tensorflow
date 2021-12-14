@@ -10,10 +10,10 @@ from absl import logging
 from absl import app
 
 import tensorflow as tf
-from learning_rate_optimizer import WarmUpAndCosineDecay
+from loss_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay
 import objectives.metrics as metrics
 from byol_simclr_imagenet_data_harry import imagenet_dataset_single_machine
-from self_supervised_losses import nt_xent_symetrize_loss_simcrl, nt_xent_asymetrize_loss_v2
+from loss_optimizers.self_supervised_losses import nt_xent_symetrize_loss_simcrl, nt_xent_asymetrize_loss_v2
 import model as all_model
 import objectives.objective as obj_lib
 from imutils import paths
