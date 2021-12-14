@@ -45,12 +45,14 @@ in SimCLR & BYOL with warmup steps =10
 
 
 
+from  .lars_optimizer import LARSOptimizer as LARS_optimzer
 import tensorflow.keras.backend as K
 import numpy as np
 import math
 import tensorflow as tf
 import tensorflow_addons as tfa
-from  lars_optimizer import LARSOptimizer as LARS_optimzer
+from math import floor, cos, pi
+
 def get_centralized_gradients(optimizer, loss, params):
     """Compute the centralized gradients.
 
@@ -101,6 +103,7 @@ def get_centralized_gradients(optimizer, loss, params):
                  for g in grads]
     return grads
 
+
 def centralized_gradients_for_optimizer(optimizer):
     """Create a centralized gradients functions for a specified optimizer.
 
@@ -121,9 +124,11 @@ def centralized_gradients_for_optimizer(optimizer):
 
     return get_centralized_gradients_for_optimizer
 
+
 def get_train_steps(num_examples, train_epochs, gloabl_batch_size, train_steps=None):
     """Determine the number of training steps."""
     if train_steps is None:
+        print("Calculate training steps")
         train_steps = (num_examples * train_epochs //
                        gloabl_batch_size + 1)
     else:
@@ -137,13 +142,14 @@ def get_train_steps(num_examples, train_epochs, gloabl_batch_size, train_steps=N
 ********************************************
 Training Configure
 ********************************************
-1. Learning Rate
+1. Warmup Cosine Decay Learning Rate with 1 cycle 
     + particular implementation : Scale Learning Rate Linearly with Batch_SIZE 
     (Warmup: Learning Implementation, and Cosine Anealing + Linear scaling)
    
     # optional not implement yet
     + Schedule Learning with Constrain-Update during training
 
+2. 
 '''
 # Implementation form SimCLR paper (Linear Scale and Sqrt Scale)
 # Debug and Visualization
@@ -199,6 +205,98 @@ class WarmUpAndCosineDecay(tf.keras.optimizers.schedules.LearningRateSchedule):
                                      cosine_decay(step - warmup_steps))
 
             return learning_rate
+
+
+class CosineAnnealingDecayRestarts(tf.keras.optimizers.schedules.LearningRateSchedule):
+    """A LearningRateSchedule that uses a cosine decay schedule with restarts.
+    See [Loshchilov & Hutter, ICLR2016](https://arxiv.org/abs/1608.03983),
+    SGDR: Stochastic Gradient Descent with Warm Restarts.
+    """
+
+    def __init__(self, initial_learning_rate, first_decay_steps, batch_size, scale_lr,
+                 # Control cycle of next step base of Previous step (2 times more steps)
+                 t_mul=2.0,
+                 # Control ititial Learning Rate Values (Next step equal to previous steps)
+                 m_mul=1.0,
+                 alpha=0.0,  # Final values of learning rate cycle
+                 name=None):
+        """Applies cosine decay with restarts to the learning rate.
+        Args:
+        initial_learning_rate: A scalar `float32` or `float64` Tensor or a Python
+            number. The initial learning rate.
+        first_decay_steps: A scalar `int32` or `int64` `Tensor` or a Python
+            number. Number of steps to decay over.
+        t_mul: A scalar `float32` or `float64` `Tensor` or a Python number.
+            Used to derive the number of iterations in the i-th period.
+        m_mul: A scalar `float32` or `float64` `Tensor` or a Python number.
+            Used to derive the initial learning rate of the i-th period.
+        alpha: A scalar `float32` or `float64` Tensor or a Python number.
+            Minimum learning rate value as a fraction of the initial_learning_rate.
+        name: String. Optional name of the operation.  Defaults to 'SGDRDecay'.
+        """
+        super(CosineAnnealingDecayRestarts, self).__init__()
+        self.initial_learning_rate = initial_learning_rate
+        self.first_decay_steps = first_decay_steps
+        self._t_mul = t_mul
+        self._m_mul = m_mul
+        self.alpha = alpha
+        self.Batch_size = batch_size
+        self.learning_rate_scale = scale_lr
+        self.name = name
+
+    def __call__(self, step):
+        with tf.name_scope(self.name or "SGDRDecay") as name:
+
+            if self.learning_rate_scale == 'linear':
+                scaled_lr = self.initial_learning_rate * self.Batch_size / 256.
+            elif self.learning_rate_scale == 'sqrt':
+                scaled_lr = self.initial_learning_rate * \
+                    math.sqrt(self.Batch_size)
+            elif self.learning_rate_scale == 'no_scale':
+                scaled_lr = self.initial_learning_rate
+            else:
+                raise ValueError('Unknown learning rate scaling {}'.format(
+                    self.learning_rate_scale))
+
+            initial_learning_rate = tf.convert_to_tensor(
+                scaled_lr, name="initial_scale_learning_rate")
+            dtype = initial_learning_rate.dtype
+            first_decay_steps = tf.cast(self.first_decay_steps, dtype)
+            alpha = tf.cast(self.alpha, dtype)
+            t_mul = tf.cast(self._t_mul, dtype)
+            m_mul = tf.cast(self._m_mul, dtype)
+
+            global_step_recomp = tf.cast(step, dtype)
+            completed_fraction = global_step_recomp / first_decay_steps
+
+            def compute_step(completed_fraction, geometric=False):
+                """Helper for `cond` operation."""
+                if geometric:
+                    i_restart = tf.floor(
+                        tf.math.log(1.0 - completed_fraction * (1.0 - t_mul)) /
+                        tf.math.log(t_mul))
+
+                    sum_r = (1.0 - t_mul**i_restart) / (1.0 - t_mul)
+                    completed_fraction = (completed_fraction -
+                                          sum_r) / t_mul**i_restart
+
+                else:
+                    i_restart = tf.floor(completed_fraction)
+                    completed_fraction -= i_restart
+
+                return i_restart, completed_fraction
+
+            i_restart, completed_fraction = tf.cond(
+                tf.equal(t_mul, 1.0),
+                lambda: compute_step(completed_fraction, geometric=False),
+                lambda: compute_step(completed_fraction, geometric=True))
+
+            m_fac = m_mul**i_restart
+            cosine_decayed = 0.5 * m_fac * (1.0 + tf.cos(
+                tf.constant(math.pi, dtype=dtype) * completed_fraction))
+            decayed = (1 - alpha) * cosine_decayed + alpha
+
+            return tf.multiply(initial_learning_rate, decayed, name=name)
 
 
 '''

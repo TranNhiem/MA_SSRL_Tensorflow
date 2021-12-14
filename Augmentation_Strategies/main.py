@@ -26,8 +26,8 @@ def get_toy_dataset(dataset_name, split='train', shuffle_files=True, with_info=T
 
 def multiview_wrap(ds, da_type="auto_aug"):
     # preproc for cifar10
-    format_proc = lambda ex :  ex["image"] 
-    ds = ds.map(format_proc, num_parallel_calls=AUTOTUNE)
+    format_proc = lambda ex : ex["image"] # filter out the lable info
+    ds = ds.map(format_proc, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     # wrap the multi-view & data augment strategy
     da = Data_Augmentor(da_type)
@@ -36,11 +36,18 @@ def multiview_wrap(ds, da_type="auto_aug"):
     # wrap multi_view into tf.py_function, because of the leak of 'pseudo' auto-graph..
     out_typ_lst = [tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]
     py_flow_wrap = lambda x : tf.py_function(mv.multi_view, [x], Tout=out_typ_lst)
-    return ds.map(py_flow_wrap, num_parallel_calls=AUTOTUNE)
+    return ds.map(py_flow_wrap, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
    
 def view_mixing_wrap(ds):
-    ...
+
+    def mix_view(*args):
+        v01, l01 = mix_up_batch(args[0], args[1]) 
+        v23, l23 = mix_up_batch(args[2], args[3])
+        v24, l24 = mix_up_batch(args[2], args[4])
+        return (v01, v23, v24), (l01, l23, l24)
+
+    return ds.map(mix_view, num_parallel_calls=tf.data.experimental.AUTOTUNE)   
     
 
 def vis_data_aug(ori_ds, batch_size=4):
@@ -50,42 +57,17 @@ def vis_data_aug(ori_ds, batch_size=4):
     
     ## Kernel of the proposed method : multi-view & view mixing strategies 
     mv_ds = multiview_wrap(ds)
+    mix_ds = view_mixing_wrap(mv_ds)
     
-    for mv_bh_img in mv_ds:
-        print(f"mixed view size : { len(mv_bh_img) }\n")
-        v01 = mix_up_batch(mv_bh_img[0], mv_bh_img[1])
-        v23 = mix_up_batch(mv_bh_img[2], mv_bh_img[3])
-        v24 = mix_up_batch(mv_bh_img[2], mv_bh_img[4])
-
-        imshow_imgs(v01.numpy(), "global view mixed examples")
-        imshow_imgs(v23.numpy(), "local view mixed examples 1)")
-        imshow_imgs(v24.numpy(), "local view mixed examples 2)")
-
-
-    '''
-    for bh_img, mv_bh_img, mix_bh_img in zip(ori_ds, mv_ds, mix_ds):
-        ## shape infomation :
-        print(f"origin batch size : { len(bh_img) }\n")
-        print(f"multiple view size : { len(mv_bh_img) }\n")
-        print(f"mixed view size : { len(mix_bh_img) }\n")
-        ## visualized example :
-        # show original batch img
-        imshow_imgs(bh_img.numpy(), "origin view of examples")
-        # default setting is 2 view (global/local)
-        imshow_imgs(mv_bh_img[0].numpy(), "global view examples")
-        imshow_imgs(mv_bh_img[3].numpy(), "local view examples")
-        # default setting is 3 output mixed view 
-        #   (mix<glb_1, glb_2>, mix<loc_1, loc_2>, mix<loc_1, loc_3>) 
-        #       omit the mix<loc2, loc_3> to prevent the heavy computation cost..
-        imshow_imgs(mv_bh_img[0].numpy(), "global view mixed examples")
-        imshow_imgs(mv_bh_img[1].numpy(), "local view mixed examples 1)")
-        imshow_imgs(mv_bh_img[2].numpy(), "local view mixed examples 2)")
-    '''
-
+    # for loop-style solution (pass the test)
+    for  bh_mix_img, lam in mix_ds.take(1):
+        print(f"multiple view size : { len(bh_mix_img) }\n")
+        # visualized example..
+        imshow_imgs( bh_mix_img[0].numpy() , "global view mixed examples")
+        imshow_imgs( bh_mix_img[1].numpy() , "local mixed 2, 3 view examples")
+        imshow_imgs( bh_mix_img[2].numpy() , "local mixed 2, 4 view examples")
+    
 
 if __name__ == "__main__":
-    import os
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # disable GPU
-
     cifar_ds, info = get_toy_dataset("cifar10")
     vis_data_aug(cifar_ds)

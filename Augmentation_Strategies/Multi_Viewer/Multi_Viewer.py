@@ -1,4 +1,4 @@
-from Simclr_Byol_augmentation import distorted_bounding_box_crop
+from .Simclr_Byol_augmentation import distorted_bounding_box_crop
 from collections import namedtuple
 import tensorflow as tf
 import numpy as np
@@ -49,9 +49,9 @@ class Multi_viewer(object):
         return im_view
 
     
-    def multi_view(self, batch_image, batch_label, incpt_crp=False):
+    def multi_view(self, batch_image, incpt_crp=False):
         bth_im = self.util['cnvt_typ'](batch_image)
-        bth_im_buff, bth_lab_buff = [], []
+        bth_im_buff = []
         for viw_name, vs in self.multi_view_spec.items():
             crp_key = "incpt_crp" if viw_name == "glb" and incpt_crp \
                                 else "rnd_crp"
@@ -64,5 +64,5 @@ class Multi_viewer(object):
                     
                 # data augment perform batch image transformations
                 bth_im_buff.append( self.da_inst.data_augment(im_buff, ["default"], ["default"]) )
-                bth_lab_buff.append( batch_label )
-        return bth_im_buff, bth_lab_buff
+        
+        return bth_im_buff

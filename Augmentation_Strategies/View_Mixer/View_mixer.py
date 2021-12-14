@@ -7,8 +7,8 @@ def sample_beta_distribution(size, concentration_0=0.1, concentration_1=0.1):
 
 def mix_up_batch(ds_one, ds_two, alpha=0.2):
     # Unpack two datasets
-    images_one, labels_one = ds_one
-    images_two, labels_two = ds_two
+    images_one = ds_one
+    images_two = ds_two
     batch_size = tf.shape(images_one)[0]
 
     # Sample lambda and reshape it to do the mixup
@@ -19,5 +19,4 @@ def mix_up_batch(ds_one, ds_two, alpha=0.2):
     # Perform mixup on both images and labels by combining a pair of images/labels
     # (one from each dataset) into one image/label
     images = images_one * x_l + images_two * (1 - x_l)
-    labels = labels_one * y_l + labels_two * (1 - y_l)
     return (images, lamda)
