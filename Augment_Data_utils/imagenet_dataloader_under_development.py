@@ -140,24 +140,21 @@ class Imagenet_dataset(object):
                 # n02119789 1 kit_fox
         return class_number
 
-    @classmethod
-    def parse_images_lable_pair(self, image_path, lable=None):
+    def __parse_images_lable_pair(self, image_path, label):
         def parse_images(image_path):
             # Loading and reading Image
             img = tf.io.read_file(image_path)
             img = tf.io.decode_jpeg(img, channels=3)
             img = tf.image.convert_image_dtype(img, tf.float32)
             return img
-
-        label = label if label else tf.strings.split(
-            image_path, os.path.sep)[4]
-        return parse_images(image_path), lable
+        #label = label if label else tf.strings.split(image_path, os.path.sep)[4]
+        return parse_images(image_path), label
 
     def __wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-            .map(lambda x, y: (self.parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
