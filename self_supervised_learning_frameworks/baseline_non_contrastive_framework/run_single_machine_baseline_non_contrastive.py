@@ -7,14 +7,13 @@ from absl import logging
 from absl import app
 
 import tensorflow as tf
-from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay
-import metrics
+from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay , CosineAnnealingDecayRestarts
 from helper_functions import *
 from Augment_Data_utils.imagenet_dataloader_under_development import imagenet_dataset
 from losses_optimizers.self_supervised_losses import byol_symetrize_loss
-
-import model_for_non_contrastive_framework as all_model
-import objective as obj_lib
+from Neural_Net_Architecture import ssl_model as all_model
+from objectives import objective as obj_lib
+from objectives import metrics
 from imutils import paths
 
 import tensorflow as tf
@@ -30,7 +29,6 @@ if gpus:
         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
     except RuntimeError as e:
         print(e)
-
 
 from config.config_non_contrast import read_cfg
 read_cfg()
