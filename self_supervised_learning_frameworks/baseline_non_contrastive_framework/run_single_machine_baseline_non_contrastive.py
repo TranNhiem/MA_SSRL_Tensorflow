@@ -8,7 +8,7 @@ from absl import app
 
 import tensorflow as tf
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay , CosineAnnealingDecayRestarts
-from from config import helper_functions import *
+from config.helper_functions import *
 from Augment_Data_utils.imagenet_dataloader_under_development import imagenet_dataset
 from losses_optimizers.self_supervised_losses import byol_symetrize_loss
 from Neural_Net_Architecture import ssl_model as all_model
