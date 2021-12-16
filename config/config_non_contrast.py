@@ -60,11 +60,11 @@ class Flage():
         'Mask path.')
 
         self.flags.DEFINE_string(
-        'train_label', "image_net_1k_lable.txt",
+        'train_label', "~/Augment_Data_utils/image_net_1k_lable.txt",
         'train_label.')
 
         self.flags.DEFINE_string(
-        'val_label', "ILSVRC2012_validation_ground_truth.txt",
+        'val_label', "~/Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
         'val_label.')
         # ------------------------------------------
         # Define for Linear Evaluation
