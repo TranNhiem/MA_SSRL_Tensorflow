@@ -12,6 +12,7 @@ import metrics
 from helper_functions import *
 from byol_simclr_imagenet_data_harry import imagenet_dataset
 from self_supervised_losses import byol_symetrize_loss
+
 import model_for_non_contrastive_framework as all_model
 import objective as obj_lib
 from imutils import paths
@@ -51,7 +52,7 @@ def main():
                                         strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
                                         train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )
 
-    train_ds = train_dataset.simclr_inception_style_crop()
+    train_ds = train_dataset.simclr_crop_da("incpt_style")
     # for performing Linea-protocol
     val_ds = train_dataset.supervised_validation()
 
