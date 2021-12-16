@@ -15,7 +15,6 @@ from Neural_Net_Architecture import ssl_model as all_model
 from objectives import objective as obj_lib
 from objectives import metrics
 from imutils import paths
-
 import tensorflow as tf
 
 # Setting GPU
@@ -359,10 +358,17 @@ def main():
                 for metric in all_metrics:
                     metric.reset_states()
                 # Saving Entire Model
-                if epoch + 1 == 50:
-                    save_ = './model_ckpt/resnet_byol/baseline_encoder_resnet50_mlp' + \
-                        str(epoch) + ".h5"
-                    online_model.save_weights(save_)
+                if (epoch+1) % 20 == 0:
+                    save_encoder = os.path.join(
+                        FLAGS.model_dir, "encoder_model_" + str(epoch) + ".h5")
+                    save_online_model = os.path.join(
+                        FLAGS.model_dir, "online_model_" + str(epoch) + ".h5")
+                    save_target_model = os.path.join(
+                        FLAGS.model_dir, "target_model_" + str(epoch) + ".h5")
+                    online_model.resnet_model.save_weights(save_encoder)
+                    online_model.save_weights(save_online_model)
+                    target_model.save_weights(save_target_model)
+
 
             logging.info('Training Complete ...')
 
