@@ -244,15 +244,6 @@ def byol_symetrize_mixed_loss(p, z, lamda, temperature):
 
     # Calculate contrastive Loss
     batch_size = tf.shape(p)[0]
-<<<<<<< HEAD
-    similarities=[]
-    for i in range(len(lamda)): 
-        # Measure similarity
-        similarity = lamda[i]*(tf.multiply(p[i], z[i])))
-        similarities.append(similarity)
-        loss = 2 - 2 * tf.reduce_mean(similarities)
-    # 
-=======
     # all batch_size similarity
     similarities = []
     for i in range(len(lamda)):
@@ -267,7 +258,6 @@ def byol_symetrize_mixed_loss(p, z, lamda, temperature):
     similarities = tf.reduce_sum(similarities, axis=1)
     loss = 2 - 2 * tf.reduce_mean(similarities)
 
->>>>>>> 833dc0e45e8eec9782908a0435a02522b0979ea4
     labels = tf.one_hot(tf.range(batch_size), batch_size * 2)
     logits_ab = tf.matmul(p, z, transpose_b=True) / temperature
 

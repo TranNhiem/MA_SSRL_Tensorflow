@@ -10,8 +10,8 @@ import tensorflow as tf
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay
 import metrics
 from helper_functions import *
-from byol_simclr_imagenet_data_harry import imagenet_dataset
-from self_supervised_losses import byol_symetrize_loss
+from Augment_Data_utils.imagenet_dataloader_under_development import imagenet_dataset
+from losses_optimizers.self_supervised_losses import byol_symetrize_loss
 
 import model_for_non_contrastive_framework as all_model
 import objective as obj_lib
@@ -32,7 +32,7 @@ if gpus:
         print(e)
 
 
-from config.config import read_cfg
+from config.config_non_contrast import read_cfg
 read_cfg()
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
@@ -126,13 +126,27 @@ def main():
         with strategy.scope():
 
             # Configure the learning rate
-            base_lr = FLAGS.base_lr
-            scale_lr = FLAGS.lr_rate_scaling
-            warmup_epochs = FLAGS.warmup_epochs
-            train_epochs = FLAGS.train_epochs
-            lr_schedule = WarmUpAndCosineDecay(
-                base_lr, train_global_batch, num_train_examples, scale_lr, warmup_epochs,
-                train_epochs=train_epochs, train_steps=train_steps)
+            if FLAGS.lr_strategies == "warmup_cos_lr":
+                base_lr = FLAGS.base_lr
+                scale_lr = FLAGS.lr_rate_scaling
+                warmup_epochs = FLAGS.warmup_epochs
+                train_epochs = FLAGS.train_epochs
+
+                lr_schedule = WarmUpAndCosineDecay(
+                    base_lr, train_global_batch, num_train_examples, scale_lr, warmup_epochs,
+                    train_epochs=train_epochs, train_steps=train_steps)
+
+            elif FLAGS.lr_strategies == "cos_annealing_restart":
+                base_lr = FLAGS.base_lr
+                scale_lr = FLAGS.lr_rate_scaling
+                # Control cycle of next step base of Previous step (2 times more steps)
+                t_mul = 2.0
+                # Control ititial Learning Rate Values (Next step equal to previous steps)
+                m_mul = 1.0
+                alpha = 0.0  # Final values of learning rate
+                first_decay_steps = train_steps / (FLAGS.number_cycles * t_mul)
+                lr_schedule = CosineAnnealingDecayRestarts(
+                    base_lr, first_decay_steps, train_global_batch, scale_lr, t_mul=t_mul, m_mul=m_mul, alpha=alpha)
 
             # Current Implement the Mixpercision optimizer
             optimizer = all_model.build_optimizer(lr_schedule)
