@@ -15,10 +15,10 @@ if __name__ == "__main__":
     train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
     val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
     # side-effect of bad manner while using the abs-path
-    FLAGS.train_label = "../../Augment_Data_utils/image_net_1k_lable.txt"
-    FLAGS.val_label = "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt"
-    FLAGS.train_path = "../../../../Datasets/SSL_dataset/ImageNet/1K_New/train/"
-    FLAGS.val_path =  "../../../../Datasets/SSL_dataset/ImageNet/1K_New/val/"
+    FLAGS.train_label = "/code_spec/Josef/multi_augmentation_strategies_self_supervised_learning/Augment_Data_utils/image_net_1k_lable.txt"
+    FLAGS.val_label = "/code_spec/Josef/multi_augmentation_strategies_self_supervised_learning/Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt"
+    FLAGS.train_path = "/code_spec/Datasets/SSL_dataset/ImageNet/1K_New/val/"
+    FLAGS.val_path =  "/code_spec/Datasets/SSL_dataset/ImageNet/1K_New/val/"
     train_dataset = Imagenet_dataset(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
                                         strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
                                         train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )

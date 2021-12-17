@@ -18,8 +18,6 @@ flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
 # temporary rename to imagenet_dataset, single/multiple machine will become an option.
-
-
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_style": simclr_augment_inception_style,
@@ -88,6 +86,7 @@ class Imagenet_dataset(object):
                 label = int(label.split(".")[0])
                 numeric_val_cls.append(val_label_map[label-1])
 
+        print(self.x_train)
         if subset_class_num != None:
             x_train_sub = []
             numeric_train_cls_sub = []
