@@ -1,8 +1,9 @@
 # PEP8. alphabet order for std or 3 part pkg
 from config.absl_mock import Mock_Flag
-from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, simclr_augment_inception_style
+from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
+                                                    simclr_augment_inception_style, supervised_augment_eval
 from Augmentation_Strategies.Multi_Viewer.Multi_Viewer import Multi_viewer
-from Augmentation_Strategies.Auto_Data_Augment import Data_Augmentor
+from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
 from absl import logging
 from imutils import paths
 import numpy as np
@@ -86,7 +87,6 @@ class Imagenet_dataset(object):
                 label = int(label.split(".")[0])
                 numeric_val_cls.append(val_label_map[label-1])
 
-        print(self.x_train)
         if subset_class_num != None:
             x_train_sub = []
             numeric_train_cls_sub = []
@@ -176,7 +176,7 @@ class Imagenet_dataset(object):
 
     def supervised_validation(self):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
-        val_ds = self.__wrap_crop(raw_ds, supervised_augment_eval, "validate")
+        val_ds = self.__wrap_da(raw_ds, supervised_augment_eval, "validate")
         return self.strategy.experimental_distribute_dataset(val_ds)
 
     def simclr_crop_da(self, crop_type):
@@ -185,10 +185,10 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        train_ds_one = self.__wrap_crop(ds_one, self.crop_dict[crop_type])
+        train_ds_one = self.__wrap_da(ds_one, self.crop_dict[crop_type])
 
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        train_ds_two = self.__wrap_crop(ds_two, self.crop_dict[crop_type])
+        train_ds_two = self.__wrap_da(ds_two, self.crop_dict[crop_type])
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
@@ -198,20 +198,23 @@ class Imagenet_dataset(object):
     def auto_data_aug(self, da_type=None):
         # default da type is auto data_augment
         da_inst = Data_Augmentor(
-            da_type=da_type) if da_type else Data_Augmentor()
+            DAS_type=da_type) if da_type else Data_Augmentor()
+        # who knows ?
+        def py_flow_wrap(x): return tf.py_function(
+            da_inst.data_augment, [x], Tout=[tf.float32])
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
+        train_ds_one = self.__wrap_da(ds_one, py_flow_wrap, "data_aug")
 
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
+        train_ds_two = self.__wrap_da(ds_two, py_flow_wrap, "data_aug")
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # DEPRECATE : it will be replaced by the auto_data_aug with setup multi-view option
     def multi_view_data_aug(self, da_type=None):
-        da = Data_Augmentor(da_type=da_type) if da_type else Data_Augmentor()
+        da = Data_Augmentor(DAS_type=da_type) if da_type else Data_Augmentor()
         da.pre_proc_dict["default"] = lambda x: tf.cast(
             x, dtype=tf.float32) * 255.0
         mv = Multi_viewer(da_inst=da)
@@ -231,29 +234,4 @@ class Imagenet_dataset(object):
 
 
 if __name__ == '__main__':
-    note_str = ''' Data augmentation dev Note : 
-    # all of func without label except super-vised valid..
-    # step 1. test da :
-    #   cropping only 2 view -> data_aug, (auto_aug)  :=> find best da strategy
-    # step 2. multi-view :
-    #   cropping with different view -> auto_aug (fine-tuned auto_aug) :=> find best crop_size to each view
-    # step 3. mixing-view :
-    #   cropping with different view -> auto_aug -> mixing (smoothing label) ( fixed pair for mixing )
-    # step 4. benchmark :
-    #   :=> cmp with baseline, give suggestion to da design 
-
-    # Method 1.
-    def train_loop():
-
-        @tf.function
-        def un_zip(zip_ds, ds_typ):
-            if ds_typ == multi_view:
-                return zip_ds[0][0], zip_ds[0][1], zip_ds[1][0], zip_ds[1][1], zip_ds[1][2]
-            elif ds_typ == :
-                
-        for ds1, ds2, ds3, ds4, ds5 in multi_view(ds):
-            mix12, lambd_lst = mix_batch(ds_1, ds_2)
-            ... 
-            loss()
-    '''
-    print(note_str)
+    pass

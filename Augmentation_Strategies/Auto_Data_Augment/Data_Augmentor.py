@@ -126,6 +126,9 @@ class Data_Augmentor(object):
                 img_lst.append( proc_func(img_tnsr) )
             return img_lst
 
+        # deal with the non-batch image
+        if len(image.shape) == 3:
+            image = tf.expand_dims(image, axis=0)
         # 1. image pre-processing 
         try:
             pre_img = image
