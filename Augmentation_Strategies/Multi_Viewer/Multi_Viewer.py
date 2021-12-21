@@ -59,10 +59,11 @@ class Multi_viewer(object):
                 im_buff = []
                 kwargs = {"re_siz":vs.re_siz, "viw_siz":vs.viw_siz, 
                         "min_scale":vs.min_scale, "max_scale":vs.max_scale}
-                for im in bth_im:
-                    im_buff.append( self.util[crp_key](im, **kwargs) )
+                #for im in bth_im:
+                #    im_buff.append( self.util[crp_key](im, **kwargs) )
+                bth_im = self.util[crp_key](bth_im, **kwargs)
                     
                 # data augment perform batch image transformations
-                bth_im_buff.append( self.da_inst.data_augment(im_buff, ["default"], ["default"]) )
+                bth_im_buff.append( self.da_inst.data_augment(bth_im, ["default"], ["default"]) )
         
         return bth_im_buff

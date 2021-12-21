@@ -160,7 +160,7 @@ class Imagenet_dataset(object):
         elif wrap_type == "validate":
             def map_func(x, y): return (trfs(x, FLAGS.IMG_height, FLAGS.IMG_width,
                                              FLAGS.randaug_transform, FLAGS.randaug_magnitude), y)
-        else:
+        else: # wrap_type == "auto_da"
             def map_func(x, y): return (trfs(x), y)
 
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
@@ -187,8 +187,7 @@ class Imagenet_dataset(object):
         train_ds_two = self.__wrap_da(ds_two, self.crop_dict[crop_type])
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
-        return train_ds  # cpu
-        #return self.strategy.experimental_distribute_dataset(train_ds) #gpu
+        return self.strategy.experimental_distribute_dataset(train_ds)
         
 
 
@@ -202,6 +201,10 @@ class Imagenet_dataset(object):
         def py_flow_wrap(x): return tf.py_function(
             da_inst.data_augment, [x], Tout=[tf.float32])
 
+        # The reason why we should apply tf.cast(x, tf.float32)*255 before fed into auto_ds,
+        # is that the __parse_images_lable_pair in __wrap_ds decode img into range [0, 1]
+        # though it's rational to most of case, the auto_ds will suppose the input range
+        # should  in [0, 255], and the norm decode-img cause the 'zero' output...
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
         ds_one = ds_one.map(lambda x, y : (tf.cast(x, tf.float32)*255., y), num_parallel_calls=AUTO)
         train_ds_one = self.__wrap_da(ds_one, py_flow_wrap, "data_aug")
@@ -209,6 +212,8 @@ class Imagenet_dataset(object):
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
         ds_two = ds_two.map(lambda x, y : (tf.cast(x, tf.float32)*255., y), num_parallel_calls=AUTO)
         train_ds_two = self.__wrap_da(ds_two, py_flow_wrap, "data_aug")
+
+        # but, after transformation, we should convert img in [0, 255] back into [0, 1]
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
