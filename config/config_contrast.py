@@ -9,6 +9,7 @@ def read_cfg(mod="contrastive"):
         non_contrastive_cfg()
     else:
         contrastive_cfg()
+    return flags
 
 def base_cfg():
     flags = Mock_Flag() 
