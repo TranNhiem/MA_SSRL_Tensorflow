@@ -41,23 +41,28 @@ def test_autods(train_dataset):
     auto_ds = train_dataset.auto_data_aug(da_type="auto_aug")  # customized DA strategy
     
     for (im_bt_1, lab_bt_1), (im_bt_2, lab_bt_2) in auto_ds:
+    #for ds_1, ds_2 in auto_ds:
+        dump_pk(file_name='./im1.pickle', dump_obj=im_bt_1)
+        dump_pk(file_name='./lab.pickle', dump_obj=lab_bt_2)
+        
         # squz img
-        im_bt_1, im_bt_2 = tf.squeeze(im_bt_1), tf.squeeze(im_bt_2) 
-        prnt_2view(im_bt_1, lab_bt_1, FLAGS.train_batch_size)
-        prnt_2view(im_bt_2, lab_bt_2, FLAGS.train_batch_size)
+        #im_bt_1, im_bt_2 = tf.squeeze(im_bt_1), tf.squeeze(im_bt_2) 
+        print(f"img batch shape: {im_bt_1.shape}\n")
+        print(f"img batch shape: {im_bt_2.shape}\n")
+        #prnt_2view(im_bt_1, lab_bt_1, FLAGS.train_batch_size)
+        #prnt_2view(im_bt_2, lab_bt_2, FLAGS.train_batch_size)
         break
 
 
 def test_mvds(train_dataset):
     mv_ds = train_dataset.multi_view_data_aug(da_type="auto_aug")
     
-    dump_pk(file_name='./test.pickle', dump_obj=next(iter(mv_ds)))
-
-    for (im_bt_1, lab_bt_1), (_, _), (_, _), (_, _), (_, _) in mv_ds:
+    for im1, im2, im3, im4, im5 in mv_ds:
         #im_bt_1, im_bt_2 = im_bt_1.values, im_bt_2.values
         #lab_bt_1, lab_bt_2 = lab_bt_1.values, lab_bt_2.values
-        dump_pk(file_name='./im.pickle', dump_obj=im_bt_1)
-        dump_pk(file_name='./lab.pickle', dump_obj=lab_bt_1)
+        dump_pk(file_name='./im.pickle', dump_obj=im)
+        dump_pk(file_name='./lam.pickle', dump_obj=lam)
+        dump_pk(file_name='./lab.pickle', dump_obj=lab_bt)
         break
 
 
@@ -86,8 +91,8 @@ if __name__ == "__main__":
     val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
 
     # side-effect of bad manner while using the abs-path
-    FLAGS.train_label = "/code_spec/multi_augmentation_strategies_self_supervised_learning/Augment_Data_utils/image_net_1k_lable.txt"
-    FLAGS.val_label = "/code_spec/multi_augmentation_strategies_self_supervised_learning/Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt"
+    FLAGS.train_label = "/code_spec/Augment_Data_utils/image_net_1k_lable.txt"
+    FLAGS.val_label = "/code_spec/Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt"
     FLAGS.train_path = "/data/train"
     FLAGS.val_path =  "/data/val"
     train_dataset = Imagenet_dataset(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
@@ -97,7 +102,7 @@ if __name__ == "__main__":
     #test_traVal(train_dataset)
     
     #  Readout the from auto_augment strategies
-    #test_autods(train_dataset)
+    test_autods(train_dataset)
     
     # multi-view with random augment ds
-    test_mvds(train_dataset)
+    #test_mvds(train_dataset)

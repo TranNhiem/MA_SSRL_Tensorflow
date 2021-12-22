@@ -88,3 +88,5 @@ if __name__ == '__main__':
     flag_inst = Mock_Flag()
     FLAGS = flag_inst.FLAGS
     print(f"test name : {FLAGS.name} done!!\n")
+
+    
