@@ -890,7 +890,7 @@ class RandAugment(ImageAugment):
     self.cutout_const = float(cutout_const)
     self.translate_const = float(translate_const)
     self.available_ops = [
-        'AutoContrast', 'Equalize', 'Invert', 'Posterize', 'Solarize', 'Sharpness'
+        'AutoContrast', 'Equalize', 'Invert', 'Posterize', 'Solarize', 'Sharpness',
         'Color', 'Contrast', 'Brightness', 'SolarizeAdd', 'Rotate', 
         'ShearX', 'ShearY', 'TranslateX', 'TranslateY', 'Cutout'
     ]
@@ -933,11 +933,11 @@ class RandAugment(ImageAugment):
                 image, *selected_args)))
         # pylint:enable=g-long-lambda
       
-      print("op -> ", op_to_select)
+      
       image = tf.switch_case(
           branch_index=op_to_select,
           branch_fns=branch_fns,
           default=lambda: tf.identity(image))
     
     image = tf.cast(image, dtype=input_image_type)
-    return image
+    return image, [] # HACKME : see how can we collect the selected_op..

@@ -26,7 +26,7 @@ def dump_pk(file_name='./test.pickle', dump_obj=None):
     with open(file_name, 'wb') as pk_ptr:
         pickle.dump(dump_obj, pk_ptr)
 
-def prnt_2view(im_bt, lab_bt, batch_size):  # with 8 gpus [8 elem] -> (4 batch_size), (4 empty)
+def prnt_2view(im_bt, lab_bt, batch_size):
     # im_bt : EagerTensor, .numpy() API convert into numpy array
     print(f"origin setting batch_size : {batch_size}\n")
     print(f"img batch shape: {im_bt.shape}, lab batch shape : {lab_bt.shape}\n")
@@ -49,7 +49,7 @@ def test_traVal(train_dataset):
 
 
 def test_autods(train_dataset):
-    auto_ds = train_dataset.auto_data_aug(da_type="fast_aug")  # customized DA strategy
+    auto_ds = train_dataset.auto_data_aug(da_type="rand_aug")  # customized DA strategy
     
     for (im_bt_1, lab_bt_1), (im_bt_2, lab_bt_2) in auto_ds:
         prnt_2view(im_bt_1, lab_bt_1, FLAGS.train_batch_size)

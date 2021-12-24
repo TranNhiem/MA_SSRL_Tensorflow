@@ -196,7 +196,9 @@ class Imagenet_dataset(object):
         # default da type is auto data_augment
         da_inst = Data_Augmentor(
             DAS_type=da_type) if da_type else Data_Augmentor()
-        da_inst.pre_proc_lst.append( lambda x : tf.cast(x, dtype=tf.float32) * 255.0 )
+        da_inst.pre_proc_lst[0] = lambda x : tf.cast(x, dtype=tf.float32) * 255.0
+        # auto_da should /255., fastAA should keep same, rand_da should /255.
+        da_inst.post_proc_lst[0] = lambda x : tf.cast(x, dtype=tf.float32) /255.
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")

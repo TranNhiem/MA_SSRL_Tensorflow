@@ -71,6 +71,8 @@ class Fast_AutoAugment(object):
         # dummy transformation of tf.tensor & PIL
         pil_im = Image.fromarray( image.numpy().astype(np.uint8) )
         da_ims = self.trfs_cntr(pil_im)
+        # PIL format have different channel order from tf.tensor : e.g. (-, c(3), h, w) -> (-, h, w, c(3)), batch channel omit..
+        da_ims = np.einsum('chw->hwc', da_ims)
         return da_ims, [*self.policy_info.items()]
 
 
