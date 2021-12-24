@@ -4,8 +4,8 @@
 
 import math
 from losses_optimizers import lars_optimizer
-import resnet
-from resnet_modify import resnet as resnet_modify
+from . import resnet
+from .resnet_modify import resnet as resnet_modify
 import tensorflow as tf
 from losses_optimizers.learning_rate_optimizer import get_optimizer
 from tensorflow.keras import mixed_precision
