@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 from absl import logging
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
-from visualize import Visualize
+from .visualize import Visualize
 # -------------------------------------------------------------
 # Helper function to save and resore model.
 # -------------------------------------------------------------
