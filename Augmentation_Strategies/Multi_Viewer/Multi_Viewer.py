@@ -1,3 +1,6 @@
+__author__ = "Rick & Josef"
+__date__ = "2021/12/24"
+
 from .Simclr_Byol_augmentation import distorted_bounding_box_crop
 from collections import namedtuple
 import tensorflow as tf

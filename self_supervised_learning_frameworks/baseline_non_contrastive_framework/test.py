@@ -52,6 +52,7 @@ def test_autods(train_dataset):
     auto_ds = train_dataset.auto_data_aug(da_type="rand_aug")  # customized DA strategy
     
     for (im_bt_1, lab_bt_1), (im_bt_2, lab_bt_2) in auto_ds:
+        print("test auto_ds 2 view")
         prnt_2view(im_bt_1, lab_bt_1, FLAGS.train_batch_size)
         prnt_2view(im_bt_2, lab_bt_2, FLAGS.train_batch_size)
         break
@@ -61,13 +62,7 @@ def test_mvds(train_dataset):
     mv_ds = train_dataset.multi_view_data_aug(da_type="auto_aug")
     
     for im1, im2, im3, im4, im5 in mv_ds:
-        '''
-        dump_pk(file_name='./im1.pickle', dump_obj=im1)
-        dump_pk(file_name='./im2.pickle', dump_obj=im2)
-        dump_pk(file_name='./im3.pickle', dump_obj=im3)
-        dump_pk(file_name='./im4.pickle', dump_obj=im4)
-        dump_pk(file_name='./im5.pickle', dump_obj=im5)
-        '''
+        print("test multi-view_ds 5 view")
         print(f"img batch shape: {im1.shape}\n")
         print(f"valid img range --> max : {im1.numpy().max()}, min : {im1.numpy().min()}\n")
         break
@@ -97,10 +92,10 @@ if __name__ == "__main__":
                                         strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
                                         train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )
     # Readout the train/valid data testing
-    #test_traVal(train_dataset)
+    test_traVal(train_dataset)
     
-    #  Readout the from auto_augment strategies
+    # Readout the from auto_augment strategies
     test_autods(train_dataset)
     
     # multi-view with random augment ds
-    #test_mvds(train_dataset)
+    test_mvds(train_dataset)

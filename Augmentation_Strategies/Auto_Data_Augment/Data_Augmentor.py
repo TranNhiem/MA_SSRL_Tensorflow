@@ -1,3 +1,5 @@
+__author__ = "Rick & Josef"
+__date__ = "2021/12/24"
 __src_str__ = '''
 Data Augumentation Searching Package :
   1. Auto Augmentation Policy Focus on Object Detection Task 
@@ -24,7 +26,6 @@ Data Augumentation Searching Package :
     [2] https://github.com/NoamRosenberg/fast-autoaugment
     [3] https://github.com/JunYeopLee/fast-autoaugment-efficientnet-pytorch (not recommend)
 '''
-
 # Current implementation will Deploy for Images WITHOUT BOX
 import tensorflow as tf
 from tensorflow.image import random_flip_left_right, random_crop
@@ -37,21 +38,29 @@ from .tf_official_DA import AutoAugment, RandAugment
 # For 'Type Hint' function, we replace the comment of code into type package.. 
 #from typing import Any, Dict, List, Optional, Text, Tuple
 from functools import partial
+from collections import namedtuple
 import numpy as np
 
 class Data_Augmentor(object):
+    DAS_obj = namedtuple('DAS_obj', 'init, pre_proc, post_proc')
+    def_op = lambda image : tf.cast(image, dtype=tf.float32)
+    mul_op = lambda image : tf.cast(image, dtype=tf.float32) * 255.
+    div_op = lambda image : tf.cast(image, dtype=tf.float32) / 255. 
+
+    auto_aug_obj = DAS_obj(AutoAugment, mul_op, div_op)
+    fast_aug_obj = DAS_obj(Fast_AutoAugment, mul_op, def_op)
+    rnd_aug_obj = DAS_obj(RandAugment, def_op, div_op)
+    
     # static instance, declare once use everywhere!
-    DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment}
+    DAS_dict = {"auto_aug":auto_aug_obj, "fast_aug":fast_aug_obj, "rand_aug":rnd_aug_obj}
     # common method name to apply the data augmentation!!
     DA_METHOD = "distort"
-    def_preproc = lambda image : tf.cast(image, dtype=tf.float32)
-    # In practice view, the input tensor should be norm into [0, 1]
-    def_postproc = lambda image : tf.cast(image, dtype=tf.float32) / 255. 
 
     def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
         try:
             self.DAS_type = DAS_type
-            self.aug_inst = Data_Augmentor.DAS_dict[DAS_type](*aug_args, **aug_kwarg)
+            das_obj = Data_Augmentor.DAS_dict[DAS_type]
+            self.aug_inst = das_obj.init(*aug_args, **aug_kwarg)
         except KeyError as k_err:
             raise KeyError("Given vlaue {} of DAS_type, \
                             but the value should be one of that ({})".format(
@@ -60,8 +69,8 @@ class Data_Augmentor(object):
         except Exception as exc:
             raise
 
-        self.pre_proc_lst = [Data_Augmentor.def_preproc]
-        self.post_proc_lst = [Data_Augmentor.def_postproc]
+        self.pre_proc_lst = [ das_obj.pre_proc ]
+        self.post_proc_lst = [ das_obj.post_proc ]
         self.regist_common_distort()
 
 

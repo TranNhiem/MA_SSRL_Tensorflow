@@ -1,3 +1,6 @@
+__author__ = "Rick & Josef (refactor)"
+__date__ = "2021/12/24"
+
 from config.absl_mock import Mock_Flag
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
                                                     simclr_augment_inception_style, supervised_augment_eval
@@ -159,7 +162,7 @@ class Imagenet_dataset(object):
         elif wrap_type == "validate":
             def map_func(x, y): return (trfs(x, FLAGS.IMG_height, FLAGS.IMG_width,
                                              FLAGS.randaug_transform, FLAGS.randaug_magnitude), y)
-        elif wrap_type == "data_aug": 
+        elif wrap_type == "data_aug": # careful, tf.py_func ret_val include dummy-dim, so we unzip * it
             map_func = lambda x, y : (*tf.py_function(trfs, [x], Tout=[tf.float32]), y)
             
         else: # ignore the label to simplify mixing view implementation
@@ -170,6 +173,7 @@ class Imagenet_dataset(object):
                         .map(map_func, num_parallel_calls=AUTO) \
             .batch(self.BATCH_SIZE).prefetch(AUTO)
         return data_aug_ds
+
 
     # This for Supervised validation training
     def supervised_validation(self):
@@ -192,13 +196,9 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
         
 
-    def auto_data_aug(self, da_type=None):
-        # default da type is auto data_augment
+    def auto_data_aug(self, da_type="auto_aug"):
         da_inst = Data_Augmentor(
             DAS_type=da_type) if da_type else Data_Augmentor()
-        da_inst.pre_proc_lst[0] = lambda x : tf.cast(x, dtype=tf.float32) * 255.0
-        # auto_da should /255., fastAA should keep same, rand_da should /255.
-        da_inst.post_proc_lst[0] = lambda x : tf.cast(x, dtype=tf.float32) /255.
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
@@ -210,14 +210,12 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
 
-    def multi_view_data_aug(self, da_type=None):
+    def multi_view_data_aug(self, da_type="auto_aug"):
         da = Data_Augmentor(DAS_type=da_type) if da_type else Data_Augmentor()
-        da.pre_proc_lst.append( lambda x : tf.cast(x, dtype=tf.float32) * 255.0 )
-
         mv = Multi_viewer(da_inst=da)
-        py_flow_wrap = mv.multi_view
+
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
-        tra_ds_lst = self.__wrap_da(raw_ds, py_flow_wrap, "mv_aug")
+        tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         train_ds = tf.data.Dataset.zip(tra_ds_lst)
         return self.strategy.experimental_distribute_dataset(train_ds)
 

@@ -1,3 +1,6 @@
+__author__ = "Rick & Josef"
+__date__ = "2021/12/24"
+
 # Fast Auto Augument
 import torch
 import torchvision
