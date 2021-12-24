@@ -3,7 +3,6 @@ import json
 import math
 import random
 import tensorflow as tf
-#from absl import flags
 from absl import logging
 import model_for_non_contrastive_framework as all_model
 from visualize import Visualize
