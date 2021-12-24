@@ -56,12 +56,12 @@ def base_cfg():
 
     flags.DEFINE_string(
     #'train_path', "/mnt/sharefolder/Datasets/SSL_dataset/ImageNet/1K_New/ILSVRC2012_img_train",
-    'train_path', '/data1/1K_New/train/',
+    'train_path', '/data/train/',
     'Train dataset path.')
 
     flags.DEFINE_string(
     # 'val_path',"/mnt/sharefolder/Datasets/SSL_dataset/ImageNet/1K_New/val",
-    'val_path', "/data1/1K_New/val/",
+    'val_path', "/data/val/",
     'Validaion dataset path.')
 
     # Mask_folder should locate in location and same level of train folder
@@ -70,11 +70,11 @@ def base_cfg():
     'Mask path.')
 
     flags.DEFINE_string(
-    'train_label', "image_net_1k_lable.txt",
+    'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
     'train_label.')
 
     flags.DEFINE_string(
-    'val_label', "ILSVRC2012_validation_ground_truth.txt",
+    'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
     'val_label.')
 
 def Linear_Evaluation():

@@ -11,7 +11,7 @@ import os
 import math
 import errno
 import shutil
-from helper_functions import *
+from .helper_functions import *
 
 class Visualize:
     def __init__(self,epoch,visualize_dir):

@@ -9,9 +9,9 @@ from absl import app
 import tensorflow as tf
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay , CosineAnnealingDecayRestarts
 from config.helper_functions import *
-from Augment_Data_utils.imagenet_dataloader_under_development import imagenet_dataset
+from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from losses_optimizers.self_supervised_losses import byol_symetrize_loss
-from Neural_Net_Architecture import ssl_model as all_model
+from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
 from objectives import objective as obj_lib
 from objectives import metrics
 from imutils import paths
@@ -29,7 +29,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-from config.config_non_contrast import read_cfg
+from config.config_contrast import read_cfg
 read_cfg()
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
@@ -45,7 +45,7 @@ def main():
     strategy = tf.distribute.MirroredStrategy()
     train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
     val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
-    train_dataset = imagenet_dataset(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
+    train_dataset = Imagenet_dataset(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
                                         strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
                                         train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )
 
@@ -385,5 +385,4 @@ def main():
     # Pre-Training and Finetune
 if __name__ == '__main__':
     # test 
-    from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
-    da = Data_Augmentor()
+    main()
