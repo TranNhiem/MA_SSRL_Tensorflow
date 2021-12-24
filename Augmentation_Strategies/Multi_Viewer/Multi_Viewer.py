@@ -64,6 +64,6 @@ class Multi_viewer(object):
                 bth_im = self.util[crp_key](bth_im, **kwargs)
                     
                 # data augment perform batch image transformations
-                bth_im_buff.append( self.da_inst.data_augment(bth_im, ["default"], ["default"]) )
+                bth_im_buff.append( self.da_inst.data_augment(bth_im) )
         
         return bth_im_buff

@@ -3,6 +3,8 @@ import random
 import PIL, PIL.ImageOps, PIL.ImageEnhance, PIL.ImageDraw
 import numpy as np
 
+random_mirror = True
+
 def ShearX(img, v):  # [-0.3, 0.3]
     assert -0.3 <= v <= 0.3
     if random_mirror and random.random() > 0.5:

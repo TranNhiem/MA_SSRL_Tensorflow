@@ -154,19 +154,14 @@ class Imagenet_dataset(object):
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
-        # all of the da type require to return the label ??
-        # wrap into a tuple
         if wrap_type == "cropping":
             def map_func(x, y): return (trfs(x, self.IMG_SIZE), y)
         elif wrap_type == "validate":
             def map_func(x, y): return (trfs(x, FLAGS.IMG_height, FLAGS.IMG_width,
                                              FLAGS.randaug_transform, FLAGS.randaug_magnitude), y)
-        
-        elif wrap_type == "data_aug":  # tf.py
-            map_func = lambda x, y : (tf.py_function(trfs, [x], Tout=[tf.float32]), y)
-        
-        
-        
+        elif wrap_type == "data_aug": 
+            map_func = lambda x, y : (*tf.py_function(trfs, [x], Tout=[tf.float32]), y)
+            
         else: # ignore the label to simplify mixing view implementation
             map_func = lambda x, y : tf.py_function(trfs, [x], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
 
@@ -197,52 +192,30 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
         
 
-
-    # HACKME : add the multi_view into the auto data augmentation
-    # multi_view=Imagenet_dataset.default_view):
     def auto_data_aug(self, da_type=None):
         # default da type is auto data_augment
         da_inst = Data_Augmentor(
             DAS_type=da_type) if da_type else Data_Augmentor()
-        
-        #def py_flow_wrap(x): return tf.py_function(
-        #    da_inst.data_augment, [x], Tout=[tf.float32])
-        f = da_inst.data_augment
-        # The reason why we should apply tf.cast(x, tf.float32)*255 before fed into auto_ds,
-        # is that the __parse_images_lable_pair in __wrap_ds decode img into range [0, 1]
-        # though it's rational to most of case, the auto_ds will suppose the input range
-        # should  in [0, 255], and the norm decode-img cause the 'zero' output...
+        da_inst.pre_proc_lst.append( lambda x : tf.cast(x, dtype=tf.float32) * 255.0 )
+
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_one = ds_one.map(lambda x, y : (tf.cast(x, tf.float32)*255., y), num_parallel_calls=AUTO)
-        train_ds_one = self.__wrap_da(ds_one, f, "data_aug")
-        print(train_ds_one.as_numpy_iterator())
-
+        train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
+        
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_two = ds_two.map(lambda x, y : (tf.cast(x, tf.float32)*255., y), num_parallel_calls=AUTO)
-        train_ds_two = self.__wrap_da(ds_two, f, "data_aug")
-        print(train_ds_two.as_numpy_iterator())
-        # but, after transformation, we should convert img in [0, 255] back into [0, 1]
-
+        train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
+        
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
-        return train_ds
-        #return self.strategy.experimental_distribute_dataset(train_ds)
+        return self.strategy.experimental_distribute_dataset(train_ds)
 
 
-    # DEPRECATE : it will be replaced by the auto_data_aug with setup multi-view option
     def multi_view_data_aug(self, da_type=None):
         da = Data_Augmentor(DAS_type=da_type) if da_type else Data_Augmentor()
-        da.pre_proc_dict["default"] = lambda x: tf.cast(
-            x, dtype=tf.float32) * 255.0
+        da.pre_proc_lst.append( lambda x : tf.cast(x, dtype=tf.float32) * 255.0 )
 
         mv = Multi_viewer(da_inst=da)
-        #out_typ_lst = [tf.float32, tf.float32,
-        #               tf.float32, tf.float32, tf.float32]
-
-        #def py_flow_wrap(x): return tf.py_function(
-        #    mv.multi_view, [x], Tout=out_typ_lst)
         py_flow_wrap = mv.multi_view
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
-        tra_ds_lst = self.__wrap_da(raw_ds, py_flow_wrap, "data_aug")
+        tra_ds_lst = self.__wrap_da(raw_ds, py_flow_wrap, "mv_aug")
         train_ds = tf.data.Dataset.zip(tra_ds_lst)
         return self.strategy.experimental_distribute_dataset(train_ds)
 

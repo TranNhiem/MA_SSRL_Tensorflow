@@ -4,12 +4,16 @@ import torchvision
 from torchvision.transforms import transforms
 from .searched_policies import fa_reduced_cifar10, fa_resnet50_rimagenet, fa_reduced_svhn
 from .transform_table import augment_list
+from PIL import Image
+import numpy as np
+import random
 
 
 class Augmentation(object):
     def __init__(self, policies):
         self.policies = policies
         self.augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augment_list()}
+        self.trfs_info = {}
 
     def __call__(self, img):
         for _ in range(1):
@@ -20,9 +24,10 @@ class Augmentation(object):
                 img = self.apply_augment(img, name, level)
         return img
     
-    def apply_augment(img, name, level):
-        augment_fn, low, high = augment_dict[name]
-        return augment_fn(img.copy(), level * (high - low) + low) 
+    def apply_augment(self, img, name, level):
+        augment_fn, low, high = self.augment_dict[name]
+        self.trfs_info[name] = degree = level * (high - low) + low
+        return augment_fn(img.copy(), degree) 
 
 
 class Fast_AutoAugment(object):
@@ -50,6 +55,7 @@ class Fast_AutoAugment(object):
         
         self.policy_type = policy_type
         self.trfs_cntr.transforms.insert(-1, ds_policies)
+        self.policy_info = ds_policies.trfs_info
 
     def prnt_policies(self):
         if self.policy_type == "imagenet":
@@ -62,7 +68,10 @@ class Fast_AutoAugment(object):
         return ds_policies
 
     def distort(self, image):
-        return self.trfs_cntr(image)
+        # dummy transformation of tf.tensor & PIL
+        pil_im = Image.fromarray( image.numpy().astype(np.uint8) )
+        da_ims = self.trfs_cntr(pil_im)
+        return da_ims, [*self.policy_info.items()]
 
 
 # sample code snippet..

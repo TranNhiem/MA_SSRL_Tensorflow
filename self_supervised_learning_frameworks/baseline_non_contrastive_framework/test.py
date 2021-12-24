@@ -10,6 +10,17 @@ tf.get_logger().setLevel(logging.ERROR)
 from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from Augmentation_Strategies.vis_tool import imshow_imgs
 
+def set_gpu_env(n_gpu=8):
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            tf.config.experimental.set_visible_devices(gpus[0:n_gpu], 'GPU')
+            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+        except RuntimeError as e:
+            print(e)
 
 def dump_pk(file_name='./test.pickle', dump_obj=None):
     with open(file_name, 'wb') as pk_ptr:
@@ -38,19 +49,11 @@ def test_traVal(train_dataset):
 
 
 def test_autods(train_dataset):
-    auto_ds = train_dataset.auto_data_aug(da_type="auto_aug")  # customized DA strategy
+    auto_ds = train_dataset.auto_data_aug(da_type="fast_aug")  # customized DA strategy
     
     for (im_bt_1, lab_bt_1), (im_bt_2, lab_bt_2) in auto_ds:
-    #for ds_1, ds_2 in auto_ds:
-        dump_pk(file_name='./im1.pickle', dump_obj=im_bt_1)
-        dump_pk(file_name='./lab.pickle', dump_obj=lab_bt_2)
-        
-        # squz img
-        #im_bt_1, im_bt_2 = tf.squeeze(im_bt_1), tf.squeeze(im_bt_2) 
-        print(f"img batch shape: {im_bt_1.shape}\n")
-        print(f"img batch shape: {im_bt_2.shape}\n")
-        #prnt_2view(im_bt_1, lab_bt_1, FLAGS.train_batch_size)
-        #prnt_2view(im_bt_2, lab_bt_2, FLAGS.train_batch_size)
+        prnt_2view(im_bt_1, lab_bt_1, FLAGS.train_batch_size)
+        prnt_2view(im_bt_2, lab_bt_2, FLAGS.train_batch_size)
         break
 
 
@@ -58,11 +61,15 @@ def test_mvds(train_dataset):
     mv_ds = train_dataset.multi_view_data_aug(da_type="auto_aug")
     
     for im1, im2, im3, im4, im5 in mv_ds:
-        #im_bt_1, im_bt_2 = im_bt_1.values, im_bt_2.values
-        #lab_bt_1, lab_bt_2 = lab_bt_1.values, lab_bt_2.values
-        dump_pk(file_name='./im.pickle', dump_obj=im)
-        dump_pk(file_name='./lam.pickle', dump_obj=lam)
-        dump_pk(file_name='./lab.pickle', dump_obj=lab_bt)
+        '''
+        dump_pk(file_name='./im1.pickle', dump_obj=im1)
+        dump_pk(file_name='./im2.pickle', dump_obj=im2)
+        dump_pk(file_name='./im3.pickle', dump_obj=im3)
+        dump_pk(file_name='./im4.pickle', dump_obj=im4)
+        dump_pk(file_name='./im5.pickle', dump_obj=im5)
+        '''
+        print(f"img batch shape: {im1.shape}\n")
+        print(f"valid img range --> max : {im1.numpy().max()}, min : {im1.numpy().min()}\n")
         break
 
 
@@ -74,16 +81,7 @@ if __name__ == "__main__":
     flag = Mock_Flag()
     FLAGS = flag.FLAGS
     
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            tf.config.experimental.set_visible_devices(gpus[0:8], 'GPU')
-            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
-        except RuntimeError as e:
-            print(e)
+    set_gpu_env(n_gpu=8)
             
     # Prepare the imagenet dataset
     strategy = tf.distribute.MirroredStrategy()

@@ -30,7 +30,7 @@ import tensorflow as tf
 from tensorflow.image import random_flip_left_right, random_crop
 
 # flexible policies implementation of AutoAugment, RandAugment
-from .Fast_Auto_Augment import Fast_AutoAugment
+from .Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 # tf-models-official 
 from .tf_official_DA import AutoAugment, RandAugment
 
@@ -41,11 +41,12 @@ import numpy as np
 
 class Data_Augmentor(object):
     # static instance, declare once use everywhere!
-    DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment, "simCLR":None}
+    DAS_dict = {"auto_aug":AutoAugment, "rand_aug":RandAugment, "fast_aug":Fast_AutoAugment}
     # common method name to apply the data augmentation!!
     DA_METHOD = "distort"
     def_preproc = lambda image : tf.cast(image, dtype=tf.float32)
-    def_postproc = lambda image : tf.cast(image, dtype=tf.float32) / 255.
+    # In practice view, the input tensor should be norm into [0, 1]
+    def_postproc = lambda image : tf.cast(image, dtype=tf.float32) / 255. 
 
     def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
         try:
@@ -57,10 +58,10 @@ class Data_Augmentor(object):
                             aug_type, Data_Augmentor.DAS_dict.keys() )
                           )
         except Exception as exc:
-            print(exc)
+            raise
 
-        self.pre_proc_dict = {"default":Data_Augmentor.def_preproc}
-        self.post_proc_dict = {"default":Data_Augmentor.def_postproc}
+        self.pre_proc_lst = [Data_Augmentor.def_preproc]
+        self.post_proc_lst = [Data_Augmentor.def_postproc]
         self.regist_common_distort()
 
 
@@ -99,7 +100,7 @@ class Data_Augmentor(object):
         # plz regist the correct method, which apply the data transformation.. 
         
 
-    def data_augment(self, image, preproc_lst=[], postproc_lst=[], db_mod=False):
+    def data_augment(self, image, db_mod=False):
         '''
             The common interface for public user, which allow user only call this method 
             to augument the given image with the corresponding behavior setting by args. 
@@ -129,41 +130,25 @@ class Data_Augmentor(object):
         # deal with the non-batch image
         if len(image.shape) == 3:
             image = tf.expand_dims(image, axis=0)
+
         # 1. image pre-processing 
-        try:
-            pre_img = image
-            for proc_typ in preproc_lst:
-                preproc = self.pre_proc_dict[proc_typ]
-                pre_img = _img_proc(pre_img, preproc)
-        except KeyError as k_err:
-            raise KeyError("Given preprocess type {} has not be registered in the pre_proc_dict, \
-            the registered preprocess type : ({})".format(
-                proc_typ, self.pre_proc_dict.keys() )
-            )
-        except Exception as exc:
-            raise Exception(exc)
-        
+        pre_img = image
+        for preproc in self.pre_proc_lst:
+            pre_img = _img_proc(pre_img, preproc)
+
         # 2. apply the data augmentation of the image
         aug_img = _distort(pre_img)
-
+        
         # 3. image post-processing 
-        try:
-            post_img = aug_img
-            for proc_typ in postproc_lst:
-                postproc = self.post_proc_dict[proc_typ]
-                post_img = _img_proc(post_img, postproc)
-        except KeyError as k_err:
-            raise KeyError("Given postprocess type {} has not be registered in the post_proc_dict, \
-            the registered postprocess type : ({})".format(
-                proc_typ, self.post_proc_dict.keys() )
-            )
-        except Exception as exc:
-            raise Exception(exc)
+        post_img = aug_img
+        for postproc in self.post_proc_lst:
+            post_img = _img_proc(post_img, postproc)
+        
         # convert numpy dtype into the tf.Tensor for tf.Model processing..
         tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
         post_img = tf_cnvt(post_img)
 
-        return post_img
+        return tf.squeeze(post_img)
 
 
 if __name__ == '__main__':

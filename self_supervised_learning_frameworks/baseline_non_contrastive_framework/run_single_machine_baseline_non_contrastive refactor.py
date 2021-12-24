@@ -62,6 +62,8 @@ def main():
     flag = read_cfg()
     FLAGS = flag.FLAGS
     
+    set_gpu_env()
+    
     ## 1. Prepare imagenet dataset
     strategy = MirroredStrategy()
     FLAGS.train_global_batch = train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
