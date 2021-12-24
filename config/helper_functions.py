@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 #from absl import flags
 from absl import logging
-import model_for_non_contrastive_framework as all_model
+import Resnet_models.ssl_model as all_model
 from visualize import Visualize
 # -------------------------------------------------------------
 # Helper function to save and resore model.
@@ -16,6 +16,7 @@ import metrics
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
+
 
 def get_salient_tensors_dict(include_projection_head):
     """Returns a dictionary of tensors."""
@@ -67,6 +68,7 @@ def build_saved_model(model, include_projection_head=True):
     return module
 
 # configure Json format saving file
+
 
 def json_serializable(val):
     #
@@ -211,9 +213,9 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
     def single_step(features, labels):
         # Logits output
         print("start v")
-        _,_,_, supervised_head_outputs = model(features, training=False)
-        v = Visualize(1,FLAGS.visualize_dir)
-        v.plot_feature_map(1,supervised_head_outputs)
+        _, _, _, supervised_head_outputs = model(features, training=False)
+        v = Visualize(1, FLAGS.visualize_dir)
+        v.plot_feature_map(1, supervised_head_outputs)
         assert supervised_head_outputs is not None
         outputs = supervised_head_outputs
 
