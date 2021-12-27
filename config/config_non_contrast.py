@@ -80,7 +80,6 @@ def base_cfg():
         'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
         'val_label.')
 
-
 def wandb_set():
     flags = Mock_Flag()
     flags.DEFINE_string(
@@ -94,7 +93,6 @@ def wandb_set():
     flags.DEFINE_enum(
         'wandb_mod', 'run', ['run', 'dryrun'],
         'update the to the wandb server or not')
-
 
 def Linear_Evaluation():
     flags = Mock_Flag()
@@ -115,7 +113,6 @@ def Linear_Evaluation():
     flags.DEFINE_float(
         'randaug_magnitude', 7,
         'Number of augmentation transformations.')
-
 
 def Learning_Rate_Optimizer_and_Training_Strategy():
     flags = Mock_Flag()
@@ -172,7 +169,6 @@ def Learning_Rate_Optimizer_and_Training_Strategy():
 
     flags.DEFINE_float('weight_decay', 1e-6, 'Amount of weight decay to use.')
 
-
 def Encoder():
     flags = Mock_Flag()
     flags.DEFINE_boolean(
@@ -223,7 +219,6 @@ def Encoder():
             '1': 1, '2': 1, '3': 1, '4': 1, '5': 1},
         "control the part of the every block channel output.,"
     )
-
 
 def Projection_and_Prediction_head():
 
@@ -284,7 +279,6 @@ def Projection_and_Prediction_head():
         'feature_upsample', False,
         'encoder out put do the upsample or mask do the downsample'
     )
-
 
 def Configure_Model_Training():
     # Self-Supervised training and Supervised training mode
