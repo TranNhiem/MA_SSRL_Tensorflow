@@ -1,0 +1,3 @@
+*.pickle
+wandb/
+model_ckpt/

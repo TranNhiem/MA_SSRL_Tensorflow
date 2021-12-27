@@ -49,9 +49,9 @@ def main():
                                         strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
                                         train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )
 
-    train_ds = train_dataset.simclr_crop_da("incpt_style")
+    train_ds = train_dataset.auto_data_aug(da_type="auto_aug")
     # for performing Linea-protocol
-    val_ds = train_dataset.supervised_validation()
+    val_ds = train_dataset.supervised_validation() 
 
     num_train_examples, num_eval_examples = train_dataset.get_data_size()
 
