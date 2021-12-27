@@ -1,12 +1,17 @@
 from config.absl_mock import Mock_Flag
 
 
-def read_cfg_base(mod="non_contrastive"):
+def read_cfg(mod="non_contrastive"):
     flags = Mock_Flag()
     base_cfg()
     wandb_set()
-    non_contrastive_cfg()
-
+    if(mod == "non_contrastive"):
+        non_contrastive_cfg()
+    
+    else:
+        raise(ValueError("Not implement Contrastive configure yet"))
+            #contrastive_cfg()
+    return flags
 
 def base_cfg():
     flags = Mock_Flag()
