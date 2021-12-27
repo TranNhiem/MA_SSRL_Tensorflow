@@ -2,14 +2,13 @@ from absl import logging
 import json
 from math import ceil
 import os
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'   #  for disable tf warning message..
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'   #  for disable some tf warning message..
 import random
 from tqdm import trange    # progress-bar presentation
 import wandb
 
 ## deep-learn pkgs
 import tensorflow as tf
-#tf.get_logger().setLevel(logging.ERROR)    #  for disable tf warning message..
 from tensorflow import distribute as tf_dis
 #       self-define pkgs
 from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
@@ -258,7 +257,7 @@ def main(FLAGS):
                 online_model, optimizer.iterations, optimizer)
 
             global_step = optimizer.iterations
-            for epoch in trange(FLAGS.train_epochs):  # range function 
+            for epoch in trange(FLAGS.train_epochs):
 
                 total_loss = 0.0
                 num_batches = 0
@@ -372,4 +371,4 @@ if __name__ == '__main__':
     flag = read_cfg()
     set_gpu_env()
 
-    #main(flag.FLAGS)
+    main(flag.FLAGS)
