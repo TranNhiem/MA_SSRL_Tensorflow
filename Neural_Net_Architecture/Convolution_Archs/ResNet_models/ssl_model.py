@@ -519,6 +519,7 @@ class PredictionHead(tf.keras.layers.Layer):
 ##******************************************************************
 # Non Contrastive Framework Models
 ##******************************************************************
+'''Noted this Design Using Resnet from SimCLR --> Not modify version'''
 class online_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -555,7 +556,7 @@ class online_model(tf.keras.models.Model):
 
         # # Base network forward pass.
         hiddens = self.resnet_model(features, training=training)
-        hiddens = self.globalaveragepooling(hiddens)
+        #hiddens = self.globalaveragepooling(hiddens)
         #print("Output from ResNet Model", hiddens.shape)
         # Add heads.
         projection_head_outputs, supervised_head_inputs, = self._projection_head(
@@ -581,7 +582,7 @@ class online_model(tf.keras.models.Model):
             return projection_head_outputs, None
 
 # Consideration take Supervised evaluate From the Target model
-
+'''Noted this Design Using Resnet from SimCLR --> Not modify version'''
 class target_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -618,7 +619,7 @@ class target_model(tf.keras.models.Model):
 
         # # Base network forward pass.
         hiddens = self.resnet_model(features, training=training)
-        hiddens = self.globalaveragepooling(hiddens)
+        #hiddens = self.globalaveragepooling(hiddens)
 
         # Add heads.
         projection_head_outputs, supervised_head_inputs = self._projection_head(
