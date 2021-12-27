@@ -1,46 +1,57 @@
-from absl import logging
-import json
-from math import ceil
-import os
-import random
-#import tqdm
-import wandb
+class Runner(object):
+    # utils : Setting GPU
+    def set_gpu_env(self, n_gpus=None, force_cpu=False):
+        env_gpus = tf.config.experimental.list_physical_devices('GPU')
+        n_gpus = n_gpus if n_gpus else env_gpus
+        if env_gpus: # TODO : chk & handle n_gpus and env_gpus
+            try:
+                for gpu in n_gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                tf.config.experimental.set_visible_devices(gpus[0:n_gpus], 'GPU')
+                logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+                print(len(env_gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+            except RuntimeError as e:
+                print(e)
+        elif force_cpu: # run the test vi cpu-only
+            raise NotImplementedError("In this version, force-cpu execution is not support currently")
+        else:
+            print("Executing this code in GPU mode are highly recommended!!")
+            return
+        
+    # utils : Configure Wandb Training, Weight&Bias Tracking Experiment
+    def __wandb_record(self, FLAGS):
+        wandb.init(project=FLAGS.wandb_project_name,name = FLAGS.wandb_run_name,mode = FLAGS.wandb_mod,
+                sync_tensorboard=True, config=self.run_cfg)
 
-## deep-learn pkgs
-import tensorflow as tf
-from tensorflow import distribute as tf_dis
-#       self-define pkgs
-from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
-from config.helper_functions import *
-from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay , CosineAnnealingDecayRestarts
-from losses_optimizers.self_supervised_losses import byol_symetrize_loss
-from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
-from objectives import objective as obj_lib
-from objectives import metrics
 
+    def __init__(self, run_cfg=None):
+        self.run_cfg = run_cfg
+        self.set_gpu_env()
 
-def main(FLAGS):
-    ## training sub_procedure
-    # Scale loss  --> Aggregating all Gradients
-    def distributed_loss(x1, x2):
-        # each GPU loss per_replica batch loss
-        per_example_loss, logits_ab, labels = byol_symetrize_loss(
-            x1, x2,  temperature=FLAGS.temperature)
+        ## 1. Prepare imagenet dataset
+        self._strategy = tf_dis.MirroredStrategy()
+        train_global_batch = self.run_cfg["Batch_size"] = \
+                            FLAGS.train_batch_size * strategy.num_replicas_in_sync
+        val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
+        self.run_cfg["Epochs"] = FLAGS.train_epochs
+        
+        self.ds_args = {'img_size':FLAGS.image_size, 'train_path':FLAGS.train_path, 'val_path':FLAGS.val_path, 
+                    'train_label':FLAGS.train_label, 'val_label':FLAGS.val_label, 'subset_class_num':FLAGS.num_classes,
+                        'train_batch':train_global_batch, 'val_batch':val_global_batch, 'strategy':strategy}
+        
+        # record the config in wanda database..
+        self.__wandb_record()
 
-        # total sum loss //Global batch_size
-        loss = tf.reduce_sum(per_example_loss) * \
-            (1./train_global_batch)
-        return loss, logits_ab, labels
 
     @tf.function
-    def distributed_train_step(ds_one, ds_two):
+    def __distributed_train_step(ds_one, ds_two):
         per_replica_losses = strategy.run(
             train_step, args=(ds_one, ds_two))
         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                 axis=None)
 
     @tf.function
-    def train_step(ds_one, ds_two):
+    def __train_step(ds_one, ds_two):
         # Get the data from
         images_one, lable_one = ds_one
         images_two, lable_two = ds_two
@@ -147,52 +158,42 @@ def main(FLAGS):
         del tape
         return loss
 
+    def __get_gpu_model(self):
+        ## 2. Configure the Encoder Architecture
+        with strategy.scope():
+            online_model = all_model.online_model(FLAGS.num_classes)
+            prediction_model = all_model.prediction_head_model()
+            target_model = all_model.online_model(FLAGS.num_classes)
 
-    ## 1. Prepare imagenet dataset
-    strategy = tf_dis.MirroredStrategy()
-    train_global_batch = FLAGS.train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
-    val_global_batch = FLAGS.val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
+        return online_model, prediction_model, target_model
 
-    ds_args = {'img_size':FLAGS.image_size, 'train_path':FLAGS.train_path, 'val_path':FLAGS.val_path, 
-                'train_label':FLAGS.train_label, 'val_label':FLAGS.val_label, 'subset_class_num':FLAGS.num_classes,
-                    'train_batch':train_global_batch, 'val_batch':val_global_batch, 'strategy':strategy}
-    train_dataset = Imagenet_dataset(**ds_args)
+    def train(self):
+        train_dataset = Imagenet_dataset(**self.ds_args)
+        #   baseline simclr style data augmentation
+        train_ds = train_dataset.simclr_crop_da("incpt_style")
+        #   performing Linear-protocol
+        val_ds = train_dataset.supervised_validation()
 
-    #   baseline simclr style data augmentation
-    train_ds = train_dataset.simclr_crop_da("incpt_style")
-    #   performing Linear-protocol
-    val_ds = train_dataset.supervised_validation()
+        #   calculate the training related meta-info
+        n_tra_sample, n_evl_sample = train_dataset.get_data_size()
+        train_steps = FLAGS.eval_steps or int(
+            n_tra_sample * FLAGS.train_epochs // train_global_batch)*2
+        # is that necessary to further convert into int ?
+        eval_steps = FLAGS.eval_steps or ceil(n_evl_sample / val_global_batch)
+        # is that necessary to further convert into int ?
+        epoch_steps = round(n_tra_sample / train_global_batch)
 
-    #   calculate the training related meta-info
-    n_tra_sample, n_evl_sample = train_dataset.get_data_size()
-    train_steps = FLAGS.eval_steps or int(
-        n_tra_sample * FLAGS.train_epochs // train_global_batch)*2
-    # is that necessary to further convert into int ?
-    eval_steps = FLAGS.eval_steps or ceil(n_evl_sample / val_global_batch)
-    # is that necessary to further convert into int ?
-    epoch_steps = round(n_tra_sample / train_global_batch)
+        checkpoint_steps = (FLAGS.checkpoint_steps or (
+            FLAGS.checkpoint_epochs * epoch_steps))
 
-    checkpoint_steps = (FLAGS.checkpoint_steps or (
-        FLAGS.checkpoint_epochs * epoch_steps))
+        logging.info(f"# Subset_training class {FLAGS.num_classes}")
+        logging.info(f"# train examples: {n_tra_sample}")
+        logging.info(f"# train_steps: {train_steps}")
+        logging.info(f"# eval examples: {n_evl_sample}")
+        logging.info(f"# eval steps: {eval_steps}")
 
-    logging.info(f"# Subset_training class {FLAGS.num_classes}")
-    logging.info(f"# train examples: {n_tra_sample}")
-    logging.info(f"# train_steps: {train_steps}")
-    logging.info(f"# eval examples: {n_evl_sample}")
-    logging.info(f"# eval steps: {eval_steps}")
-
-    # record the config in wanda database..
-    wandb_record()
-
-    ## 2. Configure the Encoder Architecture
-    with strategy.scope():
-        online_model = all_model.online_model(FLAGS.num_classes)
-        prediction_model = all_model.prediction_head_model()
-        target_model = all_model.online_model(FLAGS.num_classes)
-
-    ## 3. perform the train/eval loop
-    #   (1) training framework :
-    if "train" in FLAGS.mode:
+        online_model, prediction_model, target_model = self.__get_gpu_model()
+        
         summary_writer = tf.summary.create_file_writer(FLAGS.model_dir)
         with strategy.scope():
             # Configure the learning rate
@@ -314,10 +315,14 @@ def main(FLAGS):
                     online_model.resnet_model.save_weights(save_encoder)
                     online_model.save_weights(save_online_model)
                     target_model.save_weights(save_target_model)
+            
             logging.info('Training Complete ...')
 
-    #   (2) evaluation framework :
-    if "eval" in FLAGS.mode:
+            if "eval" in FLAGS.mode:
+                self.eval()
+
+
+    def eval(self):
         ckpt_iter = [checkpoint_manager.latest_checkpoint] if "train" not in FLAGS.mode \
                         else tf.train.checkpoints_iterator(FLAGS.model_dir, min_interval_secs=15)
         for ckpt in ckpt_iter:
@@ -327,24 +332,11 @@ def main(FLAGS):
             if result['global_step'] >= train_steps:
                 logging.info('Evaluation complete. Existing-->')
 
+if __name__ == '__main__':
+    from config.config_non_contrast import read_cfg
+    flag = read_cfg()
 
-## Utils function
-# Setting GPU
-def set_gpu_env(n_gpus=8):
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            tf.config.experimental.set_visible_devices(gpus[0:n_gpus], 'GPU')
-            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
-        except RuntimeError as e:
-            print(e)
-
-# Configure Wandb Training & for Weight and Bias Tracking Experiment
-def wandb_record():
-    configs = {
+    run_cfg = {
         "Model_Arch": "ResNet50",
         "Training mode": "Baseline Non_Contrastive",
         "DataAugmentation_types": "SimCLR_Inception_style_Croping",
@@ -352,7 +344,7 @@ def wandb_record():
 
         "IMG_SIZE": FLAGS.image_size,
         "Epochs": FLAGS.train_epochs,
-        "Batch_size": FLAGS.train_global_batch,
+        #"Batch_size": FLAGS.train_global_batch,
         "Learning_rate": FLAGS.base_lr,
         "Temperature": FLAGS.temperature,
         "Optimizer": FLAGS.optimizer,
@@ -361,13 +353,7 @@ def wandb_record():
         "Loss type": FLAGS.aggregate_loss,
         "opt" : FLAGS.up_scale
     }
-    wandb.init(project=FLAGS.wandb_project_name,name = FLAGS.wandb_run_name,mode = FLAGS.wandb_mod,
-                sync_tensorboard=True, config=configs)
 
-
-if __name__ == '__main__':
-    from config.config_non_contrast import read_cfg
-    flag = read_cfg()
-    set_gpu_env()
-
-    main(flag.FLAGS)
+    exp_runer = Runner(run_cfg)
+    exp_runer.set_gpu_env(n_gpus=8)
+    exp_runer.train(flag.FLAGS)
