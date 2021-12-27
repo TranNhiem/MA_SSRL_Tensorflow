@@ -421,7 +421,7 @@ class online_model(tf.keras.models.Model):
         #     resnet_depth=FLAGS.resnet_depth,
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
-        self.resnet_model = resnet_modify(resnet_depth=FLAGS.resnet_depth,
+        self.resnet_model = resnet(resnet_depth=FLAGS.resnet_depth,
                                          width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
@@ -484,7 +484,7 @@ class target_model(tf.keras.models.Model):
         #     resnet_depth=FLAGS.resnet_depth,
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
-        self.resnet_model = resnet_modify(resnet_depth=FLAGS.resnet_depth,
+        self.resnet_model = resnet(resnet_depth=FLAGS.resnet_depth,
                                          width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()

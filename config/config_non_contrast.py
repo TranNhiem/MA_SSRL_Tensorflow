@@ -5,7 +5,6 @@ def read_cfg_base(mod="non_contrastive"):
     flags = Mock_Flag()
     base_cfg()
     wandb_set()
-
     non_contrastive_cfg()
 
 
