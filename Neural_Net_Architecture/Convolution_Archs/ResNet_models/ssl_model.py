@@ -535,7 +535,8 @@ class online_model(tf.keras.models.Model):
                                          width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
-        self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
+        # This implementation when using modify Resnet
+        #self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
 
         # Supervised classficiation head
         if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
@@ -598,7 +599,8 @@ class target_model(tf.keras.models.Model):
                                          width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
-        self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
+        # This implementation when using modify Resnet
+        #self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
 
         # Supervised classficiation head
         if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
