@@ -83,7 +83,7 @@ def base_cfg():
 def wandb_set():
     flags = Mock_Flag()
     flags.DEFINE_string(
-        "wandb_project_name", "heuristic_attention_representation_learning_v1",
+        "wandb_project_name", "mutli_augmentation_strategies",
         "set the project name for wandb."
     )
     flags.DEFINE_string(
