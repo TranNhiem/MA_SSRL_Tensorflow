@@ -6,10 +6,7 @@ def read_cfg_base(mod="non_contrastive"):
     base_cfg()
     wandb_set()
 
-    if(mod == "non_contrastive"):
-        non_contrastive_cfg()
-    else:
-        contrastive_cfg()
+    non_contrastive_cfg()
 
 
 def base_cfg():
