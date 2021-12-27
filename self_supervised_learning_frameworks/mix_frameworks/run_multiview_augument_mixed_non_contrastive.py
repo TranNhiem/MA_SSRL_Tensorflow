@@ -29,7 +29,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-from config.config_contrast import read_cfg
+from config.config_non_contrast import read_cfg
 read_cfg()
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
@@ -49,8 +49,9 @@ def main():
                                         strategy=strategy, train_path=FLAGS.train_path, val_path=FLAGS.val_path,
                                         train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes )
 
+    train_ds = train_dataset.simclr_crop_da("incpt_style")
     # for performing Linea-protocol
-    auto_ds = multi_view_data_aug.multi_view("auto_da") 
+    val_ds = train_dataset.supervised_validation()
 
     num_train_examples, num_eval_examples = train_dataset.get_data_size()
 
