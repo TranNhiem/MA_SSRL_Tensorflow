@@ -240,21 +240,14 @@ def byol_symetrize_mixed_loss(p, z, p_z_mix, lamda, alpha, temperature):
     Return:  the mixed loss 
 
     '''
+    # Image similarity 
     image_loss,logit, lable = byol_symetrize_loss(p, z, temperature)
     
-    # Normal order mixd image
+    # Normal augmented image 1 vs mixed image
     mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
 
     loss = (image_loss + lamda*mix_loss)/2
-
-
-
-
-  
-
-
-
-    return loss, logit, img_lable
+    return loss, logit, lable
 
 
 '''Loss 2 SimSiam Model'''
