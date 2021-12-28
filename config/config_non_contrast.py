@@ -184,7 +184,7 @@ def Encoder():
         'Multiplier to change width of network.')
 
     flags.DEFINE_integer(
-        'resnet_depth', 18,
+        'resnet_depth', 50,
         'Depth of ResNet.')
 
     flags.DEFINE_float(

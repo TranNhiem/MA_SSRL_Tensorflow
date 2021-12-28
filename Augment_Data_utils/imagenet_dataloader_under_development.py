@@ -172,8 +172,8 @@ class Imagenet_dataset(object):
         data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
                         .map(map_func, num_parallel_calls=AUTO) \
             .batch(self.BATCH_SIZE)
-            #.prefetch(AUTO)
-            .prefetch(4)
+            .prefetch(AUTO)
+            #.prefetch(4)
         return data_aug_ds
 
 
