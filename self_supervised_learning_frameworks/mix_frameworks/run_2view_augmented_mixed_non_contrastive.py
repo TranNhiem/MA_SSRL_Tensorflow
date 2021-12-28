@@ -61,6 +61,7 @@ def main():
         math.ceil(num_eval_examples / val_global_batch))
 
     epoch_steps = int(round(num_train_examples / train_global_batch))
+    
     checkpoint_steps = (FLAGS.checkpoint_steps or (
         FLAGS.checkpoint_epochs * epoch_steps))
 
