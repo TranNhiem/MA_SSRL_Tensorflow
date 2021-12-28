@@ -240,13 +240,19 @@ def byol_symetrize_mixed_loss(p, z, p_z_mix, lamda, alpha, temperature):
     Return:  the mixed loss 
 
     '''
+    batch_size = tf.shape(p)[0]
+    one_tensor= tf.ones(shape=(batch_size, 1),dtype=tf.dtypes.float32, )
     # Image similarity 
     image_loss,logit, lable = byol_symetrize_loss(p, z, temperature)
     
     # Normal augmented image 1 vs mixed image
-    mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
-
-    loss = (image_loss + lamda*mix_loss)/2
+    normal_mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
+    
+    # Reverse Order Image 2 vs mixed image 
+    reverse_mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
+    
+    loss = (image_loss + (lamda*normal_mix_loss+ (one_tensor-lamda)*reverse_mix_loss)/2
+    
     return loss, logit, lable
 
 
