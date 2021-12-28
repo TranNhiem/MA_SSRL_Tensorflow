@@ -251,7 +251,7 @@ def byol_symetrize_mixed_loss(p, z, p_z_mix, lamda, alpha, temperature):
     # Reverse Order Image 2 vs mixed image 
     reverse_mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
     
-    loss = (image_loss + (lamda*normal_mix_loss+ (one_tensor-lamda)*reverse_mix_loss)/2
+    loss = (image_loss + (lamda*normal_mix_loss+ (one_tensor-lamda)*reverse_mix_loss))/2
     
     return loss, logit, lable
 
