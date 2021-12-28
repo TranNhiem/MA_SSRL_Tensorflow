@@ -197,7 +197,6 @@ class Imagenet_dataset(object):
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
         
-
     def auto_data_aug(self, da_type="auto_aug"):
         da_inst = Data_Augmentor(
             DAS_type=da_type) if da_type else Data_Augmentor()
@@ -210,7 +209,6 @@ class Imagenet_dataset(object):
         
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
-
 
     def multi_view_data_aug(self, da_type="auto_aug"):
         da = Data_Augmentor(DAS_type=da_type) if da_type else Data_Augmentor()
