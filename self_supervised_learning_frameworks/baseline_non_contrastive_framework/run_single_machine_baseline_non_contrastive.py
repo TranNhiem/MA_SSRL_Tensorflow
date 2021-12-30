@@ -370,5 +370,5 @@ if __name__ == '__main__':
     from config.config_non_contrast import read_cfg
     flag = read_cfg()
     set_gpu_env()
-
+    
     main(flag.FLAGS)
