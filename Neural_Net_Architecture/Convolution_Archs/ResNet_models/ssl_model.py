@@ -653,7 +653,6 @@ class target_model(tf.keras.models.Model):
 '''
 For Contrastive Framework --> 
 We might Design MoCo Contrastive Framework instead of SimCLR
-
 '''
 class contrast_models(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
