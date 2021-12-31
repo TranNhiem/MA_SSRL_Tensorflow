@@ -515,7 +515,6 @@ class PredictionHead(tf.keras.layers.Layer):
         proj_head_output = tf.identity(hiddens_list[-1], 'proj_head_output')
         return proj_head_output
 
-
 ##******************************************************************
 # Non Contrastive Framework Models
 ##******************************************************************
@@ -587,7 +586,6 @@ class online_model(tf.keras.models.Model):
             return projection_head_outputs, None
 
 # Consideration take Supervised evaluate From the Target model
-
 class target_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -652,7 +650,11 @@ class target_model(tf.keras.models.Model):
 ##******************************************************************
 # Contrastive Framework Models
 ##******************************************************************
+'''
+For Contrastive Framework --> 
+We might Design MoCo Contrastive Framework instead of SimCLR
 
+'''
 class contrast_models(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
