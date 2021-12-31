@@ -515,11 +515,14 @@ class PredictionHead(tf.keras.layers.Layer):
         proj_head_output = tf.identity(hiddens_list[-1], 'proj_head_output')
         return proj_head_output
 
-
 ##******************************************************************
 # Non Contrastive Framework Models
 ##******************************************************************
-'''Noted this Design Using Resnet from SimCLR --> Not modify version'''
+'''Noted this Design Using Resnet from SimCLR --> Not modify version
++ ResNet Modify Version will Control output Spatial Features Maps
+Ex: (7*7, 14*14, 28*28,)*(1024 or 2048) Dimension 
+--> 
+'''
 class online_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -583,7 +586,6 @@ class online_model(tf.keras.models.Model):
             return projection_head_outputs, None
 
 # Consideration take Supervised evaluate From the Target model
-'''Noted this Design Using Resnet from SimCLR --> Not modify version'''
 class target_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -648,7 +650,10 @@ class target_model(tf.keras.models.Model):
 ##******************************************************************
 # Contrastive Framework Models
 ##******************************************************************
-
+'''
+For Contrastive Framework --> 
+We might Design MoCo Contrastive Framework instead of SimCLR
+'''
 class contrast_models(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 

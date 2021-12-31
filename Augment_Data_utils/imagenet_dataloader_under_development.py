@@ -176,7 +176,6 @@ class Imagenet_dataset(object):
             #.prefetch(4)
         return data_aug_ds
 
-
     # This for Supervised validation training
     def supervised_validation(self):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
