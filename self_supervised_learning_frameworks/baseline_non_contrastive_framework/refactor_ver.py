@@ -164,13 +164,19 @@ class Runner(object):
             })
 
         # prepare train related obj
-        online_model, prediction_model, target_model = get_gpu_model()
-        lr_schedule, optimizer = get_optimizer()
-        metric_dict = get_metrics()
+        self.online_model, self.prediction_model, self.target_model = get_gpu_model()
+        # assign to self.opt to prevent the namespace covered
+        lr_schedule, optimizer = _, self.opt = get_optimizer()
+        self.metric_dict = metric_dict = get_metrics()
         #   baseline simclr style data augmentation
         train_ds = self.train_dataset.simclr_crop_da(da_crp_key)
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
+
+        # Check and restore Ckpt if it available
+        # Restore checkpoint if available.
+        checkpoint_manager = try_restore_from_checkpoint(
+            self.online_model, optimizer.iterations, optimizer)
 
         global_step = optimizer.iterations
         for epoch in trange(self.train_epochs):
@@ -185,6 +191,7 @@ class Runner(object):
 
                 # Update weight of Target Encoder Every Step
                 beta = 0.99
+                target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
                 online_encoder_weights = online_model.get_weights()
                 # mean teacher update
@@ -197,7 +204,7 @@ class Runner(object):
                     cur_step = global_step.numpy()
                     checkpoint_manager.save(cur_step)
                     logging.info('Completed: %d / %d steps',
-                                    cur_step, train_steps)
+                                    cur_step, self.train_steps)
                     all_metrics = list(metric_dict.values())    
                     metrics.log_and_write_metrics_to_summary(
                         all_metrics, cur_step)
@@ -225,9 +232,9 @@ class Runner(object):
 
         # perform eval after training
         if "eval" in exe_mode:
-            self.eval()
+            self.eval(checkpoint_manager)
 
-    def eval(self):
+    def eval(self, checkpoint_manager=None):
         ckpt_iter = [checkpoint_manager.latest_checkpoint] if "train" not in self.mode \
                             else tf.train.checkpoints_iterator(self.model_dir, min_interval_secs=15)
         for ckpt in ckpt_iter:
@@ -256,22 +263,22 @@ class Runner(object):
 
             # total sum loss //Global batch_size
             loss = tf.reduce_sum(per_example_loss) * \
-                (1./train_global_batch)
+                (1./self.train_global_batch)
             return loss, logits_ab, labels
-
+        
         # Get the data from
         images_one, lable_one = ds_one
         images_two, lable_two = ds_two
 
         with tf.GradientTape(persistent=True) as tape:
             # Online
-            proj_head_output_1, supervised_head_output_1 = online_model(
+            proj_head_output_1, supervised_head_output_1 = self.online_model(
                 images_one, training=True)
-            proj_head_output_1 = prediction_model(
+            proj_head_output_1 = self.prediction_model(
                 proj_head_output_1, training=True)
 
             # Target
-            proj_head_output_2, supervised_head_output_2 = target_model(
+            proj_head_output_2, supervised_head_output_2 = self.target_model(
                 images_two, training=True)
 
             # Compute Contrastive Train Loss -->
@@ -287,9 +294,9 @@ class Runner(object):
                     loss += loss
 
                 # Update Self-Supervised Metrics
-                metrics.update_pretrain_metrics_train(contrast_loss_metric,
-                                                        contrast_acc_metric,
-                                                        contrast_entropy_metric,
+                metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                        self.metric_dict['contrast_acc_metric'],
+                                                        self.metric_dict['contrast_entropy_metric'],
                                                         loss, logits_ab,
                                                         labels)
 
@@ -310,13 +317,13 @@ class Runner(object):
                         labels=supervise_lable, logits=outputs)
 
                     scale_sup_loss = tf.nn.compute_average_loss(
-                        sup_loss, global_batch_size=train_global_batch)
+                        sup_loss, global_batch_size=self.train_global_batch)
                     # scale_sup_loss = tf.reduce_sum(
                     #     sup_loss) * (1./train_global_batch)
                     # Update Supervised Metrics
-                    metrics.update_finetune_metrics_train(supervised_loss_metric,
-                                                            supervised_acc_metric, scale_sup_loss,
-                                                            supervise_lable, outputs)
+                    metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
+                                                            self.metric_dict['supervised_acc_metric'], 
+                                                            scale_sup_loss, supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient
@@ -338,29 +345,28 @@ class Runner(object):
                         " Loss aggregate is invalid please check self.aggregate_loss")
 
             weight_decay_loss = all_model.add_weight_decay(
-                online_model, adjust_per_optimizer=True)
+                self.online_model, adjust_per_optimizer=True)
             # Under experiment Scale loss after adding Regularization and scaled by Batch_size
             # weight_decay_loss = tf.nn.scale_regularization_loss(
             #     weight_decay_loss)
-            weight_decay_metric.update_state(weight_decay_loss)
+            self.metric_dict['weight_decay_metric'].update_state(weight_decay_loss)
             loss += weight_decay_loss
-
-            total_loss_metric.update_state(loss)
+            self.metric_dict['total_loss_metric'].update_state(loss)
 
             logging.info('Trainable variables:')
-            for var in online_model.trainable_variables:
+            for var in self.online_model.trainable_variables:
                 logging.info(var.name)
 
         # Update Encoder and Projection head weight
-        grads = tape.gradient(loss, online_model.trainable_variables)
-        optimizer.apply_gradients(
-            zip(grads, online_model.trainable_variables))
+        grads = tape.gradient(loss, self.online_model.trainable_variables)
+        self.opt.apply_gradients(
+            zip(grads, self.online_model.trainable_variables))
 
         # Update Prediction Head model
         grads = tape.gradient(
-            loss, prediction_model.trainable_variables)
-        optimizer.apply_gradients(
-            zip(grads, prediction_model.trainable_variables))
+            loss, self.prediction_model.trainable_variables)
+        self.opt.apply_gradients(
+            zip(grads, self.prediction_model.trainable_variables))
         del tape
         return loss
 
@@ -387,7 +393,7 @@ if __name__ == '__main__':
         "Loss type": FLAGS.aggregate_loss,
         "opt" : FLAGS.up_scale
     }
-
+    
     runer = Runner(FLAGS, wanda_cfg)
     if "train" in FLAGS.mode:
         runer.train(FLAGS.mode)
