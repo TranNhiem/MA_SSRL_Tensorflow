@@ -14,6 +14,7 @@ from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
+
 def build_optimizer(lr_schedule):
     '''
     Args
@@ -27,25 +28,31 @@ def build_optimizer(lr_schedule):
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
         optimizer = optimizers.original_optimizer(FLAGS)
-    elif FLAGS.optimizer_type== "optimizer_weight_decay": 
+
+    elif FLAGS.optimizer_type == "optimizer_weight_decay":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
         optimizer = optimizers.optimizer_weight_decay(FLAGS)
 
-    elif  FLAGS.optimizer_type== "optimizer_GD": 
+    elif FLAGS.optimizer_type == "optimizer_GD":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
         optimizer = optimizers.optimizer_gradient_centralization(FLAGS)
 
-    elif  FLAGS.optimizer_type== "optimizer_W_GD":
+    elif FLAGS.optimizer_type == "optimizer_W_GD":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
-        optimizer = optimizers.optimizer_weight_decay_gradient_centralization(FLAGS)
-    else: 
+        optimizer = optimizers.optimizer_weight_decay_gradient_centralization(
+            FLAGS)
+    else:
         raise ValueError(" FLAGS.Optimizer type is invalid please check again")
     #optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
 
+    if FLAGS.mixprecision == "fp16":
+        optimizer = mixed_precision.LossScaleOptimizer(optimizer)
+
     return optimizer
+
 
 def build_optimizer_multi_machine(lr_schedule):
     '''
@@ -56,33 +63,35 @@ def build_optimizer_multi_machine(lr_schedule):
     The mix_percision optimizer.'optimizer_weight_decay','optimizer_GD','optimizer_W_GD' 
     '''
 
-    if FLAGS.optimizer_type== "original": 
+    if FLAGS.optimizer_type == "original":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
         optimizer = optimizers.original_optimizer(FLAGS)
         optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
-    elif FLAGS.optimizer_type== "optimizer_weight_decay": 
+    elif FLAGS.optimizer_type == "optimizer_weight_decay":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
         optimizer = optimizers.optimizer_weight_decay(FLAGS)
         optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
 
-    elif  FLAGS.optimizer_type== "optimizer_GD": 
+    elif FLAGS.optimizer_type == "optimizer_GD":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
         optimizer = optimizers.optimizer_gradient_centralization(FLAGS)
         optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
 
-    elif  FLAGS.optimizer_type== "optimizer_W_GD":
+    elif FLAGS.optimizer_type == "optimizer_W_GD":
         Optimizer_type = FLAGS.optimizer
         optimizers = get_optimizer(lr_schedule, Optimizer_type)
-        optimizer = optimizers.optimizer_weight_decay_gradient_centralization(FLAGS)
+        optimizer = optimizers.optimizer_weight_decay_gradient_centralization(
+            FLAGS)
         optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
-    else: 
+    else:
         raise ValueError(" FLAGS.Optimizer type is invalid please check again")
     #optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
 
     return optimizer_mix_percision
+
 
 def add_weight_decay(model, adjust_per_optimizer=True):
     """Compute weight decay from flags."""
@@ -109,6 +118,7 @@ def add_weight_decay(model, adjust_per_optimizer=True):
     loss = FLAGS.weight_decay * tf.add_n(l2_losses)
 
     return loss
+
 
 class LinearLayer(tf.keras.layers.Layer):
 
@@ -149,6 +159,8 @@ class LinearLayer(tf.keras.layers.Layer):
         return inputs
 
 # Linear Layers tf.keras.layer.Dense
+
+
 class modify_LinearLayer(tf.keras.layers.Layer):
 
     def __init__(self,
@@ -207,9 +219,11 @@ class modify_LinearLayer(tf.keras.layers.Layer):
                 inputs = self.bn_relu(inputs, training=training)
         return inputs
 
-#1 Dense Linear Classify model
+# 1 Dense Linear Classify model
+
+
 class SupervisedHead(tf.keras.layers.Layer):
-    
+
     def __init__(self, num_classes, name='head_supervised', **kwargs):
         super(SupervisedHead, self).__init__(name=name, **kwargs)
         self.linear_layer = modify_LinearLayer(num_classes)
@@ -218,6 +232,7 @@ class SupervisedHead(tf.keras.layers.Layer):
         inputs = self.linear_layer(inputs, training)
         inputs = tf.identity(inputs, name='logits_sup')
         return inputs
+
 
 class ProjectionHead(tf.keras.layers.Layer):
 
@@ -285,8 +300,9 @@ class ProjectionHead(tf.keras.layers.Layer):
 
         return proj_head_output, hiddens_list[FLAGS.ft_proj_selector]
 
+
 class ProjectionHead_modify(tf.keras.layers.Layer):
-    
+
     def __init__(self, **kwargs):
         out_dim = FLAGS.proj_out_dim
         self.linear_layers = []
@@ -395,6 +411,7 @@ class ProjectionHead_modify(tf.keras.layers.Layer):
 
         return proj_head_output, hiddens_list[FLAGS.ft_proj_selector]
 
+
 class prediction_head_model(tf.keras.models.Model):
     def __init__(self, **kwargs):
 
@@ -406,8 +423,9 @@ class prediction_head_model(tf.keras.models.Model):
         prediction_head_outputs = self._prediction_head(inputs, training)
         return prediction_head_outputs
 
+
 class PredictionHead(tf.keras.layers.Layer):
-    
+
     def __init__(self, **kwargs):
         out_dim = FLAGS.prediction_out_dim
         self.linear_layers = []
@@ -515,14 +533,17 @@ class PredictionHead(tf.keras.layers.Layer):
         proj_head_output = tf.identity(hiddens_list[-1], 'proj_head_output')
         return proj_head_output
 
-##******************************************************************
+
+# ******************************************************************
 # Non Contrastive Framework Models
-##******************************************************************
+# ******************************************************************
 '''Noted this Design Using Resnet from SimCLR --> Not modify version
 + ResNet Modify Version will Control output Spatial Features Maps
 Ex: (7*7, 14*14, 28*28,)*(1024 or 2048) Dimension 
 --> 
 '''
+
+
 class online_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -535,7 +556,7 @@ class online_model(tf.keras.models.Model):
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
         self.resnet_model = resnet.resnet(resnet_depth=FLAGS.resnet_depth,
-                                         width_multiplier=FLAGS.width_multiplier)
+                                          width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
         # This implementation when using modify Resnet
@@ -586,6 +607,8 @@ class online_model(tf.keras.models.Model):
             return projection_head_outputs, None
 
 # Consideration take Supervised evaluate From the Target model
+
+
 class target_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -598,7 +621,7 @@ class target_model(tf.keras.models.Model):
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
         self.resnet_model = resnet(resnet_depth=FLAGS.resnet_depth,
-                                         width_multiplier=FLAGS.width_multiplier)
+                                   width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
         # This implementation when using modify Resnet
@@ -647,13 +670,15 @@ class target_model(tf.keras.models.Model):
             return projection_head_outputs, None
 
 
-##******************************************************************
+# ******************************************************************
 # Contrastive Framework Models
-##******************************************************************
+# ******************************************************************
 '''
 For Contrastive Framework --> 
 We might Design MoCo Contrastive Framework instead of SimCLR
 '''
+
+
 class contrast_models(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -673,7 +698,7 @@ class contrast_models(tf.keras.models.Model):
             self.supervised_head = SupervisedHead(num_classes)
 
     def __call__(self, inputs, training):
-        #print(inputs)
+        # print(inputs)
         features = inputs
 
         if training and FLAGS.train_mode == 'pretrain':

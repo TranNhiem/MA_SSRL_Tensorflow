@@ -302,12 +302,17 @@ def Configure_Model_Training():
                          'Whether to finetune supervised head while pretraining.')
 
     flags.DEFINE_enum(
+        'mixprecision', "fp16", ['fp16', 'fp32'],  # fp32 is original precision
+        'Mixprecision helps for speeding up training by reducing time aggregate gradient'
+    )
+
+    flags.DEFINE_enum(
         'aggregate_loss', 'contrastive_supervised', [
             'contrastive', 'contrastive_supervised', ],
         'Consideration update Model with One Contrastive or sum up and (Contrastive + Supervised Loss).')
 
     flags.DEFINE_enum(
-        'non_contrast_loss', 'byol_symmetrized_loss', [
+        'non_contrast_loss', 'byol_asymmetrized_loss', [
             'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
         'List of loss objective for optimize model.')
 
