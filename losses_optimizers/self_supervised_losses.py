@@ -230,7 +230,7 @@ def byol_loss(p, z, temperature):
     return loss, logits_ab, labels
 
 
-def byol_symetrize_mixed_loss(p, z, p_z_mix, lamda, alpha, temperature):
+def byol_mixed_loss(p, z, p_z_mix, lamda, alpha, temperature):
     '''
     Arg: 
         p, z : Augmented Feature from img_1, img_2 

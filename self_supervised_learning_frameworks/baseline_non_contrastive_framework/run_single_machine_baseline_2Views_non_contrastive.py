@@ -110,12 +110,12 @@ def main(FLAGS):
 
                     # Update Self-Supervised Metrics
                     metrics.update_pretrain_metrics_train(contrast_loss_metric,
-                                                        contrast_acc_metric,
-                                                        contrast_entropy_metric,
-                                                        loss, logits_ab,
-                                                        labels)
-            
-            elif FLAGS.non_contrast_loss == "byol_asymmetrized_loss": 
+                                                          contrast_acc_metric,
+                                                          contrast_entropy_metric,
+                                                          loss, logits_ab,
+                                                          labels)
+
+            elif FLAGS.non_contrast_loss == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
@@ -130,14 +130,14 @@ def main(FLAGS):
                 # Target
                 proj_head_output_2, supervised_head_output_2 = target_model(
                     images_two, training=True)
-              
 
                 # Compute Contrastive Train Loss -->
                 loss = None
                 if proj_head_output_1 is not None:
                     # Compute Contrastive Loss model
                     # Loss of the image 1, 2 --> Online, Target Encoder
-                    loss, logits_ab, labels = distributed_loss(proj_head_output_1, proj_head_output_2)
+                    loss, logits_ab, labels = distributed_loss(
+                        proj_head_output_1, proj_head_output_2)
 
                     if loss is None:
                         loss = loss
@@ -146,10 +146,10 @@ def main(FLAGS):
 
                     # Update Self-Supervised Metrics
                     metrics.update_pretrain_metrics_train(contrast_loss_metric,
-                                                        contrast_acc_metric,
-                                                        contrast_entropy_metric,
-                                                        loss, logits_ab,
-                                                        labels)
+                                                          contrast_acc_metric,
+                                                          contrast_entropy_metric,
+                                                          loss, logits_ab,
+                                                          labels)
 
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
@@ -235,7 +235,7 @@ def main(FLAGS):
     train_dataset = Imagenet_dataset(**ds_args)
 
     #   baseline simclr style data augmentation
-    train_ds = train_dataset.simclr_crop_da("incpt_style")
+    train_ds = train_dataset.simclr_crop_da("rand_glb")
     #   performing Linear-protocol
     val_ds = train_dataset.supervised_validation()
 

@@ -89,7 +89,7 @@ def wandb_set():
         "set the project name for wandb."
     )
     flags.DEFINE_string(
-        "wandb_run_name", "NC_Resnet18_Incept_Crop_RandAug",
+        "wandb_run_name", "NC_Resnet18_Rand_Crop_SimCLR",
         "set the run name for wandb."
     )
     flags.DEFINE_enum(
@@ -128,7 +128,7 @@ def Learning_Rate_Optimizer_and_Training_Strategy():
     )
     # Warmup Cosine Learning Rate Scheudle Configure
     flags.DEFINE_float(
-        'base_lr', 0.5,
+        'base_lr', 0.3,
         'Initial learning rate per batch size of 256.')
 
     flags.DEFINE_integer(
@@ -333,7 +333,7 @@ def Configure_Saving_and_Restore_Model():
     # Saving Model
     flags = Mock_Flag()
     flags.DEFINE_string(
-        'model_dir', "./model_ckpt/resnet_byol/resnet_18_Incep_RandAug/",
+        'model_dir', "./model_ckpt/resnet_byol/resnet_18_Rand_SimCLR/",
         'Model directory for training.')
 
     flags.DEFINE_integer(
