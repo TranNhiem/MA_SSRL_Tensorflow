@@ -217,7 +217,7 @@ def nt_xent_symetrize_loss_simcrl(hidden1, hidden2, LARGE_NUM,
 ####################################################################################
 
 
-def byol_symetrize_loss(p, z, temperature):
+def byol_loss(p, z, temperature):
     p = tf.math.l2_normalize(p, axis=1)  # (2*bs, 128)
     z = tf.math.l2_normalize(z, axis=1)  # (2*bs, 128)
     # Calculate contrastive Loss
@@ -241,18 +241,19 @@ def byol_symetrize_mixed_loss(p, z, p_z_mix, lamda, alpha, temperature):
 
     '''
     batch_size = tf.shape(p)[0]
-    one_tensor= tf.ones(shape=(batch_size, 1),dtype=tf.dtypes.float32, )
-    # Image similarity 
-    image_loss,logit, lable = byol_symetrize_loss(p, z, temperature)
-    
+    one_tensor = tf.ones(shape=(batch_size, 1), dtype=tf.dtypes.float32, )
+    # Image similarity
+    image_loss, logit, lable = byol_symetrize_loss(p, z, temperature)
+
     # Normal augmented image 1 vs mixed image
-    normal_mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
-    
-    # Reverse Order Image 2 vs mixed image 
-    reverse_mix_loss,_  = byol_symetrize_loss(p, p_z_mix, temperature)
-    
-    loss = (image_loss + (lamda*normal_mix_loss+ (one_tensor-lamda)*reverse_mix_loss))/2
-    
+    normal_mix_loss, _ = byol_symetrize_loss(p, p_z_mix, temperature)
+
+    # Reverse Order Image 2 vs mixed image
+    reverse_mix_loss, _ = byol_symetrize_loss(p, p_z_mix, temperature)
+
+    loss = (image_loss + (lamda*normal_mix_loss +
+            (one_tensor-lamda)*reverse_mix_loss))/2
+
     return loss, logit, lable
 
 

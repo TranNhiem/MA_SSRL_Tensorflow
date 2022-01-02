@@ -1,31 +1,32 @@
+from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, CosineAnnealingDecayRestarts
+from objectives import metrics
+from objectives import objective as obj_lib
+from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
+from losses_optimizers.self_supervised_losses import byol_loss
+from config.helper_functions import *
+from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
+from tensorflow import distribute as tf_dis
+import tensorflow as tf
+import wandb
+from tqdm import trange    # progress-bar presentation
+import random
 from absl import logging
 import json
 from math import ceil
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'   #  for disable some tf warning message..
-import random
-from tqdm import trange    # progress-bar presentation
-import wandb
+# for disable some tf warning message..
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-## deep-learn pkgs
-import tensorflow as tf
-from tensorflow import distribute as tf_dis
+# deep-learn pkgs
 #       self-define pkgs
-from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
-from config.helper_functions import *
-from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay , CosineAnnealingDecayRestarts
-from losses_optimizers.self_supervised_losses import byol_symetrize_loss
-from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
-from objectives import objective as obj_lib
-from objectives import metrics
 
 
 def main(FLAGS):
-    ## training sub_procedure
+    # training sub_procedure
     # Scale loss  --> Aggregating all Gradients
     def distributed_loss(x1, x2):
         # each GPU loss per_replica batch loss
-        per_example_loss, logits_ab, labels = byol_symetrize_loss(
+        per_example_loss, logits_ab, labels = byol_loss(
             x1, x2,  temperature=FLAGS.temperature)
 
         # total sum loss //Global batch_size
@@ -38,7 +39,7 @@ def main(FLAGS):
         per_replica_losses = strategy.run(
             train_step, args=(ds_one, ds_two))
         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                                axis=None)
+                               axis=None)
 
     @tf.function
     def train_step(ds_one, ds_two):
@@ -48,30 +49,103 @@ def main(FLAGS):
 
         with tf.GradientTape(persistent=True) as tape:
 
-            # Online
-            proj_head_output_1, supervised_head_output_1 = online_model(
-                images_one, training=True)
-            proj_head_output_1 = prediction_model(
-                proj_head_output_1, training=True)
+            if FLAGS.non_contrast_loss == "byol_symmetrized_loss":
+                logging.info("You implement Symmetrized loss")
+                '''
+                Symetrize the loss --> Need to switch image_1, image_2 to (Online -- Target Network)
+                loss 1= L2_loss*[online_model(image1), target_model(image_2)]
+                loss 2=  L2_loss*[online_model(image2), target_model(image_1)]
+                symetrize_loss= (loss 1+ loss_2)/ 2
 
-            # Target
-            proj_head_output_2, supervised_head_output_2 = target_model(
-                images_two, training=True)
+                '''
 
-            # Compute Contrastive Train Loss -->
-            loss = None
-            if proj_head_output_1 is not None:
-                # Compute Contrastive Loss model
-                loss, logits_ab, labels = distributed_loss(
-                    proj_head_output_1, proj_head_output_2)
+                # -------------------------------------------------------------
+                # Passing image 1, image 2 to Online Encoder , Target Encoder
+                # -------------------------------------------------------------
 
-                if loss is None:
-                    loss = loss
-                else:
-                    loss += loss
+                # Online
+                proj_head_output_1, supervised_head_output_1 = online_model(
+                    images_one, training=True)
+                proj_head_output_1 = prediction_model(
+                    proj_head_output_1, training=True)
 
-                # Update Self-Supervised Metrics
-                metrics.update_pretrain_metrics_train(contrast_loss_metric,
+                # Target
+                proj_head_output_2, supervised_head_output_2 = target_model(
+                    images_two, training=True)
+
+                # -------------------------------------------------------------
+                # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
+                # -------------------------------------------------------------
+
+                # online
+                proj_head_output_2_online, _ = online_model(
+                    images_two, training=True)
+                # Vector Representation from Online encoder go into Projection head again
+                proj_head_output_2_online = prediction_model(
+                    proj_head_output_2_online, training=True)
+
+                # Target
+                proj_head_output_1_target, _ = target_model(
+                    images_one, training=True)
+
+                # Compute Contrastive Train Loss -->
+                loss = None
+                if proj_head_output_1 is not None:
+                    # Compute Contrastive Loss model
+                    # Loss of the image 1, 2 --> Online, Target Encoder
+                    loss_1_2, logits_ab, labels = distributed_loss(
+                        proj_head_output_1, proj_head_output_2)
+
+                    # Loss of the image 2, 1 --> Online, Target Encoder
+                    loss_2_1, logits_ab_2, labels_2 = distributed_loss(
+                        proj_head_output_2_online, proj_head_output_1_target)
+
+                    # symetrized loss
+                    loss = (loss_1_2 + loss_2_1)/2
+
+                    if loss is None:
+                        loss = loss
+                    else:
+                        loss += loss
+
+                    # Update Self-Supervised Metrics
+                    metrics.update_pretrain_metrics_train(contrast_loss_metric,
+                                                        contrast_acc_metric,
+                                                        contrast_entropy_metric,
+                                                        loss, logits_ab,
+                                                        labels)
+            
+            elif FLAGS.non_contrast_loss == "byol_asymmetrized_loss": 
+                logging.info("You implement Asymmetrized loss")
+                # -------------------------------------------------------------
+                # Passing image 1, image 2 to Online Encoder , Target Encoder
+                # -------------------------------------------------------------
+
+                # Online
+                proj_head_output_1, supervised_head_output_1 = online_model(
+                    images_one, training=True)
+                proj_head_output_1 = prediction_model(
+                    proj_head_output_1, training=True)
+
+                # Target
+                proj_head_output_2, supervised_head_output_2 = target_model(
+                    images_two, training=True)
+              
+
+                # Compute Contrastive Train Loss -->
+                loss = None
+                if proj_head_output_1 is not None:
+                    # Compute Contrastive Loss model
+                    # Loss of the image 1, 2 --> Online, Target Encoder
+                    loss, logits_ab, labels = distributed_loss(proj_head_output_1, proj_head_output_2)
+
+                    if loss is None:
+                        loss = loss
+                    else:
+                        loss += loss
+
+                    # Update Self-Supervised Metrics
+                    metrics.update_pretrain_metrics_train(contrast_loss_metric,
                                                         contrast_acc_metric,
                                                         contrast_entropy_metric,
                                                         loss, logits_ab,
@@ -99,8 +173,8 @@ def main(FLAGS):
                     #     sup_loss) * (1./train_global_batch)
                     # Update Supervised Metrics
                     metrics.update_finetune_metrics_train(supervised_loss_metric,
-                                                            supervised_acc_metric, scale_sup_loss,
-                                                            supervise_lable, outputs)
+                                                          supervised_acc_metric, scale_sup_loss,
+                                                          supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient
@@ -148,15 +222,16 @@ def main(FLAGS):
         del tape
         return loss
 
-
-    ## 1. Prepare imagenet dataset
+    # 1. Prepare imagenet dataset
     strategy = tf_dis.MirroredStrategy()
-    train_global_batch = FLAGS.train_global_batch = FLAGS.train_batch_size * strategy.num_replicas_in_sync
-    val_global_batch = FLAGS.val_global_batch = FLAGS.val_batch_size * strategy.num_replicas_in_sync
+    train_global_batch = FLAGS.train_global_batch = FLAGS.train_batch_size * \
+        strategy.num_replicas_in_sync
+    val_global_batch = FLAGS.val_global_batch = FLAGS.val_batch_size * \
+        strategy.num_replicas_in_sync
 
-    ds_args = {'img_size':FLAGS.image_size, 'train_path':FLAGS.train_path, 'val_path':FLAGS.val_path, 
-                'train_label':FLAGS.train_label, 'val_label':FLAGS.val_label, 'subset_class_num':FLAGS.num_classes,
-                    'train_batch':train_global_batch, 'val_batch':val_global_batch, 'strategy':strategy}
+    ds_args = {'img_size': FLAGS.image_size, 'train_path': FLAGS.train_path, 'val_path': FLAGS.val_path,
+               'train_label': FLAGS.train_label, 'val_label': FLAGS.val_label, 'subset_class_num': FLAGS.num_classes,
+               'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy}
     train_dataset = Imagenet_dataset(**ds_args)
 
     #   baseline simclr style data augmentation
@@ -185,13 +260,13 @@ def main(FLAGS):
     # record the config in wanda database..
     wandb_record()
 
-    ## 2. Configure the Encoder Architecture
+    # 2. Configure the Encoder Architecture
     with strategy.scope():
         online_model = all_model.online_model(FLAGS.num_classes)
         prediction_model = all_model.prediction_head_model()
         target_model = all_model.online_model(FLAGS.num_classes)
 
-    ## 3. perform the train/eval loop
+    # 3. perform the train/eval loop
     #   (1) training framework :
     if "train" in FLAGS.mode:
         summary_writer = tf.summary.create_file_writer(FLAGS.model_dir)
@@ -320,16 +395,17 @@ def main(FLAGS):
     #   (2) evaluation framework :
     if "eval" in FLAGS.mode:
         ckpt_iter = [checkpoint_manager.latest_checkpoint] if "train" not in FLAGS.mode \
-                        else tf.train.checkpoints_iterator(FLAGS.model_dir, min_interval_secs=15)
+            else tf.train.checkpoints_iterator(FLAGS.model_dir, min_interval_secs=15)
         for ckpt in ckpt_iter:
-            perform_evaluation(online_model, val_ds, eval_steps, ckpt, strategy)
-            
+            perform_evaluation(online_model, val_ds,
+                               eval_steps, ckpt, strategy)
+
             # global_step from ckpt
             if result['global_step'] >= train_steps:
                 logging.info('Evaluation complete. Existing-->')
 
 
-## Utils function
+# Utils function
 # Setting GPU
 def set_gpu_env(n_gpus=8):
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -339,11 +415,14 @@ def set_gpu_env(n_gpus=8):
                 tf.config.experimental.set_memory_growth(gpu, True)
             tf.config.experimental.set_visible_devices(gpus[0:n_gpus], 'GPU')
             logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+            print(len(gpus), "Physical GPUs,",
+                  len(logical_gpus), "Logical GPU")
         except RuntimeError as e:
             print(e)
 
 # Configure Wandb Training & for Weight and Bias Tracking Experiment
+
+
 def wandb_record():
     configs = {
         "Model_Arch": "ResNet50",
@@ -358,17 +437,17 @@ def wandb_record():
         "Temperature": FLAGS.temperature,
         "Optimizer": FLAGS.optimizer,
         "SEED": FLAGS.SEED,
-        "Subset_dataset": FLAGS.num_classes, 
+        "Subset_dataset": FLAGS.num_classes,
         "Loss type": FLAGS.aggregate_loss,
-        "opt" : FLAGS.up_scale
+        "opt": FLAGS.up_scale
     }
-    wandb.init(project=FLAGS.wandb_project_name,name = FLAGS.wandb_run_name,mode = FLAGS.wandb_mod,
-                sync_tensorboard=True, config=configs)
+    wandb.init(project=FLAGS.wandb_project_name, name=FLAGS.wandb_run_name, mode=FLAGS.wandb_mod,
+               sync_tensorboard=True, config=configs)
 
 
 if __name__ == '__main__':
     from config.config_non_contrast import read_cfg
     flag = read_cfg()
     set_gpu_env()
-    
+
     main(flag.FLAGS)

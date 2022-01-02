@@ -7,11 +7,12 @@ def read_cfg(mod="non_contrastive"):
     wandb_set()
     if(mod == "non_contrastive"):
         non_contrastive_cfg()
-    
+
     else:
         raise(ValueError("Not implement Contrastive configure yet"))
-            #contrastive_cfg()
+        # contrastive_cfg()
     return flags
+
 
 def base_cfg():
     flags = Mock_Flag()
@@ -80,6 +81,7 @@ def base_cfg():
         'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
         'val_label.')
 
+
 def wandb_set():
     flags = Mock_Flag()
     flags.DEFINE_string(
@@ -87,12 +89,13 @@ def wandb_set():
         "set the project name for wandb."
     )
     flags.DEFINE_string(
-        "wandb_run_name", "Encoder_output_test",
+        "wandb_run_name", "NC_Resnet18_Incept_Crop_RandAug",
         "set the run name for wandb."
     )
     flags.DEFINE_enum(
         'wandb_mod', 'run', ['run', 'dryrun'],
         'update the to the wandb server or not')
+
 
 def Linear_Evaluation():
     flags = Mock_Flag()
@@ -113,6 +116,7 @@ def Linear_Evaluation():
     flags.DEFINE_float(
         'randaug_magnitude', 7,
         'Number of augmentation transformations.')
+
 
 def Learning_Rate_Optimizer_and_Training_Strategy():
     flags = Mock_Flag()
@@ -169,6 +173,7 @@ def Learning_Rate_Optimizer_and_Training_Strategy():
 
     flags.DEFINE_float('weight_decay', 1e-6, 'Amount of weight decay to use.')
 
+
 def Encoder():
     flags = Mock_Flag()
     flags.DEFINE_boolean(
@@ -184,7 +189,7 @@ def Encoder():
         'Multiplier to change width of network.')
 
     flags.DEFINE_integer(
-        'resnet_depth', 50,
+        'resnet_depth', 18,
         'Depth of ResNet.')
 
     flags.DEFINE_float(
@@ -219,6 +224,7 @@ def Encoder():
             '1': 1, '2': 1, '3': 1, '4': 1, '5': 1},
         "control the part of the every block channel output.,"
     )
+
 
 def Projection_and_Prediction_head():
 
@@ -280,6 +286,7 @@ def Projection_and_Prediction_head():
         'encoder out put do the upsample or mask do the downsample'
     )
 
+
 def Configure_Model_Training():
     # Self-Supervised training and Supervised training mode
     flags = Mock_Flag()
@@ -300,19 +307,14 @@ def Configure_Model_Training():
         'Consideration update Model with One Contrastive or sum up and (Contrastive + Supervised Loss).')
 
     flags.DEFINE_enum(
-        'non_contrast_binary_loss', 'sum_symetrize_l2_loss_object_backg', ["byol_harry_loss", "sum_symetrize_l2_loss_object_backg_add_original",
-                                                                           'Original_loss_add_contrast_level_object', 'sum_symetrize_l2_loss_object_backg', 'original_add_backgroud'],
-        'Consideration update Model with One Contrastive or sum up and (Contrastive + Supervised Loss).')
+        'non_contrast_loss', 'byol_symmetrized_loss', [
+            'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
+        'List of loss objective for optimize model.')
 
     flags.DEFINE_float(
-        # Alpha Weighted loss (Objec & Background) [binary_mask_nt_xent_object_backgroud_sum_loss]
-        'alpha', 0.5,
-        'Alpha value is configuration the weighted of Object and Background in Model Total Loss.'
-    )
-    flags.DEFINE_float(
-        # Weighted loss is the scaling term between  [weighted_loss]*Binary & [1-weighted_loss]*original contrastive loss)
+        # Weighted loss is the scaling term between  [weighted_loss]*mixed_loss & [1-weighted_loss]*original_contrastive loss)
         'weighted_loss', 0.8,
-        'weighted_loss value is configuration the weighted of original and Binary contrastive loss.'
+        'weighted_loss value is configuration the weighted of original and mixed contrastive loss.'
     )
     # Fine Tuning configure
 
@@ -331,7 +333,7 @@ def Configure_Saving_and_Restore_Model():
     # Saving Model
     flags = Mock_Flag()
     flags.DEFINE_string(
-        'model_dir', "./model_ckpt/resnet_byol/resnet_50/",
+        'model_dir', "./model_ckpt/resnet_byol/resnet_18_Incep_RandAug/",
         'Model directory for training.')
 
     flags.DEFINE_integer(
