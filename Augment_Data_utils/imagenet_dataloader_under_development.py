@@ -22,8 +22,8 @@ FLAGS = flag.FLAGS
 # temporary rename to imagenet_dataset, single/multiple machine will become an option.
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
-    crop_dict = {"incpt_style": simclr_augment_inception_style,
-                 "rand_glb": simclr_augment_randcrop_global_views}
+    crop_dict = {"incpt_crp": simclr_augment_inception_style,
+                 "rnd_crp": simclr_augment_randcrop_global_views}
     # The crop strategy is 'incpt_style' in global view
     default_view = {"glb": Multi_viewer.View_spec(
         n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1)}
@@ -173,7 +173,6 @@ class Imagenet_dataset(object):
                         .map(map_func, num_parallel_calls=AUTO) \
             .batch(self.BATCH_SIZE) \
             .prefetch(AUTO)
-            #.prefetch(4)
         return data_aug_ds
 
     # This for Supervised validation training
@@ -196,14 +195,16 @@ class Imagenet_dataset(object):
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
         
-    def auto_data_aug(self, da_type="auto_aug"):
+    def auto_data_aug(self, da_type="auto_aug", crop_type="incpt_crp"):
         da_inst = Data_Augmentor(
             DAS_type=da_type) if da_type else Data_Augmentor()
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
+        ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
         
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
+        ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
         train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
         
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))

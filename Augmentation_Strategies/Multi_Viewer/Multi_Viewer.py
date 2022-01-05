@@ -2,6 +2,9 @@ __author__ = "Rick & Josef"
 __date__ = "2021/12/24"
 
 from .Simclr_Byol_augmentation import distorted_bounding_box_crop
+# use the unified cropping function
+from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
+                                                    simclr_augment_inception_style, supervised_augment_eval
 from collections import namedtuple
 import tensorflow as tf
 import numpy as np
@@ -18,8 +21,8 @@ class Multi_viewer(object):
                             else Multi_viewer.two_view
         self.util = {'cnvt_typ':lambda x : tf.image.convert_image_dtype(x, tf.float32),
                         'cast':lambda x : tf.cast(x, tf.int32)[0],
-                        'incpt_crp':lambda x, **_ : self.__inception_style_crop(x),
-                        'rnd_crp':lambda x, **args : self.__random_resize_crop(x, **args) }
+                        'incpt_crp':lambda x, **_ : simclr_augment_inception_style(x),          # self.__inception_style_crop(x),
+                        'rnd_crp':lambda x, **args : simclr_augment_randcrop_global_views(x, **args) }         # self.__random_resize_crop(x, **args) }     # 
         self.da_inst = da_inst if da_inst else Multi_viewer.def_da
 
 
