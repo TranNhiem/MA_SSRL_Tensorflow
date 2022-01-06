@@ -15,7 +15,7 @@ flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
 # Equivalent to the two lines above
-mixed_precision.set_global_policy('mixed_float16')
+# mixed_precision.set_global_policy('mixed_float16')
 
 
 def build_optimizer(lr_schedule):
@@ -51,8 +51,8 @@ def build_optimizer(lr_schedule):
         raise ValueError(" FLAGS.Optimizer type is invalid please check again")
     #optimizer_mix_percision = mixed_precision.LossScaleOptimizer(optimizer)
 
-    # if FLAGS.mixprecision == "fp16":
-    #     optimizer = mixed_precision.LossScaleOptimizer(optimizer)
+    if FLAGS.mixprecision == "fp16":
+        optimizer = mixed_precision.LossScaleOptimizer(optimizer)
 
     return optimizer
 
@@ -101,6 +101,7 @@ def add_weight_decay(model, adjust_per_optimizer=True):
     if adjust_per_optimizer and 'lars' in FLAGS.optimizer:
         # Weight decay are taking care of by optimizer for these cases.
         # Except for supervised head, which will be added here.
+        #
         l2_losses = [
             tf.nn.l2_loss(v)
             for v in model.trainable_variables
