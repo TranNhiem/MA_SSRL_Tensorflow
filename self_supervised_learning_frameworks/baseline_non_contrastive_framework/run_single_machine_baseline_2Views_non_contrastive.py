@@ -203,9 +203,10 @@ def main(FLAGS):
             # weight_decay_loss = tf.nn.scale_regularization_loss(
             #     weight_decay_loss)
             weight_decay_metric.update_state(weight_decay_loss)
-            #
-            # Casting the Supervised head loss to FP_16 for aggregate
-            weight_decay_loss = tf.cast(weight_decay_loss, 'float16')
+
+            if FLAGS.mixprecision == "fp16":
+                # Casting the Supervised head loss to FP_16 for aggregate
+                weight_decay_loss = tf.cast(weight_decay_loss, 'float16')
             loss += weight_decay_loss
 
             total_loss_metric.update_state(loss)
