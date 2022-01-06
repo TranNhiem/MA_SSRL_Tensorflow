@@ -299,7 +299,7 @@ def main(FLAGS):
     train_dataset = Imagenet_dataset(**ds_args)
 
     #   baseline simclr style data augmentation
-    train_ds = train_dataset.simclr_crop_da("incpt_crp")
+    train_ds = train_dataset.simclr_crop_da("rnd_crp")
     #   performing Linear-protocol
     val_ds = train_dataset.supervised_validation()
 

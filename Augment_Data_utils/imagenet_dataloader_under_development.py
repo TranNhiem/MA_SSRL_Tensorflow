@@ -106,6 +106,7 @@ class Imagenet_dataset(object):
                     numeric_val_cls_sub.append(numeric_cls)
             self.x_val = x_val_sub
             numeric_val_cls = numeric_val_cls_sub
+        
 
         # Path for loading all Images
         # For training
