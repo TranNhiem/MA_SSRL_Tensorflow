@@ -181,7 +181,7 @@ class Imagenet_dataset(object):
         val_ds = self.__wrap_da(raw_ds, supervised_augment_eval, "validate")
         return self.strategy.experimental_distribute_dataset(val_ds)
 
-    def simclr_crop_da(self, crop_type):
+    def simclr_crop_da(self, crop_type="incpt_crp"):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")

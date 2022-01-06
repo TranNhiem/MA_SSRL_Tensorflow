@@ -302,7 +302,7 @@ def Configure_Model_Training():
                          'Whether to finetune supervised head while pretraining.')
 
     flags.DEFINE_enum(
-        'mixprecision', "fp32", ['fp16', 'fp32'],  # fp32 is original precision
+        'mixprecision', "fp32", ['fp16', 'fp32'],  # fp16 spped-up
         'Mixprecision helps for speeding up training by reducing time aggregate gradient'
     )
 
