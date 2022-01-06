@@ -15,7 +15,9 @@ flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
 # Equivalent to the two lines above
-# mixed_precision.set_global_policy('mixed_float16')
+
+# if FLAGS.mixprecision == "fp16":
+#     mixed_precision.set_global_policy('mixed_float16')
 
 
 def build_optimizer(lr_schedule):
