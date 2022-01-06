@@ -14,6 +14,9 @@ from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
+# Equivalent to the two lines above
+mixed_precision.set_global_policy('mixed_float16')
+
 
 def build_optimizer(lr_schedule):
     '''
