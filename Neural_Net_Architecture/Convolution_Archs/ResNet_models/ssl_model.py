@@ -615,7 +615,6 @@ class online_model(tf.keras.models.Model):
 
 # Consideration take Supervised evaluate From the Target model
 
-
 class target_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -749,7 +748,6 @@ class online_model_v1(tf.keras.models.Model):
         else:
             return projection_head_outputs, None
 
-
 class target_model_v1(tf.keras.models.Model):
 
     def __init__(self, num_classes, **kwargs):
@@ -816,7 +814,6 @@ class target_model_v1(tf.keras.models.Model):
 For Contrastive Framework --> 
 We might Design MoCo Contrastive Framework instead of SimCLR
 '''
-
 
 class contrast_models(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
