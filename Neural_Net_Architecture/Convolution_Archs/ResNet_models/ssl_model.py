@@ -677,7 +677,14 @@ class target_model(tf.keras.models.Model):
             return projection_head_outputs, None
 
 # Implement with Encode ResNet Modify output Spatial Feature Map (SIZE, Channels)
+'''
+1. Control the stride output
+2. Global Average spatial feature map --> Feeding NLP
+Update requirement 
++ Setting FLAGS control spatial output (control by FLAGS.Stride)
++ Setting FLAGS control the middel layers Output if Necessary
 
+'''
 
 class online_model_v1(tf.keras.models.Model):
     """Resnet modify model with projection or supervised layer."""
