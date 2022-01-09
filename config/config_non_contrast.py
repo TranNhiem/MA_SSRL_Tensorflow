@@ -312,7 +312,7 @@ def Configure_Model_Training():
         'Consideration update Model with One Contrastive or sum up and (Contrastive + Supervised Loss).')
 
     flags.DEFINE_enum(
-        'non_contrast_loss', 'byol_asymmetrized_loss', [
+        'loss_type', 'byol_asymmetrized_loss', [
             'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
         'List of loss objective for optimize model.')
 

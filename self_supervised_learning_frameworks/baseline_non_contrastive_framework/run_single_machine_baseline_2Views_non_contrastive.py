@@ -49,7 +49,7 @@ def main(FLAGS):
 
         with tf.GradientTape(persistent=True) as tape:
 
-            if FLAGS.non_contrast_loss == "byol_symmetrized_loss":
+            if FLAGS.loss_type == "byol_symmetrized_loss":
                 logging.info("You implement Symmetrized loss")
                 '''
                 Symetrize the loss --> Need to switch image_1, image_2 to (Online -- Target Network)
@@ -115,7 +115,7 @@ def main(FLAGS):
                                                           loss, logits_ab,
                                                           labels)
 
-            elif FLAGS.non_contrast_loss == "byol_asymmetrized_loss":
+            elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
@@ -153,6 +153,8 @@ def main(FLAGS):
 
             else:
                 raise ValueError("Invalid Type loss")
+            
+            
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
             # supervised_loss=None
