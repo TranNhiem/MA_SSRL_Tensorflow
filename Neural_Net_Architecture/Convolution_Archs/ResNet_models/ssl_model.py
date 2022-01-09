@@ -548,6 +548,7 @@ class PredictionHead(tf.keras.layers.Layer):
 Ex: (7*7, 14*14, 28*28,)*(1024 or 2048) Dimension 
 --> 
 '''
+# implement with Standard ResNet Ouput
 
 
 class online_model(tf.keras.models.Model):
@@ -653,6 +654,128 @@ class target_model(tf.keras.models.Model):
         # # Base network forward pass.
         hiddens = self.resnet_model(features, training=training)
         #hiddens = self.globalaveragepooling(hiddens)
+
+        # Add heads.
+        projection_head_outputs, supervised_head_inputs = self._projection_head(
+            hiddens, training)
+
+        if FLAGS.train_mode == 'finetune':
+            supervised_head_outputs = self.supervised_head(supervised_head_inputs,
+                                                           training)
+            return None, supervised_head_outputs
+
+        elif FLAGS.train_mode == 'pretrain' and FLAGS.lineareval_while_pretraining:
+            # When performing pretraining and linear evaluation together we do not
+            # want information from linear eval flowing back into pretraining network
+            # so we put a stop_gradient.
+            supervised_head_outputs = self.supervised_head(
+                tf.stop_gradient(supervised_head_inputs), training)
+
+            return projection_head_outputs, supervised_head_outputs
+
+        else:
+            return projection_head_outputs, None
+
+# Implement with Encode ResNet Modify output Spatial Feature Map (SIZE, Channels)
+
+
+class online_model_v1(tf.keras.models.Model):
+    """Resnet modify model with projection or supervised layer."""
+
+    def __init__(self, num_classes, **kwargs):
+
+        super(online_model_v1, self).__init__(**kwargs)
+
+        # Encoder using Resnet with Larger Output spatial Dimension
+        self.resnet_model = resnet_modify.resnet(
+            resnet_depth=FLAGS.resnet_depth,
+            width_multiplier=FLAGS.width_multiplier,
+            cifar_stem=FLAGS.image_size <= 32)
+
+        # Projcetion head
+        self._projection_head = ProjectionHead()
+        # This implementation when using modify Resnet
+        self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
+
+        # Supervised classficiation head
+        if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
+            self.supervised_head = SupervisedHead(num_classes)
+
+    def __call__(self, inputs, training):
+
+        features = inputs
+
+        if training and FLAGS.train_mode == 'pretrain':
+            if FLAGS.fine_tune_after_block > -1:
+                raise ValueError('Does not support layer freezing during pretraining,'
+                                 'should set fine_tune_after_block<=-1 for safety.')
+
+        if inputs.shape[3] is None:
+            raise ValueError('The input channels dimension must be statically known '
+                             f'(got input shape {inputs.shape})')
+
+        # network forward pass.
+        # different spatial feature outputs
+        hiddens = self.resnet_model(features, training=training)
+        hiddens = self.globalaveragepooling(hiddens)
+
+        # Add heads.
+        projection_head_outputs, supervised_head_inputs, = self._projection_head(
+            hiddens, training)
+
+        if FLAGS.train_mode == 'finetune':
+            supervised_head_outputs = self.supervised_head(supervised_head_inputs,
+                                                           training)
+            return None, supervised_head_outputs
+
+        elif FLAGS.train_mode == 'pretrain' and FLAGS.lineareval_while_pretraining:
+            # When performing pretraining and linear evaluation together we do not
+            # want information from linear eval flowing back into pretraining network
+            # so we put a stop_gradient.
+            supervised_head_outputs = self.supervised_head(
+                tf.stop_gradient(supervised_head_inputs), training)
+            #print("Supervised Head Output Dim", supervised_head_outputs.shape)
+            return projection_head_outputs, supervised_head_outputs
+
+        else:
+            return projection_head_outputs, None
+
+class target_model_v1(tf.keras.models.Model):
+
+    def __init__(self, num_classes, **kwargs):
+
+        super(target_model_v1, self).__init__(**kwargs)
+        # Encoder
+        self.resnet_model = resnet_modify.resnet(
+            resnet_depth=FLAGS.resnet_depth,
+            width_multiplier=FLAGS.width_multiplier,
+            cifar_stem=FLAGS.image_size <= 32)
+
+        # Projcetion head
+        self._projection_head = ProjectionHead()
+        # This implementation when using modify Resnet
+        self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
+
+        # Supervised classficiation head
+        if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
+            self.supervised_head = SupervisedHead(num_classes)
+
+    def __call__(self, inputs, training):
+
+        features = inputs
+
+        if training and FLAGS.train_mode == 'pretrain':
+            if FLAGS.fine_tune_after_block > -1:
+                raise ValueError('Does not support layer freezing during pretraining,'
+                                 'should set fine_tune_after_block<=-1 for safety.')
+
+        if inputs.shape[3] is None:
+            raise ValueError('The input channels dimension must be statically known '
+                             f'(got input shape {inputs.shape})')
+
+        # # Base network forward pass.
+        hiddens = self.resnet_model(features, training=training)
+        hiddens = self.globalaveragepooling(hiddens)
 
         # Add heads.
         projection_head_outputs, supervised_head_inputs = self._projection_head(
