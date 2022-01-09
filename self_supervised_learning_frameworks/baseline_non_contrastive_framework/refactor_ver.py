@@ -369,10 +369,10 @@ class Runner(object):
 
                     # Update Self-Supervised Metrics
                     metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                      self.metric_dict['contrast_acc_metric'],
-                                                      self.metric_dict['contrast_entropy_metric'],
-                                                      loss, logits_ab,
-                                                      labels)
+                                                          self.metric_dict['contrast_acc_metric'],
+                                                          self.metric_dict['contrast_entropy_metric'],
+                                                          loss, logits_ab,
+                                                          labels)
 
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
@@ -405,15 +405,13 @@ class Runner(object):
 
                     # Update Self-Supervised Metrics
                     metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                      self.metric_dict['contrast_acc_metric'],
-                                                      self.metric_dict['contrast_entropy_metric'],
-                                                      loss, logits_ab,
-                                                      labels)
+                                                          self.metric_dict['contrast_acc_metric'],
+                                                          self.metric_dict['contrast_entropy_metric'],
+                                                          loss, logits_ab,
+                                                          labels)
 
             else:
                 raise ValueError("Invalid Type loss")
-            
-            
 
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''

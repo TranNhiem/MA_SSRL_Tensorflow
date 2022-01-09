@@ -562,7 +562,7 @@ class online_model(tf.keras.models.Model):
         #     resnet_depth=FLAGS.resnet_depth,
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
-        self.resnet_model = resnet.resnet(resnet_depth=FLAGS.resnet_depth,
+        self.resnet_model = resnet_modify(resnet_depth=FLAGS.resnet_depth,
                                           width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
@@ -627,8 +627,8 @@ class target_model(tf.keras.models.Model):
         #     resnet_depth=FLAGS.resnet_depth,
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
-        self.resnet_model = resnet(resnet_depth=FLAGS.resnet_depth,
-                                   width_multiplier=FLAGS.width_multiplier)
+        self.resnet_model = resnet_modify(resnet_depth=FLAGS.resnet_depth,
+                                          width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
         # This implementation when using modify Resnet
@@ -676,6 +676,7 @@ class target_model(tf.keras.models.Model):
         else:
             return projection_head_outputs, None
 
+
 # Implement with Encode ResNet Modify output Spatial Feature Map (SIZE, Channels)
 '''
 1. Control the stride output
@@ -685,6 +686,7 @@ Update requirement
 + Setting FLAGS control the middel layers Output if Necessary
 
 '''
+
 
 class online_model_v1(tf.keras.models.Model):
     """Resnet modify model with projection or supervised layer."""
@@ -746,6 +748,7 @@ class online_model_v1(tf.keras.models.Model):
 
         else:
             return projection_head_outputs, None
+
 
 class target_model_v1(tf.keras.models.Model):
 
