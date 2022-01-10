@@ -1,5 +1,5 @@
 from config.absl_mock import Mock_Flag
-from config.non_contrast_config_v1 import read_cfg
+from config.config_non_contrast import read_cfg
 
 
 def read_cfg(mod="non_contrastive"):
