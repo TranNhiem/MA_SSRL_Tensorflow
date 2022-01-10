@@ -153,8 +153,7 @@ def main(FLAGS):
 
             else:
                 raise ValueError("Invalid Type loss")
-            
-            
+
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
             # supervised_loss=None
@@ -513,7 +512,9 @@ def wandb_record():
 
 
 if __name__ == '__main__':
-    from config.config_non_contrast import read_cfg
+    #from config.config_non_contrast import read_cfg
+    from config.config_non_contrast import read_cfg_base
+
     flag = read_cfg()
     set_gpu_env()
 

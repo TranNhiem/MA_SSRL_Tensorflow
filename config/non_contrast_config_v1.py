@@ -2,7 +2,7 @@ from config.absl_mock import Mock_Flag
 from config.config_non_contrast import read_cfg
 
 
-def read_cfg(mod="non_contrastive"):
+def read_cfg_base(mod="non_contrastive"):
     read_cfg(mod)
     flag = Mock_Flag()
     FLAGS = flag.FLAGS
