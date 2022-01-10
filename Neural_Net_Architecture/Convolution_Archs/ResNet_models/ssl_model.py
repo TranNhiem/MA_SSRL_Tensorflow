@@ -563,11 +563,10 @@ class online_model(tf.keras.models.Model):
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
         self.resnet_model = resnet_modify(resnet_depth=FLAGS.resnet_depth,
-                                          width_multiplier=FLAGS.width_multiplier)
+                                         width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
-        # This implementation when using modify Resnet
-        #self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
+        self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
 
         # Supervised classficiation head
         if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
@@ -588,7 +587,7 @@ class online_model(tf.keras.models.Model):
 
         # # Base network forward pass.
         hiddens = self.resnet_model(features, training=training)
-        #hiddens = self.globalaveragepooling(hiddens)
+        hiddens = self.globalaveragepooling(hiddens)
         #print("Output from ResNet Model", hiddens.shape)
         # Add heads.
         projection_head_outputs, supervised_head_inputs, = self._projection_head(
@@ -615,6 +614,7 @@ class online_model(tf.keras.models.Model):
 
 # Consideration take Supervised evaluate From the Target model
 
+
 class target_model(tf.keras.models.Model):
     """Resnet model with projection or supervised layer."""
 
@@ -627,11 +627,10 @@ class target_model(tf.keras.models.Model):
         #     width_multiplier=FLAGS.width_multiplier,
         #     cifar_stem=FLAGS.image_size <= 32)
         self.resnet_model = resnet_modify(resnet_depth=FLAGS.resnet_depth,
-                                          width_multiplier=FLAGS.width_multiplier)
+                                         width_multiplier=FLAGS.width_multiplier)
         # Projcetion head
         self._projection_head = ProjectionHead()
-        # This implementation when using modify Resnet
-        #self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
+        self.globalaveragepooling = tf.keras.layers.GlobalAveragePooling2D()
 
         # Supervised classficiation head
         if FLAGS.train_mode == 'finetune' or FLAGS.lineareval_while_pretraining:
@@ -652,7 +651,7 @@ class target_model(tf.keras.models.Model):
 
         # # Base network forward pass.
         hiddens = self.resnet_model(features, training=training)
-        #hiddens = self.globalaveragepooling(hiddens)
+        hiddens = self.globalaveragepooling(hiddens)
 
         # Add heads.
         projection_head_outputs, supervised_head_inputs = self._projection_head(
@@ -674,7 +673,6 @@ class target_model(tf.keras.models.Model):
 
         else:
             return projection_head_outputs, None
-
 
 # Implement with Encode ResNet Modify output Spatial Feature Map (SIZE, Channels)
 '''

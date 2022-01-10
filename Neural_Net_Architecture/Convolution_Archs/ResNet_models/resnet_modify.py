@@ -287,6 +287,7 @@ class SK_Conv2D(tf.keras.layers.Layer):  # pylint: disable=invalid-name
             use_bias=False,
             data_format=data_format)
 
+
     def call(self, inputs, training):
         channel_axis = 1 if self.data_format == 'channels_first' else 3
         pooling_axes = [
@@ -337,6 +338,7 @@ class SE_Layer(tf.keras.layers.Layer):  # pylint: disable=invalid-name
     def build(self, input_shape):
         self.se_expand.filters = input_shape[-1]
         super(SE_Layer, self).build(input_shape)
+
 
     def call(self, inputs, training):
         spatial_dims = [
@@ -402,6 +404,7 @@ class ResidualBlock(tf.keras.layers.Layer):  # pylint: disable=missing-docstring
         if FLAGS.se_ratio > 0:
             self.se_layer = SE_Layer(
                 filters, FLAGS.se_ratio, data_format=data_format)
+
 
     def call(self, inputs, training):
         shortcut = inputs
@@ -754,7 +757,8 @@ def resnet(resnet_depth,
            cifar_stem=False,
            data_format='channels_last',
            dropblock_keep_probs=None,
-           dropblock_size=None):
+           dropblock_size=None,
+           Middle_layer_output=None):
     """Returns the ResNet model for a given size and number of output classes."""
     model_params = {
         18: {
@@ -794,7 +798,8 @@ def resnet(resnet_depth,
         cifar_stem=cifar_stem,
         dropblock_keep_probs=dropblock_keep_probs,
         dropblock_size=dropblock_size,
-        data_format=data_format)
+        data_format=data_format,
+        Middle_layer_output = Middle_layer_output)
 
 """# MLP"""
 
