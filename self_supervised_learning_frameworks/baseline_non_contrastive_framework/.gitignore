@@ -1,3 +1,4 @@
 *.pickle
 wandb/
 model_ckpt/
+old_code/

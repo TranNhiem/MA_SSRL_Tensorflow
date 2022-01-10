@@ -287,6 +287,7 @@ class SK_Conv2D(tf.keras.layers.Layer):  # pylint: disable=invalid-name
             use_bias=False,
             data_format=data_format)
 
+
     def call(self, inputs, training):
         channel_axis = 1 if self.data_format == 'channels_first' else 3
         pooling_axes = [
@@ -337,6 +338,7 @@ class SE_Layer(tf.keras.layers.Layer):  # pylint: disable=invalid-name
     def build(self, input_shape):
         self.se_expand.filters = input_shape[-1]
         super(SE_Layer, self).build(input_shape)
+
 
     def call(self, inputs, training):
         spatial_dims = [
@@ -402,6 +404,7 @@ class ResidualBlock(tf.keras.layers.Layer):  # pylint: disable=missing-docstring
         if FLAGS.se_ratio > 0:
             self.se_layer = SE_Layer(
                 filters, FLAGS.se_ratio, data_format=data_format)
+
 
     def call(self, inputs, training):
         shortcut = inputs
@@ -569,9 +572,12 @@ class Resnet(tf.keras.models.Model):  # pylint: disable=missing-docstring
                  data_format='channels_last',
                  dropblock_keep_probs=None,
                  dropblock_size=None,
+                 Middle_layer_output=None,
                  **kwargs):
         super(Resnet, self).__init__(**kwargs)
         self.data_format = data_format
+
+        self.Middle_layer_output = Middle_layer_output
 
         if dropblock_keep_probs is None:
             dropblock_keep_probs = [None] * 4
@@ -718,15 +724,20 @@ class Resnet(tf.keras.models.Model):  # pylint: disable=missing-docstring
     def call(self, inputs, training):
         for layer in self.initial_conv_relu_max_pool:
             inputs = layer(inputs, training=training)
+        Middle_output = []
+        if self.Middle_layer_output != None:
+            if 1 in self.Middle_layer_output:
+                Middle_output.append(tf.identity(inputs))
 
-        Middle_output = None
         for i, layer in enumerate(self.block_groups):
             if FLAGS.train_mode == 'finetune' and FLAGS.fine_tune_after_block == i:
                 inputs = tf.stop_gradient(inputs)
             inputs = layer(inputs, training=training)
-
-            if FLAGS.Middle_layer_output-2 == i:
-                Middle_output = inputs
+            if self.Middle_layer_output != None:
+                if i+2 in self.Middle_layer_output:
+                    Middle_output.append(tf.identity(inputs))
+                    if FLAGS.original_loss_stop_gradient:
+                        inputs = tf.stop_gradient(inputs)
 
             # if FLAGS.original_loss_stop_gradient and FLAGS.Middle_layer_output-1 == i:
             #     inputs = tf.stop_gradient(inputs)
@@ -734,10 +745,10 @@ class Resnet(tf.keras.models.Model):  # pylint: disable=missing-docstring
         if FLAGS.train_mode == 'finetune' and FLAGS.fine_tune_after_block == 4:
             inputs = tf.stop_gradient(inputs)
         inputs = tf.identity(inputs, 'final_avg_pool')
-        if Middle_output == None:
+        if Middle_output == []:
             return inputs
         else:
-            Middle_output = tf.identity(Middle_output, 'final_avg_pool')
+            # Middle_output = tf.identity(Middle_output, 'final_avg_pool')
             return inputs,Middle_output
 
 
@@ -746,7 +757,8 @@ def resnet(resnet_depth,
            cifar_stem=False,
            data_format='channels_last',
            dropblock_keep_probs=None,
-           dropblock_size=None):
+           dropblock_size=None,
+           Middle_layer_output=None):
     """Returns the ResNet model for a given size and number of output classes."""
     model_params = {
         18: {
@@ -786,7 +798,8 @@ def resnet(resnet_depth,
         cifar_stem=cifar_stem,
         dropblock_keep_probs=dropblock_keep_probs,
         dropblock_size=dropblock_size,
-        data_format=data_format)
+        data_format=data_format,
+        Middle_layer_output = Middle_layer_output)
 
 """# MLP"""
 
