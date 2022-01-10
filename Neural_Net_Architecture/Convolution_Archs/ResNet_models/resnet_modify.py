@@ -569,9 +569,12 @@ class Resnet(tf.keras.models.Model):  # pylint: disable=missing-docstring
                  data_format='channels_last',
                  dropblock_keep_probs=None,
                  dropblock_size=None,
+                 Middle_layer_output=None,
                  **kwargs):
         super(Resnet, self).__init__(**kwargs)
         self.data_format = data_format
+
+        self.Middle_layer_output = Middle_layer_output
 
         if dropblock_keep_probs is None:
             dropblock_keep_probs = [None] * 4
@@ -718,15 +721,20 @@ class Resnet(tf.keras.models.Model):  # pylint: disable=missing-docstring
     def call(self, inputs, training):
         for layer in self.initial_conv_relu_max_pool:
             inputs = layer(inputs, training=training)
+        Middle_output = []
+        if self.Middle_layer_output != None:
+            if 1 in self.Middle_layer_output:
+                Middle_output.append(tf.identity(inputs))
 
-        Middle_output = None
         for i, layer in enumerate(self.block_groups):
             if FLAGS.train_mode == 'finetune' and FLAGS.fine_tune_after_block == i:
                 inputs = tf.stop_gradient(inputs)
             inputs = layer(inputs, training=training)
-
-            if FLAGS.Middle_layer_output-2 == i:
-                Middle_output = inputs
+            if self.Middle_layer_output != None:
+                if i+2 in self.Middle_layer_output:
+                    Middle_output.append(tf.identity(inputs))
+                    if FLAGS.original_loss_stop_gradient:
+                        inputs = tf.stop_gradient(inputs)
 
             # if FLAGS.original_loss_stop_gradient and FLAGS.Middle_layer_output-1 == i:
             #     inputs = tf.stop_gradient(inputs)
@@ -734,10 +742,10 @@ class Resnet(tf.keras.models.Model):  # pylint: disable=missing-docstring
         if FLAGS.train_mode == 'finetune' and FLAGS.fine_tune_after_block == 4:
             inputs = tf.stop_gradient(inputs)
         inputs = tf.identity(inputs, 'final_avg_pool')
-        if Middle_output == None:
+        if Middle_output == []:
             return inputs
         else:
-            Middle_output = tf.identity(Middle_output, 'final_avg_pool')
+            # Middle_output = tf.identity(Middle_output, 'final_avg_pool')
             return inputs,Middle_output
 
 
