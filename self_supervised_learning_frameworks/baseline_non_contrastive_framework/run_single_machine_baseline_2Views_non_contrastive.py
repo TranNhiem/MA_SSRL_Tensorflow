@@ -8,6 +8,7 @@ from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_da
 from tensorflow import distribute as tf_dis
 import tensorflow as tf
 import wandb
+from math import cos, pi
 from tqdm import trange    # progress-bar presentation
 import random
 from absl import logging
@@ -39,6 +40,7 @@ def set_gpu_env(n_gpus=8):
 
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
+
         # Configure Wandb Training & for Weight and Bias Tracking Experiment
         def wandb_init(wanda_cfg):
             if wanda_cfg:
@@ -52,6 +54,7 @@ class Runner(object):
             self.epoch_steps = round(n_tra_sample / train_global_batch)
             eval_steps = self.eval_steps or ceil(
                 n_evl_sample / val_global_batch)
+
             # logging the ds info
             logging.info(f"# Subset_training class {self.num_classes}")
             logging.info(f"# train examples: {n_tra_sample}")
@@ -197,7 +200,15 @@ class Runner(object):
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
-                beta = 0.99
+                if FLAGS.moving_average == "fixed_value":
+                    beta = 0.99
+                if FLAGS.moving_average == "schedule":
+                    # This update the Beta value schedule along with Trainign steps Follow BYOL
+                    beta_base = 0.996
+                    cur_step = global_step.numpy()
+                    beta = 1 - (1-beta_base) * \
+                        (cos(pi*cur_step/self.train_steps)+1)/2
+
                 target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
                 online_encoder_weights = online_model.get_weights()

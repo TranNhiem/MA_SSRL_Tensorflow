@@ -21,6 +21,8 @@ def read_cfg_base(mod="non_contrastive"):
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
     FLAGS.loss_type = "byol_symmetrized_loss"
+    # two options [fixed_value, schedule] schedule recommend from BYOL
+    FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
     FLAGS.mixprecision = 'fp32'
     FLAGS.base_lr = 0.3
