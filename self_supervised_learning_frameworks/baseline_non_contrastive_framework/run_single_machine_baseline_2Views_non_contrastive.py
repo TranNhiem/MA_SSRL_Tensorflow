@@ -41,7 +41,7 @@ class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
         # Configure Wandb Training & for Weight and Bias Tracking Experiment
         def wandb_init(wanda_cfg):
-            if not wanda_cfg:
+            if wanda_cfg:
                 wandb.init(project=self.wandb_project_name, name=self.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
         #   calculate the training related meta-info
@@ -492,7 +492,7 @@ if __name__ == '__main__':
 
     set_gpu_env()
     wanda_cfg = {
-        "Model_Arch": "ResNet50",
+        "Model_Arch": f"ResNet{FLAGS.resnet_depth}",
         "Training mode": "Baseline Non_Contrastive",
         "DataAugmentation_types": "SimCLR_Inception_style_Croping",
         "Dataset": "ImageNet1k",
