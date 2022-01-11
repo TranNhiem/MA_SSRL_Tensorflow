@@ -178,8 +178,11 @@ class Runner(object):
         # assign to self.opt to prevent the namespace covered
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
-        #   baseline simclr style data augmentation
-        train_ds = self.train_dataset.simclr_crop_da(da_crp_key)
+
+        ## Run on dkr22 : 
+        train_ds = self.train_dataset.auto_data_aug(da_type="auto_aug", crop_type=da_crp_key, 
+                                                    augmentation_name='v1')
+
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
