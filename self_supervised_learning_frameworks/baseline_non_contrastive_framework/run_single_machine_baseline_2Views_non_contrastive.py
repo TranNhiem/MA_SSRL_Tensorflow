@@ -200,9 +200,9 @@ class Runner(object):
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
-                FLAGS.moving_average == "fixed_value":
+                if FLAGS.moving_average == "fixed_value":
                     beta = 0.99
-                FLAGS.moving_average == "schedule":
+                if FLAGS.moving_average == "schedule":
                     # This update the Beta value schedule along with Trainign steps Follow BYOL
                     beta_base = 0.996
                     beta = 1 - (1-beta_base) * \
