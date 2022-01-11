@@ -56,15 +56,11 @@ def base_cfg():
         'num_classes', 100,
         'Number of class in training data.')
 
-    flags.DEFINE_string(
-        #'train_path', "/mnt/sharefolder/Datasets/SSL_dataset/ImageNet/1K_New/ILSVRC2012_img_train",
-        #'train_path', '/data1/share/1K_New/train',
+    flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
         'train_path', '/data/train',
-
         'Train dataset path.')
 
-    flags.DEFINE_string(
-        # 'val_path',"/mnt/sharefolder/Datasets/SSL_dataset/ImageNet/1K_New/val",
+    flags.DEFINE_string(  # fixed mount point in the docker
         'val_path', '/data/val',
         'Validaion dataset path.')
 
@@ -73,7 +69,7 @@ def base_cfg():
         'mask_path', "train_binary_mask_by_USS",
         'Mask path.')
 
-    flags.DEFINE_string(
+    flags.DEFINE_string(   # label data just put it into proj-repo with relative path.. 
         'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
         'train_label.')
 
