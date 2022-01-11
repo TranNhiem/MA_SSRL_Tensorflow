@@ -205,8 +205,9 @@ class Runner(object):
                 if FLAGS.moving_average == "schedule":
                     # This update the Beta value schedule along with Trainign steps Follow BYOL
                     beta_base = 0.996
+                    cur_step = global_step.numpy()
                     beta = 1 - (1-beta_base) * \
-                        (cos(pi*global_step/self.train_steps)+1)/2
+                        (cos(pi*cur_step/self.train_steps)+1)/2
 
                 target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
