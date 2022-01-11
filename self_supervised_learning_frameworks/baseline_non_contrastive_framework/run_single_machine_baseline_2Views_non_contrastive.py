@@ -8,7 +8,7 @@ from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_da
 from tensorflow import distribute as tf_dis
 import tensorflow as tf
 import wandb
-from math import cos , pi
+from math import cos, pi
 from tqdm import trange    # progress-bar presentation
 import random
 from absl import logging
@@ -54,7 +54,7 @@ class Runner(object):
             self.epoch_steps = round(n_tra_sample / train_global_batch)
             eval_steps = self.eval_steps or ceil(
                 n_evl_sample / val_global_batch)
-        
+
             # logging the ds info
             logging.info(f"# Subset_training class {self.num_classes}")
             logging.info(f"# train examples: {n_tra_sample}")
@@ -198,15 +198,15 @@ class Runner(object):
 
                 total_loss += self.__distributed_train_step(ds_one, ds_two)
                 num_batches += 1
-                
+
                 # Update weight of Target Encoder Every Step
                 FLAGS.moving_average == "fixed_value":
                     beta = 0.99
-                FLAGS.moving_average == "schedule": 
-                #This update the Beta value schedule along with Trainign steps Follow BYOL
-                    beta_base=0.996
-                    beta = 1 - (1-beta_base)*(cos(pi*global_step/self.train_steps)) 
-
+                FLAGS.moving_average == "schedule":
+                    # This update the Beta value schedule along with Trainign steps Follow BYOL
+                    beta_base = 0.996
+                    beta = 1 - (1-beta_base) * \
+                        (cos(pi*global_step/self.train_steps)+1)/2
 
                 target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
