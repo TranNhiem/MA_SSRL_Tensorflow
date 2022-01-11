@@ -333,6 +333,10 @@ def Configure_Model_Training():
         'everything. 0 means fine-tuning after stem block. 4 means fine-tuning '
         'just the linear head.')
 
+    flags.DEFINE_enum(
+        'moving_average', 'schedule', ["fixed_value", "schedule"],
+        'Moving average the weight of online Encoder to Target Encoder.')
+
 
 def Configure_Saving_and_Restore_Model():
     # Saving Model
