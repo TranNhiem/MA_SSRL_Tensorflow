@@ -18,6 +18,9 @@ import os
 # for disable some tf warning message..
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+# Automatic Clustering JIT Compiler XLA
+tf.config.optimizer.set_jit(True)
+
 # deep-learn pkgs
 #       self-define pkgs
 
@@ -275,7 +278,7 @@ class Runner(object):
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
-    @tf.function(jit_compile=True)
+    @tf.function
     def __train_step(self, ds_one, ds_two):
         # Scale loss  --> Aggregating all Gradients
         def distributed_loss(x1, x2):
