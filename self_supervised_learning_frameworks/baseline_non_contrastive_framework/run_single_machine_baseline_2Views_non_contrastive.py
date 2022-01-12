@@ -179,8 +179,8 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-        ## Run on dkr22 : 
-        train_ds = self.train_dataset.auto_data_aug(da_type="auto_aug", crop_type=da_crp_key, 
+        # Run on dkr22 :
+        train_ds = self.train_dataset.auto_data_aug(da_type="auto_aug", crop_type=da_crp_key,
                                                     augmentation_name='v1')
 
         #   performing Linear-protocol

@@ -11,9 +11,11 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.wandb_run_name = "multi_augmentation_autoaugment_rand_Crop"
     FLAGS.wandb_mod = "run"
 
+    '''
+        The middle layer output control the feature map size
+    '''
     FLAGS.Middle_layer_output = None
     FLAGS.original_loss_stop_gradient = False
-
     FLAGS.Encoder_block_strides = {'1': 2, '2': 1, '3': 2, '4': 2, '5': 2}
 
     FLAGS.Encoder_block_channel_output = {
