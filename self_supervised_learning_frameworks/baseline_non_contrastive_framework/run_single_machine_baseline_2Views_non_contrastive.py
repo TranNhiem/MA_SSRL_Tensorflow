@@ -275,7 +275,7 @@ class Runner(object):
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
-    @tf.function
+    @tf.function(jit_compile=True)
     def __train_step(self, ds_one, ds_two):
         # Scale loss  --> Aggregating all Gradients
         def distributed_loss(x1, x2):
