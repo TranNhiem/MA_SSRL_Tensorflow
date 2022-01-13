@@ -164,7 +164,7 @@ class Imagenet_dataset(object):
         # data_info record the path of imgs, it should be parsed
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)  # .cache()
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -183,7 +183,7 @@ class Imagenet_dataset(object):
 
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
         data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
-                        .map(map_func, num_parallel_calls=AUTO) \
+                        .map(map_func, num_parallel_calls=AUTO).cache() \
             .batch(self.BATCH_SIZE) \
             .prefetch(AUTO)
         return data_aug_ds
@@ -193,8 +193,8 @@ class Imagenet_dataset(object):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         val_ds = self.__wrap_da(raw_ds, supervised_augment_eval, "validate")
         logging.info("Val_ds with option")
-        val_ds.with_options(option)
-            
+        val_ds.with_options(options)
+
         return self.strategy.experimental_distribute_dataset(val_ds)
 
     def simclr_crop_da(self, crop_type="incpt_crp"):
@@ -210,16 +210,16 @@ class Imagenet_dataset(object):
 
         if FLAGS.dataloader == "ds_1_2_options":
             logging.info("Train_ds_one and two  with option")
-            train_ds_one.with_options(option)
-            train_ds_two.with_options(option)
+            train_ds_one.with_options(options)
+            train_ds_two.with_options(options)
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
 
-        elif FLAGS.dataloader == "train_ds_options":
+        if FLAGS.dataloader == "train_ds_options":
             logging.info("Train_ds dataloader with option")
-            train_ds.with_options(option)
-        else: 
-            logging.info(" dataloader without option")
+            train_ds.with_options(options)
+        # else:
+        #     logging.info(" dataloader without option")
         #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
@@ -237,17 +237,17 @@ class Imagenet_dataset(object):
 
         if FLAGS.dataloader == "ds_1_2_options":
             logging.info("Train_ds_one and two  with option")
-            train_ds_one.with_options(option)
-            train_ds_two.with_options(option)
+            train_ds_one.with_options(options)
+            train_ds_two.with_options(options)
 
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
 
-        elif FLAGS.dataloader == "train_ds_options":
+        if FLAGS.dataloader == "train_ds_options":
             logging.info("Train_ds dataloader with option")
-            train_ds.with_options(option)
-        
-        else: 
-            logging.info(" dataloader without option")
+            train_ds.with_options(options)
+
+        # else:
+        #     logging.info(" dataloader without option")
 
         #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
@@ -261,7 +261,7 @@ class Imagenet_dataset(object):
         train_ds = tf.data.Dataset.zip(tra_ds_lst)
 
         logging.info("Train_ds_multiview dataloader with option")
-        train_ds.with_options(option)
+        train_ds.with_options(options)
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 

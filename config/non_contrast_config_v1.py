@@ -6,6 +6,7 @@ def read_cfg_base(mod="non_contrastive"):
     read_cfg(mod)
     flag = Mock_Flag()
     FLAGS = flag.FLAGS
+    
     FLAGS.dataloader = 'ds_1_2_options'   #, ['ds_1_2_options', 'train_ds_options'],
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "multi_augmentation_autoaugment_rand_Crop"
