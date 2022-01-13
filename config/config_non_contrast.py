@@ -55,6 +55,10 @@ def base_cfg():
     flags.DEFINE_integer(
         'num_classes', 100,
         'Number of class in training data.')
+    
+    flags.DEFINE_enum(
+    'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
+    'The dataloader apply options.')
 
     flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
         'train_path', '/data/train',

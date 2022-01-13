@@ -3,7 +3,7 @@ __date__ = "2021/12/24"
 
 from config.absl_mock import Mock_Flag
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
-                                                    simclr_augment_inception_style, supervised_augment_eval
+    simclr_augment_inception_style, supervised_augment_eval
 from Augmentation_Strategies.Multi_Viewer.Multi_Viewer import Multi_viewer
 from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
 from absl import logging
@@ -17,6 +17,17 @@ AUTO = tf.data.experimental.AUTOTUNE
 
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
+
+
+# Experimental options
+options = tf.data.Options()
+options.experimental_optimization.noop_elimination = True
+#options.experimental_optimization.map_vectorization.enabled = True
+options.experimental_optimization.map_and_batch_fusion = True
+options.experimental_optimization.map_parallelization = True
+options.experimental_optimization.apply_default_optimizations = True
+options.experimental_deterministic = False
+options.experimental_threading.max_intra_op_parallelism = 1
 
 
 # temporary rename to imagenet_dataset, single/multiple machine will become an option.
@@ -106,7 +117,6 @@ class Imagenet_dataset(object):
                     numeric_val_cls_sub.append(numeric_cls)
             self.x_val = x_val_sub
             numeric_val_cls = numeric_val_cls_sub
-        
 
         # Path for loading all Images
         # For training
@@ -163,11 +173,13 @@ class Imagenet_dataset(object):
         elif wrap_type == "validate":
             def map_func(x, y): return (trfs(x, FLAGS.IMG_height, FLAGS.IMG_width,
                                              FLAGS.randaug_transform, FLAGS.randaug_magnitude), y)
-        elif wrap_type == "data_aug": # careful, tf.py_func ret_val include dummy-dim, so we unzip * it
-            map_func = lambda x, y : (*tf.py_function(trfs, [x], Tout=[tf.float32]), y)
-            
-        else: # ignore the label to simplify mixing view implementation
-            map_func = lambda x, y : tf.py_function(trfs, [x], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
+        elif wrap_type == "data_aug":  # careful, tf.py_func ret_val include dummy-dim, so we unzip * it
+            def map_func(x, y): return (
+                *tf.py_function(trfs, [x], Tout=[tf.float32]), y)
+
+        else:  # ignore the label to simplify mixing view implementation
+            def map_func(x, y): return tf.py_function(trfs, [x], Tout=[
+                tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
 
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
         data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
@@ -180,6 +192,9 @@ class Imagenet_dataset(object):
     def supervised_validation(self):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         val_ds = self.__wrap_da(raw_ds, supervised_augment_eval, "validate")
+        logging.info("Val_ds with option")
+        val_ds.with_options(option)
+            
         return self.strategy.experimental_distribute_dataset(val_ds)
 
     def simclr_crop_da(self, crop_type="incpt_crp"):
@@ -193,22 +208,48 @@ class Imagenet_dataset(object):
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
         train_ds_two = self.__wrap_da(ds_two, self.crop_dict[crop_type])
 
+        if FLAGS.dataloader == "ds_1_2_options":
+            logging.info("Train_ds_one and two  with option")
+            train_ds_one.with_options(option)
+            train_ds_two.with_options(option)
+
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
+
+        elif FLAGS.dataloader == "train_ds_options":
+            logging.info("Train_ds dataloader with option")
+            train_ds.with_options(option)
+        else: 
+            logging.info(" dataloader without option")
+        #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
-        
+
     def auto_data_aug(self, da_type="auto_aug", crop_type="incpt_crp", *aug_args, **aug_kwarg):
         da_inst = Data_Augmentor(DAS_type=da_type, *aug_args, **aug_kwarg) if da_type \
-                                else Data_Augmentor(*aug_args, **aug_kwarg)
+            else Data_Augmentor(*aug_args, **aug_kwarg)
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
         ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
-        
+
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
         ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
         train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
-        
+
+        if FLAGS.dataloader == "ds_1_2_options":
+            logging.info("Train_ds_one and two  with option")
+            train_ds_one.with_options(option)
+            train_ds_two.with_options(option)
+
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
+
+        elif FLAGS.dataloader == "train_ds_options":
+            logging.info("Train_ds dataloader with option")
+            train_ds.with_options(option)
+        
+        else: 
+            logging.info(" dataloader without option")
+
+        #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def multi_view_data_aug(self, da_type="auto_aug"):
@@ -218,6 +259,10 @@ class Imagenet_dataset(object):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         train_ds = tf.data.Dataset.zip(tra_ds_lst)
+
+        logging.info("Train_ds_multiview dataloader with option")
+        train_ds.with_options(option)
+
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def get_data_size(self):
