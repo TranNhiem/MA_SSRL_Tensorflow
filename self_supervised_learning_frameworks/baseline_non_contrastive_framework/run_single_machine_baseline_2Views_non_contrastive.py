@@ -478,8 +478,13 @@ class Runner(object):
 
 if __name__ == '__main__':
     from config.non_contrast_config_v1 import read_cfg_base
-    flag = read_cfg()
-    FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
+    from config.absl_mock import Mock_Flag
+    read_cfg_base()
+
+    flag = Mock_Flag()
+    FLAGS = flag.FLAGS
+    # flag = read_cfg_base()
+    # FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
 
     set_gpu_env()
     wanda_cfg = {
