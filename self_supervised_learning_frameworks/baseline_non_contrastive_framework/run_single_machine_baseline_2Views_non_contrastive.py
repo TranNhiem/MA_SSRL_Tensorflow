@@ -483,6 +483,14 @@ if __name__ == '__main__':
 
     flag = Mock_Flag()
     FLAGS = flag.FLAGS
+    if not os.path.isdir(FLAGS.model_dir):
+        print("Creat the model dir: ", FLAGS.model_dir)
+        os.makedirs(FLAGS.model_dir)
+    flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
+
+    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+
+
     # flag = read_cfg_base()
     # FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
 
