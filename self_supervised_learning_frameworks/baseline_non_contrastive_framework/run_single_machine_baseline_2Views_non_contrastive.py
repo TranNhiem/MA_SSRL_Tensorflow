@@ -477,7 +477,7 @@ class Runner(object):
 
 
 if __name__ == '__main__':
-    from config.config_non_contrast import read_cfg
+    from config.config_non_contrast_v1 import read_cfg
     flag = read_cfg()
     FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
 
