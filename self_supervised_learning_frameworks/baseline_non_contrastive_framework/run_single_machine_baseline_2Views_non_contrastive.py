@@ -18,6 +18,8 @@ import os
 # for disable some tf warning message..
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+
+#test
 # Automatic Clustering JIT Compiler XLA
 tf.config.optimizer.set_jit(True)
 
