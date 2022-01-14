@@ -18,10 +18,20 @@ import os
 # for disable some tf warning message..
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+from config.non_contrast_config_v1 import read_cfg_base
+from config.absl_mock import Mock_Flag
+read_cfg_base()
 
-#test
+flag = Mock_Flag()
+FLAGS = flag.FLAGS
+
+if not os.path.isdir(FLAGS.model_dir):
+    print("Creat the model dir: ", FLAGS.model_dir)
+    os.makedirs(FLAGS.model_dir)
+# flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
+
 # Automatic Clustering JIT Compiler XLA
-tf.config.optimizer.set_jit(True)
+#tf.config.optimizer.set_jit(True)
 
 # deep-learn pkgs
 #       self-define pkgs
@@ -477,18 +487,7 @@ class Runner(object):
 
 
 if __name__ == '__main__':
-    from config.non_contrast_config_v1 import read_cfg_base
-    from config.absl_mock import Mock_Flag
-    read_cfg_base()
 
-    flag = Mock_Flag()
-    FLAGS = flag.FLAGS
-    if not os.path.isdir(FLAGS.model_dir):
-        print("Creat the model dir: ", FLAGS.model_dir)
-        os.makedirs(FLAGS.model_dir)
-    # flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
-
-    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 
 
     # flag = read_cfg_base()

@@ -162,9 +162,20 @@ class Imagenet_dataset(object):
 
     def __wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
-        img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-            .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+
+        if FLAGS.resize_wrap_ds: 
+            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache() 
+
+            
+        else:
+            img_shp = (self.IMG_SIZE, self.IMG_SIZE) 
+            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+            
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -181,11 +192,21 @@ class Imagenet_dataset(object):
             def map_func(x, y): return tf.py_function(trfs, [x], Tout=[
                 tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
 
-        img_shp = (self.IMG_SIZE, self.IMG_SIZE)
-        data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
-                        .map(map_func, num_parallel_calls=AUTO) \
+        if FLAGS.resize_wrap_ds: 
+            logging.info("applying resize in wrap_ds for Caching Implementation")
+            data_aug_ds = ds.map(map_func, num_parallel_calls=AUTO) \
             .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
             .prefetch(AUTO)
+        
+        else: 
+            img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+            data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
+                            .map(map_func, num_parallel_calls=AUTO) \
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
+                .prefetch(AUTO)
+
+      
+        
         return data_aug_ds
 
     # This for Supervised validation training

@@ -60,6 +60,12 @@ def base_cfg():
     'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
     'The dataloader apply options.')
 
+
+
+    flags.DEFINE_boolean(
+        'resize_wrap_ds', True,# set True will resize inside wrap_ds else resize in Wrap_da STEP
+        'Whether to Resize within Wrap_ds or resize in.__wrap_da')
+
     flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
         'train_path', '/data/train',
         'Train dataset path.')
