@@ -36,5 +36,5 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    FLAGS.model_dir = "/data1/share/resnet_byol/resnet18/auto_augment_rand_crop"
+    FLAGS.model_dir = "/data/share/resnet_byol/resnet18/auto_augment_inception_crop"
     #FLAGS.train_mode = "finetune"
