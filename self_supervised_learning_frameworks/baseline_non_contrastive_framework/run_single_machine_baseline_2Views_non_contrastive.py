@@ -486,7 +486,7 @@ if __name__ == '__main__':
     if not os.path.isdir(FLAGS.model_dir):
         print("Creat the model dir: ", FLAGS.model_dir)
         os.makedirs(FLAGS.model_dir)
-    flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
+    # flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
 
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 
