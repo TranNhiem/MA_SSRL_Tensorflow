@@ -12,6 +12,9 @@ import numpy as np
 import random
 import re
 
+
+from official.vision.image_classification.augment import AutoAugment
+
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 
@@ -209,6 +212,21 @@ class Imagenet_dataset(object):
         
         return data_aug_ds
 
+    def tfa_AutoAugment(self, image):
+        '''
+        Args:
+        image: A tensor [ with, height, channels]
+        AutoAugment: a function to apply Policy transformation [v0, policy_simple]
+        Return: 
+        Image: A tensor of Applied transformation [with, height, channels]
+        '''
+        '''Version 1  AutoAugmentation'''
+        augmenter_apply = AutoAugment(augmentation_name='v0')
+        image = augmenter_apply.distort(image)
+        image = tf.cast(image, dtype=tf.float32)/255.
+        return image
+
+
     # This for Supervised validation training
     def supervised_validation(self):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
@@ -245,17 +263,51 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def auto_data_aug(self, da_type="auto_aug", crop_type="incpt_crp", *aug_args, **aug_kwarg):
-        da_inst = Data_Augmentor(DAS_type=da_type, *aug_args, **aug_kwarg) if da_type \
-            else Data_Augmentor(*aug_args, **aug_kwarg)
+        ## Using TFA AutoAugment
+        if da_type =="auto_aug": 
+            
+            ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
+            ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+            train_ds_one = ds_one.map(lambda x, y: (tfa_AutoAugment(x,), y), num_parallel_calls=AUTO)
 
-        ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
-        train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
+            ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
+            ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+            train_ds_two =ds_two.map(lambda x, y: (tfa_AutoAugment(x,), y), num_parallel_calls=AUTO)
+            
+            if FLAGS.resize_wrap_ds: 
+                logging.info("applying resize in wrap_ds for Caching Implementation")
+                train_ds_one = train_ds_one.batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
+                .prefetch(AUTO)
+                train_ds_two = train_ds_two.batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
+                .prefetch(AUTO)
 
-        ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
-        train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
+            else: 
+                img_shp = (self.IMG_SIZE, self.IMG_SIZE)
 
+                train_ds_one = train_ds_one.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)\
+                                        .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
+                                        .prefetch(AUTO)
+                train_ds_two = train_ds_two.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)\
+                                        .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
+                                        .prefetch(AUTO)
+
+
+
+
+        else: 
+            da_inst = Data_Augmentor(DAS_type=da_type, *aug_args, **aug_kwarg) if da_type \
+                else Data_Augmentor(*aug_args, **aug_kwarg)
+
+            ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
+            ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+            train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
+
+            ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
+            ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+            train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
+
+            
+        
         if FLAGS.dataloader == "ds_1_2_options":
             logging.info("Train_ds_one and two  with option")
             train_ds_one.with_options(options)
