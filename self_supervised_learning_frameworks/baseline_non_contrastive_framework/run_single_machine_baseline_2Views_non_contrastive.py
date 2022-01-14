@@ -16,7 +16,12 @@ import json
 from math import ceil
 import os
 # for disable some tf warning message..
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+### For setting GPUs Thread reduce kernel Luanch Delay
+#https://github.com/tensorflow/tensorflow/issues/25724
+os.environ['TF_GPU_THREAD_MODE']='gpu_private'
+os.environ['TF_GPU_THREAD_COUNT']='2'
 
 from config.non_contrast_config_v1 import read_cfg_base
 from config.absl_mock import Mock_Flag
