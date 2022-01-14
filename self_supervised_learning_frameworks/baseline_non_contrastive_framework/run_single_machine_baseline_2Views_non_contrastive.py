@@ -298,35 +298,7 @@ class Runner(object):
         images_two, lable_two = ds_two
 
         with tf.GradientTape(persistent=True) as tape:
-            # # Online
-            # proj_head_output_1, supervised_head_output_1 = self.online_model(
-            #     images_one, training=True)
-            # proj_head_output_1 = self.prediction_model(
-            #     proj_head_output_1, training=True)
-
-            # # Target
-            # proj_head_output_2, supervised_head_output_2 = self.target_model(
-            #     images_two, training=True)
-
-            # # Compute Contrastive Train Loss -->
-            # loss = None
-            # if proj_head_output_1 is not None:
-            #     # Compute Contrastive Loss model
-            #     loss, logits_ab, labels = distributed_loss(
-            #         proj_head_output_1, proj_head_output_2)
-
-            #     if loss is None:
-            #         loss = loss
-            #     else:
-            #         loss += loss
-
-            #     # Update Self-Supervised Metrics
-            #     metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-            #                                           self.metric_dict['contrast_acc_metric'],
-            #                                           self.metric_dict['contrast_entropy_metric'],
-            #                                           loss, logits_ab,
-            #                                           labels)
-
+  
             if FLAGS.loss_type == "byol_symmetrized_loss":
                 logging.info("You implement Symmetrized loss")
                 '''
