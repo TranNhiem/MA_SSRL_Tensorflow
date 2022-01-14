@@ -1,5 +1,5 @@
-from config.absl_mock import Mock_Flag
-from config.config_non_contrast import read_cfg
+from .absl_mock import Mock_Flag
+from .config_non_contrast import read_cfg
 
 
 def read_cfg_base(mod="non_contrastive"):
@@ -9,7 +9,7 @@ def read_cfg_base(mod="non_contrastive"):
     
     FLAGS.dataloader = 'ds_1_2_options'   #, ['ds_1_2_options', 'train_ds_options'],
     FLAGS.resize_wrap_ds = True # set True will resize inside wrap_ds else resize in Wrap_da STEP
-    
+
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "ResNet18_autoaugment_Inception_Crop"
     FLAGS.wandb_mod = "run"
