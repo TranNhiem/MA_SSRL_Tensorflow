@@ -164,7 +164,7 @@ class Imagenet_dataset(object):
         # data_info record the path of imgs, it should be parsed
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)  # .cache()
+            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -183,8 +183,8 @@ class Imagenet_dataset(object):
 
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
         data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
-                        .map(map_func, num_parallel_calls=AUTO).cache() \
-            .batch(self.BATCH_SIZE) \
+                        .map(map_func, num_parallel_calls=AUTO) \
+            .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
             .prefetch(AUTO)
         return data_aug_ds
 
