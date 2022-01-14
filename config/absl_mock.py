@@ -55,14 +55,13 @@ class Mock_Flag(object):
             self.flag_spec.__dict__[var_name] = value
         else:
             raise TypeError("The input value should be dict type")
-    
+
     def save_config(self,file_name):
         with open(file_name,"w") as f:
             for key in self.flag_spec.__dict__.keys():
                 f.write(key + " : " +str(self.flag_spec.__dict__[key])+"\n")
         print("save the config in :",file_name)
     
-
 
 def local_test():
     flag_inst = Mock_Flag()
@@ -95,5 +94,3 @@ if __name__ == '__main__':
     flag_inst = Mock_Flag()
     FLAGS = flag_inst.FLAGS
     print(f"test name : {FLAGS.name} done!!\n")
-
-    
