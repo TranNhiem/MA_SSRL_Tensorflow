@@ -33,7 +33,8 @@ FLAGS = flag.FLAGS
 if not os.path.isdir(FLAGS.model_dir):
     print("Creat the model dir: ", FLAGS.model_dir)
     os.makedirs(FLAGS.model_dir)
-# flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
+
+flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
 
 # Automatic Clustering JIT Compiler XLA
 #tf.config.optimizer.set_jit(True)
@@ -56,7 +57,6 @@ def set_gpu_env(n_gpus=8):
                   len(logical_gpus), "Logical GPU")
         except RuntimeError as e:
             print(e)
-
 
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
@@ -493,16 +493,15 @@ class Runner(object):
 
 if __name__ == '__main__':
 
-
-
     # flag = read_cfg_base()
     # FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
 
     set_gpu_env()
+
     wanda_cfg = {
         "Model_Arch": f"ResNet{FLAGS.resnet_depth}",
         "Training mode": "Baseline Non_Contrastive",
-        "DataAugmentation_types": "SimCLR_Inception_style_Croping",
+        "DataAugmentation_types": "Inception_Croping_Auto_Augment",
         "Dataset": "ImageNet1k",
 
         "IMG_SIZE": FLAGS.image_size,

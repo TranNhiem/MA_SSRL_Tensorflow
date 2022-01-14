@@ -174,7 +174,7 @@ class Imagenet_dataset(object):
             img_shp = (self.IMG_SIZE, self.IMG_SIZE) 
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
             
         return img_lab_ds
 
