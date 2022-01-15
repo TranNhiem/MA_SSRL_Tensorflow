@@ -295,7 +295,7 @@ class Imagenet_dataset(object):
         return len(self.x_train), len(self.x_val)
 
 
-class Imagenet_dataset_v2():
+class Imagenet_dataset_v2(Imagenet_dataset):
 
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -315,6 +315,7 @@ class Imagenet_dataset_v2():
             val_path:   Directory to validation or testing data
             subset_class_num: subset class 
         '''
+        super(Imagenet_dataset_v2, self).__init__(**kwargs)
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch
         self.val_batch = val_batch
@@ -389,89 +390,6 @@ class Imagenet_dataset_v2():
             self.class_name) if subset_class_num == None else subset_class_num)
         self.x_val_lable = tf.one_hot(numeric_val_cls, depth=len(
             self.class_name) if subset_class_num == None else subset_class_num)
-
-    def get_label(self, label_txt_path=None):
-        class_name = []
-        class_ID = []
-        class_number = []
-        print(label_txt_path)
-        with open(label_txt_path) as file:
-            for line in file.readlines():
-                # n02119789 1 kit_fox
-                lint_split = line.split(" ")
-                class_ID.append(lint_split[0])
-                class_number.append(int(lint_split[1]))
-                class_name.append(lint_split[2])
-            file.close()
-
-        label = dict(zip(class_ID, class_number))
-        class_name = dict(zip(class_ID, class_name))
-        return label, class_name
-
-    def get_val_label(self, label_txt_path=None):
-        class_number = []
-        with open(label_txt_path) as file:
-            for line in file.readlines():
-                class_number.append(int(line[:-1]))
-                # n02119789 1 kit_fox
-        return class_number
-
-    def __parse_images_lable_pair(self, image_path, label):
-        def parse_images(image_path):
-            # Loading and reading Image
-            img = tf.io.read_file(image_path)
-            img = tf.io.decode_jpeg(img, channels=3)
-            img = tf.image.convert_image_dtype(img, tf.float32)
-            return img
-        return parse_images(image_path), label
-
-    def __wrap_ds(self, img_folder, labels):
-        # data_info record the path of imgs, it should be parsed
-
-        if FLAGS.resize_wrap_ds:
-            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
-
-        else:
-            img_shp = (self.IMG_SIZE, self.IMG_SIZE)
-            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
-
-        return img_lab_ds
-
-        # Using TFA AutoAugment
-        if da_type == "auto_aug":
-
-        ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
-        train_ds_one = ds_one.map(lambda x, y: (
-            tfa_AutoAugment(x,), y), num_parallel_calls=AUTO)
-
-        ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
-        train_ds_two = ds_two.map(lambda x, y: (
-            tfa_AutoAugment(x,), y), num_parallel_calls=AUTO)
-
-        if FLAGS.resize_wrap_ds:
-            logging.info(
-                "applying resize in wrap_ds for Caching Implementation")
-            train_ds_one = train_ds_one.batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(AUTO)
-            train_ds_two = train_ds_two.batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(AUTO)
-
-        else:
-            img_shp = (self.IMG_SIZE, self.IMG_SIZE)
-
-            train_ds_one = train_ds_one.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)\
-                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(AUTO)
-            train_ds_two = train_ds_two.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)\
-                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(AUTO)
 
     def Auto_Augment(self, image):
         '''
@@ -552,8 +470,7 @@ class Imagenet_dataset_v2():
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def RandAug(self, policy=(2, 4), crop_type="incpt_crp", ):
-        pass
+    def RandAug(self, policy=(2, 4), crop_type="incpt_crp"):
 
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
