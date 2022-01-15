@@ -201,14 +201,14 @@ class Imagenet_dataset(object):
                 "applying resize in wrap_ds for Caching Implementation")
             data_aug_ds = ds.map(map_func, num_parallel_calls=AUTO) \
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(AUTO)
+                .prefetch(20)  # AUTO
 
         else:
             img_shp = (self.IMG_SIZE, self.IMG_SIZE)
             data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
                             .map(map_func, num_parallel_calls=AUTO) \
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(AUTO)
+                .prefetch(20)  # AUTO
 
         return data_aug_ds
 

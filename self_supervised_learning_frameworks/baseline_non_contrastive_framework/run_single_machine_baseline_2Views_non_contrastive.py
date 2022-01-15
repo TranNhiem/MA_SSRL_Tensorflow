@@ -1,3 +1,5 @@
+from config.absl_mock import Mock_Flag
+from config.non_contrast_config_v1 import read_cfg_base
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, CosineAnnealingDecayRestarts
 from objectives import metrics
 from objectives import objective as obj_lib
@@ -18,13 +20,11 @@ import os
 # for disable some tf warning message..
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-### For setting GPUs Thread reduce kernel Luanch Delay
-#https://github.com/tensorflow/tensorflow/issues/25724
-os.environ['TF_GPU_THREAD_MODE']='gpu_private'
-os.environ['TF_GPU_THREAD_COUNT']='2'
+# For setting GPUs Thread reduce kernel Luanch Delay
+# https://github.com/tensorflow/tensorflow/issues/25724
+os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
-from config.non_contrast_config_v1 import read_cfg_base
-from config.absl_mock import Mock_Flag
 read_cfg_base()
 
 flag = Mock_Flag()
@@ -37,7 +37,7 @@ if not os.path.isdir(FLAGS.model_dir):
 #flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
 
 # Automatic Clustering JIT Compiler XLA
-#tf.config.optimizer.set_jit(True)
+# tf.config.optimizer.set_jit(True)
 
 # deep-learn pkgs
 #       self-define pkgs
@@ -57,6 +57,7 @@ def set_gpu_env(n_gpus=8):
                   len(logical_gpus), "Logical GPU")
         except RuntimeError as e:
             print(e)
+
 
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
@@ -202,8 +203,8 @@ class Runner(object):
         # Run on dkr22 :
         # train_ds = self.train_dataset.auto_data_aug(da_type="auto_aug", crop_type=da_crp_key,
         #                                             augmentation_name='v1')
-        train_ds = self.train_dataset.simclr_crop_da( crop_type="rnd_crp",
-                                                    )
+        train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
+                                                     )
 
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -234,14 +235,27 @@ class Runner(object):
                     beta = 1 - (1-beta_base) * \
                         (cos(pi*cur_step/self.train_steps)+1)/2
 
-                target_model, online_model = self.target_model, self.online_model
-                target_encoder_weights = target_model.get_weights()
-                online_encoder_weights = online_model.get_weights()
-                # mean teacher update
-                for lay_idx in range(len(online_encoder_weights)):
-                    target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
-                        1-beta) * online_encoder_weights[lay_idx]
-                target_model.set_weights(target_encoder_weights)
+                if FLASG.XLA_compiler == "model_momentum":
+                    logging.info("XLA Compiler for model and Momentum")
+                    with tf.xla.experimental.jit_scope():
+                        target_model, online_model = self.target_model, self.online_model
+                        target_encoder_weights = target_model.get_weights()
+                        online_encoder_weights = online_model.get_weights()
+                        # mean teacher update
+                        for lay_idx in range(len(online_encoder_weights)):
+                            target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
+                                1-beta) * online_encoder_weights[lay_idx]
+                            target_model.set_weights(target_encoder_weights)
+                else:
+
+                    target_model, online_model = self.target_model, self.online_model
+                    target_encoder_weights = target_model.get_weights()
+                    online_encoder_weights = online_model.get_weights()
+                    # mean teacher update
+                    for lay_idx in range(len(online_encoder_weights)):
+                        target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
+                            1-beta) * online_encoder_weights[lay_idx]
+                    target_model.set_weights(target_encoder_weights)
 
                 with self.summary_writer.as_default():
                     cur_step = global_step.numpy()
@@ -315,7 +329,7 @@ class Runner(object):
         images_two, lable_two = ds_two
 
         with tf.GradientTape(persistent=True) as tape:
-  
+
             if FLAGS.loss_type == "byol_symmetrized_loss":
                 logging.info("You implement Symmetrized loss")
                 '''
@@ -329,122 +343,127 @@ class Runner(object):
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
                 # -------------------------------------------------------------
+                if FLAGS.XLA_compiler == "model_momentum" or "model":
+                    logging.info("XLA Compiler for model and Momentum")
+                    with tf.xla.experimental.jit_scope():
+                        # Online
+                        proj_head_output_1, supervised_head_output_1 = self.online_model(
+                            images_one, training=True)
+                        proj_head_output_1 = self.prediction_model(
+                            proj_head_output_1, training=True)
 
-                # Online
-                proj_head_output_1, supervised_head_output_1 = self.online_model(
-                    images_one, training=True)
-                proj_head_output_1 = self.prediction_model(
-                    proj_head_output_1, training=True)
+                        # Target
+                        proj_head_output_2, supervised_head_output_2 = self.target_model(
+                            images_two, training=True)
 
-                # Target
-                proj_head_output_2, supervised_head_output_2 = self.target_model(
-                    images_two, training=True)
+                        # -------------------------------------------------------------
+                        # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
+                        # -------------------------------------------------------------
 
-                # -------------------------------------------------------------
-                # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
-                # -------------------------------------------------------------
+                        # online
+                        proj_head_output_2_online, _ = self.online_model(
+                            images_two, training=True)
+                        # Vector Representation from Online encoder go into Projection head again
+                        proj_head_output_2_online = self.prediction_model(
+                            proj_head_output_2_online, training=True)
 
-                # online
-                proj_head_output_2_online, _ = self.online_model(
-                    images_two, training=True)
-                # Vector Representation from Online encoder go into Projection head again
-                proj_head_output_2_online = self.prediction_model(
-                    proj_head_output_2_online, training=True)
+                        # Target
+                        proj_head_output_1_target, _ = self.target_model(
+                            images_one, training=True)
 
-                # Target
-                proj_head_output_1_target, _ = self.target_model(
-                    images_one, training=True)
+                        # Compute Contrastive Train Loss -->
+                        loss = None
+                        if proj_head_output_1 is not None:
+                            # Compute Contrastive Loss model
+                            # Loss of the image 1, 2 --> Online, Target Encoder
+                            loss_1_2, logits_ab, labels = distributed_loss(
+                                proj_head_output_1, proj_head_output_2)
 
-                # Compute Contrastive Train Loss -->
-                loss = None
-                if proj_head_output_1 is not None:
-                    # Compute Contrastive Loss model
-                    # Loss of the image 1, 2 --> Online, Target Encoder
-                    loss_1_2, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2)
+                            # Loss of the image 2, 1 --> Online, Target Encoder
+                            loss_2_1, logits_ab_2, labels_2 = distributed_loss(
+                                proj_head_output_2_online, proj_head_output_1_target)
 
-                    # Loss of the image 2, 1 --> Online, Target Encoder
-                    loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                        proj_head_output_2_online, proj_head_output_1_target)
+                            # symetrized loss
+                            loss = (loss_1_2 + loss_2_1)/2
 
-                    # symetrized loss
-                    loss = (loss_1_2 + loss_2_1)/2
+                            if loss is None:
+                                loss = loss
+                            else:
+                                loss += loss
 
-                    if loss is None:
-                        loss = loss
-                    else:
-                        loss += loss
-
-                    # Update Self-Supervised Metrics
-                    metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                          self.metric_dict['contrast_acc_metric'],
-                                                          self.metric_dict['contrast_entropy_metric'],
-                                                          loss, logits_ab,
-                                                          labels)
+                            # Update Self-Supervised Metrics
+                            metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                                  self.metric_dict['contrast_acc_metric'],
+                                                                  self.metric_dict['contrast_entropy_metric'],
+                                                                  loss, logits_ab,
+                                                                  labels)
 
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
                 # -------------------------------------------------------------
+                if FLAGS.XLA_compiler == "model_momentum" or "model":
+                    logging.info("XLA Compiler for model and Momentum")
+                    with tf.xla.experimental.jit_scope():
+                        # Online
+                        proj_head_output_1, supervised_head_output_1 = self.online_model(
+                            images_one, training=True)
+                        proj_head_output_1 = self.prediction_model(
+                            proj_head_output_1, training=True)
 
-                # Online
-                proj_head_output_1, supervised_head_output_1 = self.online_model(
-                    images_one, training=True)
-                proj_head_output_1 = self.prediction_model(
-                    proj_head_output_1, training=True)
+                        # Target
+                        proj_head_output_2, supervised_head_output_2 = self.target_model(
+                            images_two, training=True)
 
-                # Target
-                proj_head_output_2, supervised_head_output_2 = self.target_model(
-                    images_two, training=True)
+                        # Compute Contrastive Train Loss -->
+                        loss = None
+                        if proj_head_output_1 is not None:
+                            # Compute Contrastive Loss model
+                            # Loss of the image 1, 2 --> Online, Target Encoder
+                            loss, logits_ab, labels = distributed_loss(
+                                proj_head_output_1, proj_head_output_2)
 
-                # Compute Contrastive Train Loss -->
-                loss = None
-                if proj_head_output_1 is not None:
-                    # Compute Contrastive Loss model
-                    # Loss of the image 1, 2 --> Online, Target Encoder
-                    loss, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2)
+                            if loss is None:
+                                loss = loss
+                            else:
+                                loss += loss
 
-                    if loss is None:
-                        loss = loss
-                    else:
-                        loss += loss
-
-                    # Update Self-Supervised Metrics
-                    metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                          self.metric_dict['contrast_acc_metric'],
-                                                          self.metric_dict['contrast_entropy_metric'],
-                                                          loss, logits_ab,
-                                                          labels)
+                            # Update Self-Supervised Metrics
+                            metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                                  self.metric_dict['contrast_acc_metric'],
+                                                                  self.metric_dict['contrast_entropy_metric'],
+                                                                  loss, logits_ab,
+                                                                  labels)
 
             else:
                 raise ValueError("Invalid Type loss")
 
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
+
             # supervised_loss=None
             if supervised_head_output_1 is not None:
 
                 if self.train_mode == 'pretrain' and self.lineareval_while_pretraining:
+                    if FLAGS.XLA_compiler == "model_momentum" or "model":
+                        outputs = tf.concat(
+                            [supervised_head_output_1, supervised_head_output_2], 0)
+                        supervise_lable = tf.concat(
+                            [lable_one, lable_two], 0)
 
-                    outputs = tf.concat(
-                        [supervised_head_output_1, supervised_head_output_2], 0)
-                    supervise_lable = tf.concat(
-                        [lable_one, lable_two], 0)
+                        # Calculte the cross_entropy loss with Labels
+                        sup_loss = obj_lib.add_supervised_loss(
+                            labels=supervise_lable, logits=outputs)
 
-                    # Calculte the cross_entropy loss with Labels
-                    sup_loss = obj_lib.add_supervised_loss(
-                        labels=supervise_lable, logits=outputs)
-
-                    scale_sup_loss = tf.nn.compute_average_loss(
-                        sup_loss, global_batch_size=self.train_global_batch)
-                    # scale_sup_loss = tf.reduce_sum(
-                    #     sup_loss) * (1./train_global_batch)
-                    # Update Supervised Metrics
-                    metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
-                                                          self.metric_dict['supervised_acc_metric'],
-                                                          scale_sup_loss, supervise_lable, outputs)
+                        scale_sup_loss = tf.nn.compute_average_loss(
+                            sup_loss, global_batch_size=self.train_global_batch)
+                        # scale_sup_loss = tf.reduce_sum(
+                        #     sup_loss) * (1./train_global_batch)
+                        # Update Supervised Metrics
+                        metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
+                                                              self.metric_dict['supervised_acc_metric'],
+                                                              scale_sup_loss, supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient

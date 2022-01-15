@@ -6,9 +6,11 @@ def read_cfg_base(mod="non_contrastive"):
     read_cfg(mod)
     flag = Mock_Flag()
     FLAGS = flag.FLAGS
-    
-    FLAGS.dataloader = 'ds_1_2_options'   #, ['ds_1_2_options', 'train_ds_options'],
-    FLAGS.resize_wrap_ds = True # set True will resize inside wrap_ds else resize in Wrap_da STEP
+
+    # , ['ds_1_2_options', 'train_ds_options'],
+    FLAGS.dataloader = 'ds_1_2_options'
+    # set True will resize inside wrap_ds else resize in Wrap_da STEP
+    FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "SimCLR_Random_Crop"
@@ -30,6 +32,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
     FLAGS.mixprecision = 'fp32'
+    # , [ 'original', 'model_only', 'model_momentum'],
+    FLAGS.XLA_compiler = "model_only"
     FLAGS.base_lr = 0.3
 
     FLAGS.resnet_depth = 18
