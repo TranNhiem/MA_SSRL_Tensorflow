@@ -94,7 +94,7 @@ def wandb_set():
         "set the project name for wandb."
     )
     flags.DEFINE_string(
-        "wandb_run_name", "NC_Resnet18_Rand_Crop_SimCLR",
+        "wandb_run_name", "RandAug_2_7_Inception_style_crop",
         "set the run name for wandb."
     )
     flags.DEFINE_enum(
@@ -312,7 +312,7 @@ def Configure_Model_Training():
     )
 
     flags.DEFINE_enum(
-        'XLA_compiler', "model_only", [
+        'XLA_compiler', "original", [
             'original', 'model_only', ],
         'XLA Compiler for Fusing Operation or Clustering some Operations for faster training'
     )

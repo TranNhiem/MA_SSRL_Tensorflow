@@ -65,7 +65,7 @@ class Runner(object):
         # Configure Wandb Training & for Weight and Bias Tracking Experiment
         def wandb_init(wanda_cfg):
             if wanda_cfg:
-                wandb.init(project=self.wandb_project_name, name=self.wandb_run_name, mode=self.wandb_mod,
+                wandb.init(project=self.wandb_project_name, name=FLAGS.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
         #   calculate the training related meta-info
 
@@ -201,10 +201,10 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # Run on dkr22 :
-        # train_ds = self.train_dataset.auto_data_aug(da_type="auto_aug", crop_type=da_crp_key,
-        #                                             augmentation_name='v1')
-        train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
-                                                     )
+        train_ds = self.train_dataset.auto_data_aug(da_type="rand_aug", crop_type=da_crp_key,
+                                                   def_op=2, div_op=7 )
+        # train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
+        #                                              )
 
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -330,7 +330,7 @@ class Runner(object):
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
                 # -------------------------------------------------------------
-                if FLAGS.XLA_compiler == "model":
+                if FLAGS.XLA_compiler == "model_only":
                     logging.info("XLA Compiler for model")
                     with tf.xla.experimental.jit_scope():
                         # Online
@@ -384,7 +384,59 @@ class Runner(object):
                                                                   self.metric_dict['contrast_entropy_metric'],
                                                                   loss, logits_ab,
                                                                   labels)
+                else: 
+                       # Online
+                        proj_head_output_1, supervised_head_output_1 = self.online_model(
+                            images_one, training=True)
+                        proj_head_output_1 = self.prediction_model(
+                            proj_head_output_1, training=True)
 
+                        # Target
+                        proj_head_output_2, supervised_head_output_2 = self.target_model(
+                            images_two, training=True)
+
+                        # -------------------------------------------------------------
+                        # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
+                        # -------------------------------------------------------------
+
+                        # online
+                        proj_head_output_2_online, _ = self.online_model(
+                            images_two, training=True)
+                        # Vector Representation from Online encoder go into Projection head again
+                        proj_head_output_2_online = self.prediction_model(
+                            proj_head_output_2_online, training=True)
+
+                        # Target
+                        proj_head_output_1_target, _ = self.target_model(
+                            images_one, training=True)
+
+                        # Compute Contrastive Train Loss -->
+                        loss = None
+                        if proj_head_output_1 is not None:
+                            # Compute Contrastive Loss model
+                            # Loss of the image 1, 2 --> Online, Target Encoder
+                            loss_1_2, logits_ab, labels = distributed_loss(
+                                proj_head_output_1, proj_head_output_2)
+
+                            # Loss of the image 2, 1 --> Online, Target Encoder
+                            loss_2_1, logits_ab_2, labels_2 = distributed_loss(
+                                proj_head_output_2_online, proj_head_output_1_target)
+
+                            # symetrized loss
+                            loss = (loss_1_2 + loss_2_1)/2
+
+                            if loss is None:
+                                loss = loss
+                            else:
+                                loss += loss
+
+                            # Update Self-Supervised Metrics
+                            metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                                  self.metric_dict['contrast_acc_metric'],
+                                                                  self.metric_dict['contrast_entropy_metric'],
+                                                                  loss, logits_ab,
+                                                                  labels)
+            
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
@@ -433,7 +485,29 @@ class Runner(object):
             if supervised_head_output_1 is not None:
 
                 if self.train_mode == 'pretrain' and self.lineareval_while_pretraining:
-                    if FLAGS.XLA_compiler == "model":
+                    
+                    if FLAGS.XLA_compiler == "model_only":
+                        with tf.xla.experimental.jit_scope():
+                            outputs = tf.concat(
+                                [supervised_head_output_1, supervised_head_output_2], 0)
+                            supervise_lable = tf.concat(
+                                [lable_one, lable_two], 0)
+
+                            # Calculte the cross_entropy loss with Labels
+                            sup_loss = obj_lib.add_supervised_loss(
+                                labels=supervise_lable, logits=outputs)
+
+                            scale_sup_loss = tf.nn.compute_average_loss(
+                                sup_loss, global_batch_size=self.train_global_batch)
+                            # scale_sup_loss = tf.reduce_sum(
+                            #     sup_loss) * (1./train_global_batch)
+                            # Update Supervised Metrics
+                            metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
+                                                                self.metric_dict['supervised_acc_metric'],
+                                                                scale_sup_loss, supervise_lable, outputs)
+                    
+                    else:
+                        
                         outputs = tf.concat(
                             [supervised_head_output_1, supervised_head_output_2], 0)
                         supervise_lable = tf.concat(
@@ -449,8 +523,8 @@ class Runner(object):
                         #     sup_loss) * (1./train_global_batch)
                         # Update Supervised Metrics
                         metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
-                                                              self.metric_dict['supervised_acc_metric'],
-                                                              scale_sup_loss, supervise_lable, outputs)
+                                                            self.metric_dict['supervised_acc_metric'],
+                                                            scale_sup_loss, supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient
@@ -495,6 +569,7 @@ class Runner(object):
             loss, self.prediction_model.trainable_variables)
         self.opt.apply_gradients(
             zip(grads, self.prediction_model.trainable_variables))
+        
         del tape
         return loss
 

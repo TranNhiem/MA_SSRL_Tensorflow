@@ -13,7 +13,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "SimCLR_Random_Crop"
+    FLAGS.wandb_run_name = "RandAugmnet_Inception_Style_Crop_FP32"
     FLAGS.wandb_mod = "run"
 
     '''
@@ -31,7 +31,7 @@ def read_cfg_base(mod="non_contrastive"):
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
-    FLAGS.mixprecision = 'fp32'
+    FLAGS.mixprecision = 'fp32'# current Design only FP32
     # , [ 'original', 'model_only', ],
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
@@ -42,5 +42,5 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    FLAGS.model_dir = "/data/share/resnet_byol/resnet18/auto_augment_inception_crop"
+    FLAGS.model_dir = "/data/share/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
     #FLAGS.train_mode = "finetune"
