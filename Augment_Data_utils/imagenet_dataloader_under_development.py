@@ -154,7 +154,7 @@ class Imagenet_dataset(object):
         # data_info record the path of imgs, it should be parsed
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -201,11 +201,11 @@ class Imagenet_dataset(object):
                                 else Data_Augmentor(*aug_args, **aug_kwarg)
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+        ds_one = ds_one.map(lambda x, y : (self.crop_dict[crop_type](x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
         
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+        ds_two = ds_two.map(lambda x, y : (self.crop_dict[crop_type](x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
         train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
         
         train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
