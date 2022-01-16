@@ -1,4 +1,4 @@
-from config.absl_mock import Mock_Flag
+from .config.absl_mock import Mock_Flag
 
 
 def read_cfg(mod="non_contrastive"):
@@ -56,6 +56,15 @@ def base_cfg():
         'num_classes', 100,
         'Number of class in training data.')
 
+    flags.DEFINE_enum(
+        'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
+        'The dataloader apply options.')
+
+    flags.DEFINE_boolean(
+        # set True will resize inside wrap_ds else resize in Wrap_da STEP
+        'resize_wrap_ds', True,
+        'Whether to Resize within Wrap_ds or resize in.__wrap_da')
+
     flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
         'train_path', '/data/train',
         'Train dataset path.')
@@ -69,7 +78,7 @@ def base_cfg():
         'mask_path', "train_binary_mask_by_USS",
         'Mask path.')
 
-    flags.DEFINE_string(   # label data just put it into proj-repo with relative path.. 
+    flags.DEFINE_string(   # label data just put it into proj-repo with relative path..
         'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
         'train_label.')
 
@@ -85,7 +94,7 @@ def wandb_set():
         "set the project name for wandb."
     )
     flags.DEFINE_string(
-        "wandb_run_name", "NC_Resnet18_Rand_Crop_SimCLR",
+        "wandb_run_name", "RandAug_2_7_Inception_style_crop",
         "set the run name for wandb."
     )
     flags.DEFINE_enum(
@@ -300,6 +309,12 @@ def Configure_Model_Training():
     flags.DEFINE_enum(
         'mixprecision', "fp16", ['fp16', 'fp32'],  # fp16 spped-up
         'Mixprecision helps for speeding up training by reducing time aggregate gradient'
+    )
+
+    flags.DEFINE_enum(
+        'XLA_compiler', "original", [
+            'original', 'model_only', ],
+        'XLA Compiler for Fusing Operation or Clustering some Operations for faster training'
     )
 
     flags.DEFINE_enum(

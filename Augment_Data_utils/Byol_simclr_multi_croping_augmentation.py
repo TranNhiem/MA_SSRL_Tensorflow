@@ -5,6 +5,7 @@ BYOL paper: https://arxiv.org/pdf/2006.07733.pdf
 '''
 # Reference
 # https://github.com/google-research/simclr/blob/master/tf2/data_util.py
+from config.absl_mock import Mock_Flag
 import tensorflow as tf
 #from official.vision.image_classification.augment import RandAugment
 RandAugment = None
@@ -12,7 +13,6 @@ RandAugment = None
 
 #FLAGS = flags.FLAGS
 
-from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
@@ -383,6 +383,7 @@ def color_drop(image):
 # *****************************************************
 
 
+@tf.function
 def simclr_augment_randcrop(image, IMG_SIZE):
     # IMG_SIZE=IMG_SIZE
     # As discussed in the SimCLR paper, the series of augmentation
@@ -396,6 +397,7 @@ def simclr_augment_randcrop(image, IMG_SIZE):
     return image
 
 
+@tf.function
 def simclr_augment_randcrop_global_views(image, IMG_SIZE):
     '''
 
@@ -421,6 +423,7 @@ def simclr_augment_randcrop_global_views(image, IMG_SIZE):
     return image
 
 
+@tf.function
 def simclr_augment_inception_style(image, IMG_SIZE):
     # IMG_SIZE=IMG_SIZE
     # As discussed in the SimCLR paper, the series of augmentation
@@ -438,6 +441,7 @@ def simclr_augment_inception_style(image, IMG_SIZE):
 # @tf.function
 
 
+@tf.function
 def simclr_augment_randcrop_global_view_image_mask(image, mask, IMG_SIZE):
 
     min_scale = 0.5
@@ -462,6 +466,7 @@ def simclr_augment_randcrop_global_view_image_mask(image, mask, IMG_SIZE):
     return image, mask
 
 
+@tf.function
 def simclr_augment_inception_style_image_mask(image, mask, IMG_SIZE):
     # IMG_SIZE=IMG_SIZE
     # As discussed in the SimCLR paper, the series of augmentation
