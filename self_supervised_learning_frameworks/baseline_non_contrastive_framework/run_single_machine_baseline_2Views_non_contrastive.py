@@ -179,9 +179,14 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-        ## Run on dkr22 : 
-        train_ds = self.train_dataset.auto_data_aug(da_type="auto_aug", crop_type=da_crp_key, 
-                                                    augmentation_name='v1')
+        ## Run on dkr33 :  (now flag)
+        train_ds = self.train_dataset.auto_data_aug(da_type="fast_aug", crop_type=da_crp_key, 
+                                                    policy_type="imagenet")
+
+        ## Run on dkr22 (run baseline..): 
+        #train_ds = self.train_dataset.simclr_crop_da(crop_type=da_crp_key)
+
+
 
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -198,7 +203,7 @@ class Runner(object):
             num_batches = 0
 
             for _, (ds_one, ds_two) in enumerate(train_ds):
-
+                
                 total_loss += self.__distributed_train_step(ds_one, ds_two)
                 num_batches += 1
 
@@ -233,10 +238,15 @@ class Runner(object):
                                       global_step)
                     self.summary_writer.flush()
 
+
             epoch_loss = total_loss/num_batches
             log_wandb(epoch, epoch_loss, metric_dict)
             for metric in metric_dict.values():
                 metric.reset_states()
+
+
+            #perform_evaluation(self.online_model, val_ds, eval_steps, 
+            #                    checkpoint_manager.latest_checkpoint, self.strategy)
 
             # Saving Entire Model
             if (epoch+1) % 20 == 0:
