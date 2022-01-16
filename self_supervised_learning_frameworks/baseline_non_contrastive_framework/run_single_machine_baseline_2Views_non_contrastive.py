@@ -1,5 +1,4 @@
-from config.absl_mock import Mock_Flag
-from config.non_contrast_config_v1 import read_cfg_base
+
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, CosineAnnealingDecayRestarts
 from objectives import metrics
 from objectives import objective as obj_lib
@@ -25,14 +24,6 @@ import os
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
-read_cfg_base()
-
-flag = Mock_Flag()
-FLAGS = flag.FLAGS
-
-if not os.path.isdir(FLAGS.model_dir):
-    print("Creat the model dir: ", FLAGS.model_dir)
-    os.makedirs(FLAGS.model_dir)
 
 #flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
 
@@ -202,7 +193,7 @@ class Runner(object):
 
         # Run on dkr22 :
         train_ds = self.train_dataset.auto_data_aug(da_type="rand_aug", crop_type=da_crp_key,
-                                                   def_op=2, div_op=7 )
+                                                    def_op=2, div_op=7)
         # train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
         #                                              )
 
@@ -384,59 +375,59 @@ class Runner(object):
                                                                   self.metric_dict['contrast_entropy_metric'],
                                                                   loss, logits_ab,
                                                                   labels)
-                else: 
-                       # Online
-                        proj_head_output_1, supervised_head_output_1 = self.online_model(
-                            images_one, training=True)
-                        proj_head_output_1 = self.prediction_model(
-                            proj_head_output_1, training=True)
+                else:
+                    # Online
+                    proj_head_output_1, supervised_head_output_1 = self.online_model(
+                        images_one, training=True)
+                    proj_head_output_1 = self.prediction_model(
+                        proj_head_output_1, training=True)
 
-                        # Target
-                        proj_head_output_2, supervised_head_output_2 = self.target_model(
-                            images_two, training=True)
+                    # Target
+                    proj_head_output_2, supervised_head_output_2 = self.target_model(
+                        images_two, training=True)
 
-                        # -------------------------------------------------------------
-                        # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
-                        # -------------------------------------------------------------
+                    # -------------------------------------------------------------
+                    # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
+                    # -------------------------------------------------------------
 
-                        # online
-                        proj_head_output_2_online, _ = self.online_model(
-                            images_two, training=True)
-                        # Vector Representation from Online encoder go into Projection head again
-                        proj_head_output_2_online = self.prediction_model(
-                            proj_head_output_2_online, training=True)
+                    # online
+                    proj_head_output_2_online, _ = self.online_model(
+                        images_two, training=True)
+                    # Vector Representation from Online encoder go into Projection head again
+                    proj_head_output_2_online = self.prediction_model(
+                        proj_head_output_2_online, training=True)
 
-                        # Target
-                        proj_head_output_1_target, _ = self.target_model(
-                            images_one, training=True)
+                    # Target
+                    proj_head_output_1_target, _ = self.target_model(
+                        images_one, training=True)
 
-                        # Compute Contrastive Train Loss -->
-                        loss = None
-                        if proj_head_output_1 is not None:
-                            # Compute Contrastive Loss model
-                            # Loss of the image 1, 2 --> Online, Target Encoder
-                            loss_1_2, logits_ab, labels = distributed_loss(
-                                proj_head_output_1, proj_head_output_2)
+                    # Compute Contrastive Train Loss -->
+                    loss = None
+                    if proj_head_output_1 is not None:
+                        # Compute Contrastive Loss model
+                        # Loss of the image 1, 2 --> Online, Target Encoder
+                        loss_1_2, logits_ab, labels = distributed_loss(
+                            proj_head_output_1, proj_head_output_2)
 
-                            # Loss of the image 2, 1 --> Online, Target Encoder
-                            loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                                proj_head_output_2_online, proj_head_output_1_target)
+                        # Loss of the image 2, 1 --> Online, Target Encoder
+                        loss_2_1, logits_ab_2, labels_2 = distributed_loss(
+                            proj_head_output_2_online, proj_head_output_1_target)
 
-                            # symetrized loss
-                            loss = (loss_1_2 + loss_2_1)/2
+                        # symetrized loss
+                        loss = (loss_1_2 + loss_2_1)/2
 
-                            if loss is None:
-                                loss = loss
-                            else:
-                                loss += loss
+                        if loss is None:
+                            loss = loss
+                        else:
+                            loss += loss
 
-                            # Update Self-Supervised Metrics
-                            metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                                  self.metric_dict['contrast_acc_metric'],
-                                                                  self.metric_dict['contrast_entropy_metric'],
-                                                                  loss, logits_ab,
-                                                                  labels)
-            
+                        # Update Self-Supervised Metrics
+                        metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                              self.metric_dict['contrast_acc_metric'],
+                                                              self.metric_dict['contrast_entropy_metric'],
+                                                              loss, logits_ab,
+                                                              labels)
+
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
@@ -485,7 +476,7 @@ class Runner(object):
             if supervised_head_output_1 is not None:
 
                 if self.train_mode == 'pretrain' and self.lineareval_while_pretraining:
-                    
+
                     if FLAGS.XLA_compiler == "model_only":
                         with tf.xla.experimental.jit_scope():
                             outputs = tf.concat(
@@ -503,11 +494,11 @@ class Runner(object):
                             #     sup_loss) * (1./train_global_batch)
                             # Update Supervised Metrics
                             metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
-                                                                self.metric_dict['supervised_acc_metric'],
-                                                                scale_sup_loss, supervise_lable, outputs)
-                    
+                                                                  self.metric_dict['supervised_acc_metric'],
+                                                                  scale_sup_loss, supervise_lable, outputs)
+
                     else:
-                        
+
                         outputs = tf.concat(
                             [supervised_head_output_1, supervised_head_output_2], 0)
                         supervise_lable = tf.concat(
@@ -523,8 +514,8 @@ class Runner(object):
                         #     sup_loss) * (1./train_global_batch)
                         # Update Supervised Metrics
                         metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
-                                                            self.metric_dict['supervised_acc_metric'],
-                                                            scale_sup_loss, supervise_lable, outputs)
+                                                              self.metric_dict['supervised_acc_metric'],
+                                                              scale_sup_loss, supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient
@@ -569,15 +560,24 @@ class Runner(object):
             loss, self.prediction_model.trainable_variables)
         self.opt.apply_gradients(
             zip(grads, self.prediction_model.trainable_variables))
-        
+
         del tape
         return loss
 
 
 if __name__ == '__main__':
-
+    from config.absl_mock import Mock_Flag
+    from config.non_contrast_config_v1 import read_cfg_base
     # flag = read_cfg_base()
     # FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
+    read_cfg_base()
+
+    flag = Mock_Flag()
+    FLAGS = flag.FLAGS
+
+    if not os.path.isdir(FLAGS.model_dir):
+        print("Creat the model dir: ", FLAGS.model_dir)
+        os.makedirs(FLAGS.model_dir)
 
     set_gpu_env()
 
