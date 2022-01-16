@@ -235,27 +235,14 @@ class Runner(object):
                     beta = 1 - (1-beta_base) * \
                         (cos(pi*cur_step/self.train_steps)+1)/2
 
-                if FLASG.XLA_compiler == "model_momentum":
-                    logging.info("XLA Compiler for model and Momentum")
-                    with tf.xla.experimental.jit_scope():
-                        target_model, online_model = self.target_model, self.online_model
-                        target_encoder_weights = target_model.get_weights()
-                        online_encoder_weights = online_model.get_weights()
-                        # mean teacher update
-                        for lay_idx in range(len(online_encoder_weights)):
-                            target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
-                                1-beta) * online_encoder_weights[lay_idx]
-                            target_model.set_weights(target_encoder_weights)
-                else:
-
-                    target_model, online_model = self.target_model, self.online_model
-                    target_encoder_weights = target_model.get_weights()
-                    online_encoder_weights = online_model.get_weights()
-                    # mean teacher update
-                    for lay_idx in range(len(online_encoder_weights)):
-                        target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
-                            1-beta) * online_encoder_weights[lay_idx]
-                    target_model.set_weights(target_encoder_weights)
+                target_model, online_model = self.target_model, self.online_model
+                target_encoder_weights = target_model.get_weights()
+                online_encoder_weights = online_model.get_weights()
+                # mean teacher update
+                for lay_idx in range(len(online_encoder_weights)):
+                    target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
+                        1-beta) * online_encoder_weights[lay_idx]
+                target_model.set_weights(target_encoder_weights)
 
                 with self.summary_writer.as_default():
                     cur_step = global_step.numpy()
@@ -343,8 +330,8 @@ class Runner(object):
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
                 # -------------------------------------------------------------
-                if FLAGS.XLA_compiler == "model_momentum" or "model":
-                    logging.info("XLA Compiler for model and Momentum")
+                if FLAGS.XLA_compiler == "model":
+                    logging.info("XLA Compiler for model")
                     with tf.xla.experimental.jit_scope():
                         # Online
                         proj_head_output_1, supervised_head_output_1 = self.online_model(
@@ -446,7 +433,7 @@ class Runner(object):
             if supervised_head_output_1 is not None:
 
                 if self.train_mode == 'pretrain' and self.lineareval_while_pretraining:
-                    if FLAGS.XLA_compiler == "model_momentum" or "model":
+                    if FLAGS.XLA_compiler == "model":
                         outputs = tf.concat(
                             [supervised_head_output_1, supervised_head_output_2], 0)
                         supervise_lable = tf.concat(

@@ -313,7 +313,7 @@ def Configure_Model_Training():
 
     flags.DEFINE_enum(
         'XLA_compiler', "model_only", [
-            'original', 'model_only', 'model_momentum'],
+            'original', 'model_only', ],
         'XLA Compiler for Fusing Operation or Clustering some Operations for faster training'
     )
 

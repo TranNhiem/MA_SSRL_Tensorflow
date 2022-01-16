@@ -32,8 +32,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
     FLAGS.mixprecision = 'fp32'
-    # , [ 'original', 'model_only', 'model_momentum'],
-    FLAGS.XLA_compiler = "model_only"
+    # , [ 'original', 'model_only', ],
+    FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
 
     FLAGS.resnet_depth = 18
