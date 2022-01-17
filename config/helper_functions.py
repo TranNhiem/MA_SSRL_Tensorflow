@@ -270,16 +270,16 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
         json.dump({k: float(v) for k, v in result.items()}, f)
     flag_json_path = os.path.join(FLAGS.model_dir, 'flags.json')
 
-    with tf.io.gfile.GFile(flag_json_path, 'w') as f:
-        serializable_flags = {}
-        for key, val in FLAGS.flag_values_dict().items():
-            # Some flag value types e.g. datetime.timedelta are not json serializable,
-            # filter those out.
-            if json_serializable(val):
-                serializable_flags[key] = val
-            json.dump(serializable_flags, f)
+    # with tf.io.gfile.GFile(flag_json_path, 'w') as f:
+    #     serializable_flags = {}
+    #     for key, val in FLAGS.flag_values_dict().items():
+    #         # Some flag value types e.g. datetime.timedelta are not json serializable,
+    #         # filter those out.
+    #         if json_serializable(val):
+    #             serializable_flags[key] = val
+    #         json.dump(serializable_flags, f)
 
-    # Export as SavedModel for finetuning and inference.
-    save(model, global_step=result['global_step'])
+    # # Export as SavedModel for finetuning and inference.
+    # save(model, global_step=result['global_step'])
 
     return result

@@ -38,6 +38,7 @@ def set_gpu_env(n_gpus=8):
             print(e)
 
 
+
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
 
@@ -72,14 +73,12 @@ class Runner(object):
         val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED_data_split}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED}
         # Dataloader V1
         #train_dataset = Imagenet_dataset(**ds_args)
 
         # Dataloader V2
-        train_dataset = Imagenet_dataset_v2(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
-                                            strategy=strategy, train_path=FLAGS.train_path,
-                                            val_path=FLAGS.val_path, train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes)
+        train_dataset = Imagenet_dataset_v2(**ds_args)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
@@ -99,7 +98,7 @@ class Runner(object):
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
 
-    def train(self, exe_mode, da_crp_key="incpt_crp"):
+    def train(self, exe_mode, da_crp_key="rnd_crp"):
         # Configure the Encoder Architecture
         def get_gpu_model():
             with self.strategy.scope():
@@ -187,10 +186,11 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # dataloader in version 2
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_layers=2, magnitude=7)
-
-        #   performing Linear-protocol
+        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+        #                                                num_transform=2, magnitude=7)
+        train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key,
+                                                      )
+        # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
