@@ -612,8 +612,7 @@ class Imagenet_dataset_v2(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
-
+        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         if crop_type == "incpt_crp":
 
