@@ -172,6 +172,7 @@ class Imagenet_dataset(object):
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
             .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
 
+        img_shp = (self.IMG_SIZE, self.IMG_SIZE)
 
         if FLAGS.resize_wrap_ds:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
@@ -180,7 +181,6 @@ class Imagenet_dataset(object):
                 .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
         else:
-            img_shp = (self.IMG_SIZE, self.IMG_SIZE)
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()

@@ -10,7 +10,7 @@ def read_cfg_base(mod="non_contrastive"):
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
-    FLAGS.resize_wrap_ds = False
+    FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "RandAugmnet_Inception_Style_Crop_FP32"

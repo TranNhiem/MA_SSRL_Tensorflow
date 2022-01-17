@@ -191,19 +191,9 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-
-        ## Run on dkr33 :  (now flag)
-        train_ds = self.train_dataset.auto_data_aug(da_type="fast_aug", crop_type=da_crp_key, 
-                                                    policy_type="imagenet")
-
-        ## Run on dkr22 (run baseline..): 
-        #train_ds = self.train_dataset.simclr_crop_da(crop_type=da_crp_key)
-
-
-
-        # Run on dkr22 :
         train_ds = self.train_dataset.auto_data_aug(da_type="rand_aug", crop_type=da_crp_key,
                                                     num_layers=2, magnitude=7)
+
         # train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
         #                                              )
 
