@@ -1,4 +1,4 @@
-from .config.absl_mock import Mock_Flag
+from config.absl_mock import Mock_Flag
 
 
 def read_cfg(mod="non_contrastive"):
@@ -353,7 +353,9 @@ def Configure_Saving_and_Restore_Model():
     # Saving Model
     flags = Mock_Flag()
     flags.DEFINE_string(
-        'model_dir', "./model_ckpt/resnet_byol/resnet_18_Rand_SimCLR/",
+        #'model_dir', "./model_ckpt/resnet_byol/auto_aug/",  # dkr33
+        #'model_dir', "./model_ckpt/resnet_byol/baseline/", # dkr22
+        'model_dir', "./model_ckpt/resnet_byol/fast_aa/",
         'Model directory for training.')
 
     flags.DEFINE_integer(

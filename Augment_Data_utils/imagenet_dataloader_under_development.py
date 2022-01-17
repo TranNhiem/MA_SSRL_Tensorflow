@@ -168,6 +168,11 @@ class Imagenet_dataset(object):
     def __wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
 
+        img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+            .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
+
+
         if FLAGS.resize_wrap_ds:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
@@ -179,6 +184,7 @@ class Imagenet_dataset(object):
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+
 
         return img_lab_ds
 
@@ -254,11 +260,11 @@ class Imagenet_dataset(object):
             else Data_Augmentor(*aug_args, **aug_kwarg)
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_one = ds_one.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+        ds_one = ds_one.map(lambda x, y : (self.crop_dict[crop_type](x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
 
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_two = ds_two.map(self.crop_dict[crop_type], num_parallel_calls=AUTO)
+        ds_two = ds_two.map(lambda x, y : (self.crop_dict[crop_type](x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
         train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
 
         if FLAGS.dataloader == "ds_1_2_options":
@@ -471,7 +477,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def RandAug(self, policy=(2, 4), crop_type="incpt_crp"):
-
+        ...
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
 

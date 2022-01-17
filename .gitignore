@@ -1,5 +1,6 @@
 # sys generated tmp file
 __pycache__
 *.tmp
+code_spec_v1/*
 *.egg-info
 .DS_Store
