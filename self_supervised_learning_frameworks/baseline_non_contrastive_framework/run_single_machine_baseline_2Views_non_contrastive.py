@@ -77,7 +77,13 @@ class Runner(object):
         train_dataset = Imagenet_dataset(**ds_args)
 
         # Dataloader V2
+<<<<<<< HEAD
+        train_dataset = Imagenet_dataset_v2(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
+                                            strategy=strategy, train_path=FLAGS.train_path,
+                                            val_path=FLAGS.val_path, train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes)
+=======
         #train_dataset = Imagenet_dataset_v2(**ds_args)
+>>>>>>> 86ccccd5e08ad93f199d72ebb34b5605542c3cf7
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
