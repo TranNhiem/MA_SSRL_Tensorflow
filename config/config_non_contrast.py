@@ -369,6 +369,12 @@ def Configure_Saving_and_Restore_Model():
     # Loading Model
 
     # Restore model weights only, but not global step and optimizer states
+    flags.DEFINE_boolean(
+        'restore_checkpoint', False,
+        'If True, Try to restore check point from latest or Given directory.')
+
+
+    # Restore model weights only, but not global step and optimizer states
     flags.DEFINE_string(
         'checkpoint', None,
         'Loading from the given checkpoint for fine-tuning if a finetuning '
