@@ -1,5 +1,5 @@
 
-from .losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, CosineAnnealingDecayRestarts
+from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, CosineAnnealingDecayRestarts
 from objectives import metrics
 from objectives import objective as obj_lib
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
