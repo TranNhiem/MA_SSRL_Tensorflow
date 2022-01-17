@@ -72,7 +72,7 @@ class Runner(object):
         val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED_data_split}
         # Dataloader V1
         train_dataset = Imagenet_dataset(**ds_args)
 
@@ -631,7 +631,7 @@ if __name__ == '__main__':
         "opt": FLAGS.up_scale
     }
     runer = Runner(FLAGS, wanda_cfg)
-    
+
     if "train" in FLAGS.mode:
         runer.train(FLAGS.mode)
     else:  # perform evaluation

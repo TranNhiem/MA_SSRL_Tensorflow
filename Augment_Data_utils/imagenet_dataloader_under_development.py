@@ -33,7 +33,8 @@ options.experimental_optimization.apply_default_optimizations = True
 options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 
-# Imagenet_dataset is a 'class', we do not do FLAGS in it, we use 'self' instead!!
+
+# Imagenet_dataset is a 'class', we don't do FLAGS in it, we use 'self'.
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -43,7 +44,7 @@ class Imagenet_dataset(object):
         n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1)}
 
     def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None,
-                 val_path=None, val_label=None, strategy=None, subset_class_num=None):
+                 val_path=None, val_label=None, strategy=None, subset_class_num=None, seed=None):
         '''
         Args: 
             img_size: Image training size
@@ -57,7 +58,7 @@ class Imagenet_dataset(object):
         self.BATCH_SIZE = train_batch
         self.val_batch = val_batch
         self.strategy = strategy
-        self.seed = FLAGS.SEED
+        self.seed = seed
 
         self.label, self.class_name = self.get_label(train_label)
         numeric_train_cls = []
@@ -71,7 +72,7 @@ class Imagenet_dataset(object):
         elif val_path is None:
             dataset = list(paths.list_images(train_path))
             dataset_len = len(dataset)
-            random.Random(FLAGS.SEED_data_split).shuffle(dataset)
+            random.Random(self.seed).shuffle(dataset)
             self.x_val = dataset[0:int(dataset_len * 0.2)]
             self.x_train = dataset[len(self.x_val) + 1:]
             for image_path in self.x_train:
@@ -86,8 +87,8 @@ class Imagenet_dataset(object):
             self.x_train = list(paths.list_images(train_path))
 
             self.x_val = list(paths.list_images(val_path))
-            random.Random(FLAGS.SEED_data_split).shuffle(self.x_train)
-            random.Random(FLAGS.SEED_data_split).shuffle(self.x_val)
+            random.Random(self.seed).shuffle(self.x_train)
+            random.Random(self.seed).shuffle(self.x_val)
 
             for image_path in self.x_train:
                 label = re.split(r"/|\|//|\\", image_path)[-2]
@@ -165,7 +166,6 @@ class Imagenet_dataset(object):
 
     def __wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
-
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
             .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
