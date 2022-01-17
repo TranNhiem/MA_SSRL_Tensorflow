@@ -32,7 +32,7 @@ def read_cfg_base(mod="non_contrastive"):
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
-    FLAGS.mixprecision = 'fp32'
+    FLAGS.mixprecision = 'FP32'
     # , [ 'original', 'model_only', ],
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
