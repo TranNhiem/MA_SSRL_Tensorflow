@@ -1,4 +1,3 @@
-
 from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, CosineAnnealingDecayRestarts
 from objectives import metrics
 from objectives import objective as obj_lib
@@ -17,22 +16,10 @@ import json
 from math import ceil
 import os
 
-# for disable some tf warning message..
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
 # For setting GPUs Thread reduce kernel Luanch Delay
 # https://github.com/tensorflow/tensorflow/issues/25724
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 os.environ['TF_GPU_THREAD_COUNT'] = '2'
-
-
-#flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
-
-# Automatic Clustering JIT Compiler XLA
-# tf.config.optimizer.set_jit(True)
-
-# deep-learn pkgs
-#       self-define pkgs
 
 
 # Utils function
@@ -87,12 +74,16 @@ class Runner(object):
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy}
         # Dataloader V1
-        #train_dataset = Imagenet_dataset(**ds_args)
+        train_dataset = Imagenet_dataset(**ds_args)
 
         # Dataloader V2
+<<<<<<< HEAD
         train_dataset = Imagenet_dataset_v2(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
                                             strategy=strategy, train_path=FLAGS.train_path,
                                             val_path=FLAGS.val_path, train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes)
+=======
+        #train_dataset = Imagenet_dataset_v2(**ds_args)
+>>>>>>> 86ccccd5e08ad93f199d72ebb34b5605542c3cf7
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
@@ -199,14 +190,7 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-        # Run on dkr33 :  (now flag)
-        # train_ds = self.train_dataset.auto_data_aug(da_type="fast_aug", crop_type=da_crp_key,
-        #                                             policy_type="imagenet")
-
-        # Run on dkr22 (run baseline..):
-        #train_ds = self.train_dataset.simclr_crop_da(crop_type=da_crp_key)
-
-        # Run on dkr22 :
+        # dataloader in version 2
         train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
                                                        num_layers=2, magnitude=7)
 
@@ -625,12 +609,9 @@ class Runner(object):
 if __name__ == '__main__':
     from config.absl_mock import Mock_Flag
     from config.non_contrast_config_v1 import read_cfg_base
-    # flag = read_cfg_base()
-    # FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
-    read_cfg_base()
 
-    flag = Mock_Flag()
-    FLAGS = flag.FLAGS
+    # dummy assignment, so let it in one line
+    flag = read_cfg_base() ; FLAGS = flag.FLAGS     
 
     if not os.path.isdir(FLAGS.model_dir):
         print("Creat the model dir: ", FLAGS.model_dir)
@@ -655,8 +636,8 @@ if __name__ == '__main__':
         "Loss type": FLAGS.aggregate_loss,
         "opt": FLAGS.up_scale
     }
-
     runer = Runner(FLAGS, wanda_cfg)
+    
     if "train" in FLAGS.mode:
         runer.train(FLAGS.mode)
     else:  # perform evaluation
