@@ -24,10 +24,6 @@ import os
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 974d16ed94d4a22ae3be706a10cf77f82d1f9383
 
 #flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
 
@@ -207,7 +203,7 @@ class Runner(object):
 
         # Run on dkr22 :
         train_ds = self.train_dataset.auto_data_aug(da_type="rand_aug", crop_type=da_crp_key,
-                                                    def_op=2, div_op=7)
+                                                    num_layers=2, magnitude=7)
         # train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
         #                                              )
 
@@ -594,13 +590,10 @@ if __name__ == '__main__':
 
     flag = Mock_Flag()
     FLAGS = flag.FLAGS
-<<<<<<< HEAD
-=======
 
     if not os.path.isdir(FLAGS.model_dir):
         print("Creat the model dir: ", FLAGS.model_dir)
         os.makedirs(FLAGS.model_dir)
->>>>>>> 974d16ed94d4a22ae3be706a10cf77f82d1f9383
 
     if not os.path.isdir(FLAGS.model_dir):
         print("Creat the model dir: ", FLAGS.model_dir)
