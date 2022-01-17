@@ -15,6 +15,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "RandAugmnet_Inception_Style_Crop_FP32"
     FLAGS.wandb_mod = "run"
+    FLAGS.restore_checkpoint = True  # Restore Checkpoint or Not
 
     '''
         The middle layer output control the feature map size
@@ -31,7 +32,7 @@ def read_cfg_base(mod="non_contrastive"):
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
-    FLAGS.mixprecision = 'fp32'  
+    FLAGS.mixprecision = 'fp32'
     # , [ 'original', 'model_only', ],
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
