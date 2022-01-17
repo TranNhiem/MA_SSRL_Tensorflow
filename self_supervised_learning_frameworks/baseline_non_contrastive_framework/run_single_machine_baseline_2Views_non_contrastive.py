@@ -72,12 +72,14 @@ class Runner(object):
         val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED_data_split}
         # Dataloader V1
-        ##train_dataset = Imagenet_dataset(**ds_args)
+        #train_dataset = Imagenet_dataset(**ds_args)
 
         # Dataloader V2
-        train_dataset = Imagenet_dataset_v2(**ds_args)
+        train_dataset = Imagenet_dataset_v2(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
+                                            strategy=strategy, train_path=FLAGS.train_path,
+                                            val_path=FLAGS.val_path, train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
