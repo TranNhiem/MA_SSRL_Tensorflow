@@ -322,7 +322,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
             val_path:   Directory to validation or testing data
             subset_class_num: subset class 
         '''
-        super(Imagenet_dataset_v2, self).__init__(**kwargs)
+        super(Imagenet_dataset_v2, self).__init__(**kwards)
 
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch
