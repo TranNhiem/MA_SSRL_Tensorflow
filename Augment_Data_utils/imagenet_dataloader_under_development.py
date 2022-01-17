@@ -172,7 +172,6 @@ class Imagenet_dataset(object):
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
             .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
 
-
         if FLAGS.resize_wrap_ds:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
@@ -185,12 +184,12 @@ class Imagenet_dataset(object):
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
 
-
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
         if wrap_type == "cropping":
             def map_func(x, y): return (trfs(x, self.IMG_SIZE), y)
+
         elif wrap_type == "validate":
             def map_func(x, y): return (trfs(x, FLAGS.IMG_height, FLAGS.IMG_width,
                                              FLAGS.randaug_transform, FLAGS.randaug_magnitude), y)
@@ -260,11 +259,13 @@ class Imagenet_dataset(object):
             else Data_Augmentor(*aug_args, **aug_kwarg)
 
         ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_one = ds_one.map(lambda x, y : (self.crop_dict[crop_type](x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
+        ds_one = ds_one.map(lambda x, y: (self.crop_dict[crop_type](
+            x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
         train_ds_one = self.__wrap_da(ds_one, da_inst.data_augment, "data_aug")
 
         ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        ds_two = ds_two.map(lambda x, y : (self.crop_dict[crop_type](x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
+        ds_two = ds_two.map(lambda x, y: (self.crop_dict[crop_type](
+            x, self.IMG_SIZE), y), num_parallel_calls=AUTO)
         train_ds_two = self.__wrap_da(ds_two, da_inst.data_augment, "data_aug")
 
         if FLAGS.dataloader == "ds_1_2_options":
@@ -306,9 +307,9 @@ class Imagenet_dataset_v2(Imagenet_dataset):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
                  "rnd_crp": simclr_augment_randcrop_global_views}
-    # The crop strategy is 'incpt_style' in global view
-    default_view = {"glb": Multi_viewer.View_spec(
-        n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1)}
+    # # The crop strategy is 'incpt_style' in global view
+    # default_view = {"glb": Multi_viewer.View_spec(
+    #     n_crp=1, re_siz=224, viw_siz=224, min_scale=0.5, max_scale=1)}
 
     def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None,
                  val_path=None, val_label=None, strategy=None, subset_class_num=None):
@@ -322,6 +323,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
             subset_class_num: subset class 
         '''
         super(Imagenet_dataset_v2, self).__init__(**kwargs)
+
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch
         self.val_batch = val_batch
@@ -397,6 +399,22 @@ class Imagenet_dataset_v2(Imagenet_dataset):
         self.x_val_lable = tf.one_hot(numeric_val_cls, depth=len(
             self.class_name) if subset_class_num == None else subset_class_num)
 
+    def wrap_ds(self, img_folder, labels):
+        # data_info record the path of imgs, it should be parsed
+        img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+
+        if FLAGS.resize_wrap_ds:
+            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+
+        else:
+
+            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+
+        return img_lab_ds
+
     def Auto_Augment(self, image):
         '''
         Args:
@@ -432,10 +450,13 @@ class Imagenet_dataset_v2(Imagenet_dataset):
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
-        ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
+        ds_one = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds_one = ds_one.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+
         train_ds_one = self.__wrap_da(ds_one, self.crop_dict[crop_type])
 
-        ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
+        ds_two = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds_two = ds_one.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
         train_ds_two = self.__wrap_da(ds_two, self.crop_dict[crop_type])
 
         if FLAGS.dataloader == "ds_1_2_options":
@@ -454,15 +475,45 @@ class Imagenet_dataset_v2(Imagenet_dataset):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def AutoAug(self, crop_type="incpt_crp"):
+
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
-        ds_one = self.__wrap_ds(self.x_train, self.x_train_lable)
-        train_ds_one = self.__wrap_da(ds_one, self.crop_dict[crop_type])
+        ds_one = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds_one = ds_one.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
 
-        ds_two = self.__wrap_ds(self.x_train, self.x_train_lable)
-        train_ds_two = self.__wrap_da(ds_two, self.crop_dict[crop_type])
+        if crop_type == "incpt_crp":
+            train_ds_one = ds_one.map(lambda x, y: (simclr_augment_inception_style(
+                x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Auto_Augment(x, )), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+
+        elif crop_type == "rnd_crp":
+            train_ds_one = ds_one.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
+                                      num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Auto_Augment(x, )), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+        else:
+            raise ValueError("Cropping strategy is Invalid")
+
+        ds_two = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds_two = ds_two.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+
+        if crop_type == "incpt_crp":
+            train_ds_one = ds_two.map(lambda x, y: (simclr_augment_inception_style(
+                x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Auto_Augment(x, )), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+
+        elif crop_type == "rnd_crp":
+            train_ds_one = ds_two.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
+                                      num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Auto_Augment(x, )), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+
+        else:
+            raise ValueError("Cropping strategy is Invalid")
 
         if FLAGS.dataloader == "ds_1_2_options":
             logging.info("Train_ds_one and two  with option")
@@ -476,8 +527,58 @@ class Imagenet_dataset_v2(Imagenet_dataset):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def RandAug(self, policy=(2, 4), crop_type="incpt_crp"):
-        ...
+    def RandAug(self,  crop_type="incpt_crp", num_transform=2, magnitude=5):
+        if not crop_type in Imagenet_dataset.crop_dict.keys():
+            raise ValueError(
+                f"The given cropping strategy {crop_type} is not supported")
+
+        ds_one = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds_one = ds_one.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+
+        if crop_type == "incpt_crp":
+            train_ds_one = ds_one.map(lambda x, y: (simclr_augment_inception_style(
+                x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Rand_Augment(x, num_transform, magnitude)), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+
+        elif crop_type == "rnd_crp":
+            train_ds_one = ds_one.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
+                                      num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Rand_Augment(x, num_transform, magnitude)), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+        else:
+            raise ValueError("Cropping strategy is Invalid")
+
+        ds_two = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds_two = ds_two.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+
+        if crop_type == "incpt_crp":
+            train_ds_one = ds_two.map(lambda x, y: (simclr_augment_inception_style(
+                x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Rand_Augment(x, num_transform, magnitude)), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+
+        elif crop_type == "rnd_crp":
+            train_ds_one = ds_two.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
+                                      num_parallel_calls=AUTO) \
+                .map(lambda x: (self.Rand_Augment(x, num_transform, magnitude)), num_parallel_calls=AUTO)\
+                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(20)
+
+        else:
+            raise ValueError("Cropping strategy is Invalid")
+
+        if FLAGS.dataloader == "ds_1_2_options":
+            logging.info("Train_ds_one and two  with option")
+            train_ds_one.with_options(options)
+            train_ds_two.with_options(options)
+
+        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
+        if FLAGS.dataloader == "train_ds_options":
+            logging.info("Train_ds dataloader with option")
+            train_ds.with_options(options)
+
+        return self.strategy.experimental_distribute_dataset(train_ds)
+
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
 
