@@ -250,8 +250,8 @@ class Imagenet_dataset(object):
         #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def auto_data_aug(self, da_type="auto_aug", crop_type="incpt_crp", *aug_args, **aug_kwarg):
 
+    def auto_data_aug(self, da_type="auto_aug", crop_type="incpt_crp", *aug_args, **aug_kwarg):
         da_inst = Data_Augmentor(DAS_type=da_type, *aug_args, **aug_kwarg) if da_type \
             else Data_Augmentor(*aug_args, **aug_kwarg)
 
