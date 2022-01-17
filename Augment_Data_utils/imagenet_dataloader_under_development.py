@@ -33,9 +33,7 @@ options.experimental_optimization.apply_default_optimizations = True
 options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 
-# temporary rename to imagenet_dataset, single/multiple machine will become an option.
-
-
+# Imagenet_dataset is a 'class', we do not do FLAGS in it, we use 'self' instead!!
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -172,6 +170,7 @@ class Imagenet_dataset(object):
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
             .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
 
+        img_shp = (self.IMG_SIZE, self.IMG_SIZE)
         if FLAGS.resize_wrap_ds:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
@@ -217,7 +216,6 @@ class Imagenet_dataset(object):
         return data_aug_ds
 
     # This for Supervised validation training
-
     def supervised_validation(self):
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         val_ds = self.__wrap_da(raw_ds, supervised_augment_eval, "validate")
@@ -321,7 +319,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
             val_path:   Directory to validation or testing data
             subset_class_num: subset class 
         '''
-        super(Imagenet_dataset_v2, self).__init__(**kwargs)
+        super(Imagenet_dataset_v2, self).__init__()
 
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch

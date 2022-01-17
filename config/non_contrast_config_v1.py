@@ -3,8 +3,7 @@ from .config_non_contrast import read_cfg
 
 
 def read_cfg_base(mod="non_contrastive"):
-    read_cfg(mod)
-    flag = Mock_Flag()
+    flag = read_cfg(mod)
     FLAGS = flag.FLAGS
 
     # , ['ds_1_2_options', 'train_ds_options'],
@@ -44,4 +43,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
     FLAGS.model_dir = "/data/share/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
+    
     #FLAGS.train_mode = "finetune"
+
+    # plz return FLAGS for easy implementation
+    return flags
