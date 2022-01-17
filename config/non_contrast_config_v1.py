@@ -10,7 +10,7 @@ def read_cfg_base(mod="non_contrastive"):
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
-    FLAGS.resize_wrap_ds = True
+    FLAGS.resize_wrap_ds = False
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "RandAugmnet_Inception_Style_Crop_FP32"
@@ -31,7 +31,7 @@ def read_cfg_base(mod="non_contrastive"):
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
-    FLAGS.mixprecision = 'fp32'# current Design only FP32
+    FLAGS.mixprecision = 'fp32'  # current Design only FP32
     # , [ 'original', 'model_only', ],
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
