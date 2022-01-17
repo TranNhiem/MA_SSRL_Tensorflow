@@ -5,7 +5,7 @@ from objectives import objective as obj_lib
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
 from losses_optimizers.self_supervised_losses import byol_loss
 from config.helper_functions import *
-from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
+from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset, Imagenet_dataset_v2
 from tensorflow import distribute as tf_dis
 import tensorflow as tf
 import wandb
@@ -16,8 +16,6 @@ from absl import logging
 import json
 from math import ceil
 import os
-
-
 
 # for disable some tf warning message..
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -82,12 +80,17 @@ class Runner(object):
 
         # 1. Prepare imagenet dataset
         strategy = tf_dis.MirroredStrategy()
+        self.strategy = strategy
         train_global_batch = self.train_batch_size * strategy.num_replicas_in_sync
         val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy}
-        train_dataset = Imagenet_dataset(**ds_args)
+        # Dataloader V1
+        #train_dataset = Imagenet_dataset(**ds_args)
+
+        # Dataloader V2
+        train_dataset = Imagenet_dataset_v2(**ds_args)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
@@ -195,17 +198,15 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # Run on dkr33 :  (now flag)
-        train_ds = self.train_dataset.auto_data_aug(da_type="fast_aug", crop_type=da_crp_key,
-                                                    policy_type="imagenet")
+        # train_ds = self.train_dataset.auto_data_aug(da_type="fast_aug", crop_type=da_crp_key,
+        #                                             policy_type="imagenet")
 
         # Run on dkr22 (run baseline..):
         #train_ds = self.train_dataset.simclr_crop_da(crop_type=da_crp_key)
 
         # Run on dkr22 :
-        train_ds = self.train_dataset.auto_data_aug(da_type="rand_aug", crop_type=da_crp_key,
-                                                    num_layers=2, magnitude=7)
-        # train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
-        #                                              )
+        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+                                                       num_layers=2, magnitude=7)
 
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -278,6 +279,15 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
+            if (epoch + 1) % 20 == 0:
+                FLAGS.train_mode = 'finetune'
+                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+                                            checkpoint_manager.latest_checkpoint, self.strategy)
+                wandb.log({
+                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+                })
+                FLAGS.train_mode = 'pretrain'
         # perform eval after training
         if "eval" in exe_mode:
             self.eval(checkpoint_manager)

@@ -474,7 +474,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
         #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def AutoAug(self, crop_type="incpt_crp"):
+    def AutoAug_strategy(self, crop_type="incpt_crp"):
 
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
@@ -527,7 +527,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def RandAug(self,  crop_type="incpt_crp", num_transform=2, magnitude=5):
+    def RandAug_strategy(self, crop_type="incpt_crp", num_transform=2, magnitude=5):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
