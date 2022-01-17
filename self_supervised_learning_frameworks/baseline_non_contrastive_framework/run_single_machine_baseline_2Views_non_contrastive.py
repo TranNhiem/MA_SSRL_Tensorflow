@@ -550,16 +550,48 @@ class Runner(object):
             for var in self.online_model.trainable_variables:
                 logging.info(var.name)
 
-        # Update Encoder and Projection head weight
-        grads = tape.gradient(loss, self.online_model.trainable_variables)
-        self.opt.apply_gradients(
-            zip(grads, self.online_model.trainable_variables))
+        if FLAGS.mixprecision == 'FP32':
 
-        # Update Prediction Head model
-        grads = tape.gradient(
-            loss, self.prediction_model.trainable_variables)
-        self.opt.apply_gradients(
-            zip(grads, self.prediction_model.trainable_variables))
+            # Update Encoder and Projection head weight
+            grads = tape.gradient(loss, self.online_model.trainable_variables)
+            self.opt.apply_gradients(
+                zip(grads, self.online_model.trainable_variables))
+
+            # Update Prediction Head model
+            grads = tape.gradient(
+                loss, self.prediction_model.trainable_variables)
+            self.opt.apply_gradients(
+                zip(grads, self.prediction_model.trainable_variables))
+
+        elif FLAGS.mixprecision == 'FP16':
+
+            fp32_grads = tape.gradient(
+                loss, self.online_model.trainable_variables)
+            fp16_grads = [tf.cast(grad, 'float16') for grad in fp32_grads]
+            all_reduce_fp16_grads = tf.distribute.get_replica_context(
+            ).all_reduce(tf.distribute.ReduceOp.SUM, fp16_grads)
+            # all_reduce_fp32_grads = [
+            #     tf.cast(grad, 'float32') for grad in all_reduce_fp16_grads]
+            all_reduce_fp32_grads = self.opt.get_unscaled_gradients(
+                all_reduce_fp16_grads)
+
+            self.opt.apply_gradients(zip(all_reduce_fp32_grads, self.online_model.trainable_variables),
+                                     experimental_aggregate_gradients=False)
+
+            fp32_grads = tape.gradient(
+                loss, self.prediction_model.trainable_variables)
+            fp16_grads = [tf.cast(grad, 'float16')for grad in fp32_grads]
+            all_reduce_fp16_grads = tf.distribute.get_replica_context(
+            ).all_reduce(tf.distribute.ReduceOp.SUM, fp16_grads)
+            # all_reduce_fp32_grads = [
+            #     tf.cast(grad, 'float32') for grad in all_reduce_fp16_grads]
+            all_reduce_fp32_grads = self.opt.get_unscaled_gradients(
+                all_reduce_fp16_grads)
+            self.opt.apply_gradients(zip(
+                all_reduce_fp32_grads, self.prediction_model.trainable_variables),
+                experimental_aggregate_gradients=False)
+        else:
+            raise ValueError("Not supporting training Precision")
 
         del tape
         return loss
