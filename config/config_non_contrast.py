@@ -1,4 +1,4 @@
-from .config.absl_mock import Mock_Flag
+from config.absl_mock import Mock_Flag
 
 
 def read_cfg(mod="non_contrastive"):

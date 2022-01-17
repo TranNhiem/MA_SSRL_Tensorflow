@@ -167,11 +167,11 @@ class Imagenet_dataset(object):
 
     def __wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
-<<<<<<< HEAD
+
         img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
             .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)
-=======
+
 
         if FLAGS.resize_wrap_ds:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
@@ -185,7 +185,7 @@ class Imagenet_dataset(object):
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
 
->>>>>>> 01713947e08c00f802ce04e42aeffd73c47018d4
+
         return img_lab_ds
 
     def __wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -477,7 +477,7 @@ class Imagenet_dataset_v2(Imagenet_dataset):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def RandAug(self, policy=(2, 4), crop_type="incpt_crp"):
-
+        ...
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
 

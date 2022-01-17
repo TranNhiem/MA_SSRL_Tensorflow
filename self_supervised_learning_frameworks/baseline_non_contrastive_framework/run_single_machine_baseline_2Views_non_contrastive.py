@@ -25,14 +25,7 @@ import os
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
-read_cfg_base()
 
-flag = Mock_Flag()
-FLAGS = flag.FLAGS
-
-if not os.path.isdir(FLAGS.model_dir):
-    print("Creat the model dir: ", FLAGS.model_dir)
-    os.makedirs(FLAGS.model_dir)
 
 #flag.save_config(os.path.join(FLAGS.model_dir, "config.cfg"))
 
@@ -200,7 +193,7 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-<<<<<<< HEAD
+
         ## Run on dkr33 :  (now flag)
         train_ds = self.train_dataset.auto_data_aug(da_type="fast_aug", crop_type=da_crp_key, 
                                                     policy_type="imagenet")
@@ -209,13 +202,13 @@ class Runner(object):
         #train_ds = self.train_dataset.simclr_crop_da(crop_type=da_crp_key)
 
 
-=======
+
         # Run on dkr22 :
         train_ds = self.train_dataset.auto_data_aug(da_type="rand_aug", crop_type=da_crp_key,
                                                    def_op=2, div_op=7 )
         # train_ds = self.train_dataset.simclr_crop_da(crop_type="rnd_crp",
         #                                              )
->>>>>>> 01713947e08c00f802ce04e42aeffd73c47018d4
+
 
         #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -594,7 +587,15 @@ if __name__ == '__main__':
 
     # flag = read_cfg_base()
     # FLAGS = flag.FLAGS     # dummy assignment, so let it in one line
+    read_cfg_base()
 
+    flag = Mock_Flag()
+    FLAGS = flag.FLAGS
+
+    if not os.path.isdir(FLAGS.model_dir):
+        print("Creat the model dir: ", FLAGS.model_dir)
+        os.makedirs(FLAGS.model_dir)
+        
     set_gpu_env()
 
     wanda_cfg = {
