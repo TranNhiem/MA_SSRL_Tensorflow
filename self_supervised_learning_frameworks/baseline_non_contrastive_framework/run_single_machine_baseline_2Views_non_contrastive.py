@@ -74,16 +74,10 @@ class Runner(object):
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy}
         # Dataloader V1
-        train_dataset = Imagenet_dataset(**ds_args)
+        ##train_dataset = Imagenet_dataset(**ds_args)
 
         # Dataloader V2
-<<<<<<< HEAD
-        train_dataset = Imagenet_dataset_v2(img_size=FLAGS.image_size, train_batch=train_global_batch,  val_batch=val_global_batch,
-                                            strategy=strategy, train_path=FLAGS.train_path,
-                                            val_path=FLAGS.val_path, train_label=FLAGS.train_label, val_label=FLAGS.val_label, subset_class_num=FLAGS.num_classes)
-=======
-        #train_dataset = Imagenet_dataset_v2(**ds_args)
->>>>>>> 86ccccd5e08ad93f199d72ebb34b5605542c3cf7
+        train_dataset = Imagenet_dataset_v2(**ds_args)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
@@ -611,7 +605,8 @@ if __name__ == '__main__':
     from config.non_contrast_config_v1 import read_cfg_base
 
     # dummy assignment, so let it in one line
-    flag = read_cfg_base() ; FLAGS = flag.FLAGS     
+    flag = read_cfg_base()
+    FLAGS = flag.FLAGS
 
     if not os.path.isdir(FLAGS.model_dir):
         print("Creat the model dir: ", FLAGS.model_dir)
@@ -637,7 +632,7 @@ if __name__ == '__main__':
         "opt": FLAGS.up_scale
     }
     runer = Runner(FLAGS, wanda_cfg)
-    
+
     if "train" in FLAGS.mode:
         runer.train(FLAGS.mode)
     else:  # perform evaluation
