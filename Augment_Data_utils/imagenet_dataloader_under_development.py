@@ -276,9 +276,9 @@ class Imagenet_dataset(object):
         image = tf.cast(image[0], dtype=tf.float32)
         return image / 255.
 
+    @tf.function
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
-        # this return (trfs_img, apply_policies)
         image = tf.py_function(augmenter_apply.distort, [image*255.], Tout=[tf.float32])
         return image
 
