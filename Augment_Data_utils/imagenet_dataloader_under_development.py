@@ -222,7 +222,7 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(val_ds)
 
-   
+    @classmethod
     def Auto_Augment(self, image):
         '''
         Args:
@@ -252,7 +252,6 @@ class Imagenet_dataset(object):
 
         return image
 
-   
     def Rand_Augment(self, image, num_transform, magnitude):
         '''
         Args:
