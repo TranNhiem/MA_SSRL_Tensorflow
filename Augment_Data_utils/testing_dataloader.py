@@ -109,13 +109,13 @@ for _, (ds_one, ds_two) in enumerate(train_ds):
 
 image, lable = ds
 
-# plt.figure(figsize=(10, 5))
-# for n in range(10):
-#     ax = plt.subplot(2, 10, n + 1)
-#     plt.imshow(image[n])  # .numpy().astype("int")
-#     # ax = plt.subplot(2, 10, n + 11)
-#     # plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
-#     plt.axis("off")
-# plt.show()
+plt.figure(figsize=(10, 5))
+for n in range(3):
+    ax = plt.subplot(2, 3, n + 1)
+    plt.imshow(image[n])  # .numpy().astype("int")
+    # ax = plt.subplot(2, 10, n + 11)
+    # plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
+    plt.axis("off")
+plt.show()
 print(image[1])
-plt.imshow(image[1])
+# plt.imshow(image[1])
