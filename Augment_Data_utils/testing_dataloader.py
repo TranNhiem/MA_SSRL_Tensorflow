@@ -78,11 +78,11 @@ object_data = Runner(FLAGS, )
 train_dataset = object_data.train_dataset
 # train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
 #                                           num_transform=2, magnitude=7)
-train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+# train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
 
 #  already complete, have fun ~
-# train_ds = self.train_dataset.FastAug_strategy(
-#     crop_type=da_crp_key, policy_type="imagenet")
+train_ds = train_dataset.FastAug_strategy(
+    crop_type=da_crp_key, policy_type="imagenet")
 
 # #   performing Linear-protocol
 val_ds = train_dataset.supervised_validation()
@@ -114,7 +114,7 @@ for n in range(3):
     ax = plt.subplot(2, 3, n + 1)
     # plt.imshow(image[n])  # .numpy().astype("int")
     # ax = plt.subplot(2, 10, n + 11)
-    #plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
+    # plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
     plt.axis("off")
 plt.show()
 print(image[1])
