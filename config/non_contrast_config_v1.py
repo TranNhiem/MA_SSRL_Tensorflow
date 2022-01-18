@@ -8,7 +8,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
-    FLAGS.mode_prefetch = 20 # if set it to 1 will Use AUTO
+    FLAGS.mode_prefetch = 20  # if set it to 1 will Use AUTO
     # ["custome", "TFA_API"] # Current suport TFA_API
     FLAGS.auto_augment = "custome"
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
@@ -41,12 +41,12 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.resnet_depth = 18
     FLAGS.train_epochs = 100
-    FLAGS.num_classes = 10
+    FLAGS.num_classes = 5
 
-    FLAGS.train_batch_size = 10
-    FLAGS.val_batch_size = 10
+    FLAGS.train_batch_size = 5
+    FLAGS.val_batch_size = 5
     FLAGS.model_dir = "./model_ckpt/test"
-    
+
     #FLAGS.train_mode = "finetune"
 
     # plz return FLAGS for easy implementation
