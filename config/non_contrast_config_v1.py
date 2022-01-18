@@ -41,10 +41,10 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.resnet_depth = 18
     FLAGS.train_epochs = 100
-    FLAGS.num_classes = 100
+    FLAGS.num_classes = 10
 
-    FLAGS.train_batch_size = 128
-    FLAGS.val_batch_size = 128
+    FLAGS.train_batch_size = 10
+    FLAGS.val_batch_size = 10
     FLAGS.model_dir = "./model_ckpt/test"
     
     #FLAGS.train_mode = "finetune"
