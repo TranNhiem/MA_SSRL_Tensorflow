@@ -65,11 +65,6 @@ class Runner(object):
         infer_ds_info(n_tra_sample, n_evl_sample,
                       train_global_batch, val_global_batch)
 
-        self.summary_writer = tf.summary.create_file_writer(self.model_dir)
-
-        checkpoint_steps = (self.checkpoint_steps or (
-            self.checkpoint_epochs * self.epoch_steps))
-
         # record var into self
         self.strategy = strategy
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
@@ -113,12 +108,12 @@ for _, (ds_one, ds_two) in enumerate(train_ds):
 
 image, lable = ds
 
-plt.figure(figsize=(10, 5))
-for n in range(10):
-    ax = plt.subplot(2, 10, n + 1)
-    plt.imshow(image[n])  # .numpy().astype("int")
-    # ax = plt.subplot(2, 10, n + 11)
-    # plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
-    plt.axis("off")
-plt.show()
+# plt.figure(figsize=(10, 5))
+# for n in range(10):
+#     ax = plt.subplot(2, 10, n + 1)
+#     plt.imshow(image[n])  # .numpy().astype("int")
+#     # ax = plt.subplot(2, 10, n + 11)
+#     # plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
+#     plt.axis("off")
+# plt.show()
 print(image)
