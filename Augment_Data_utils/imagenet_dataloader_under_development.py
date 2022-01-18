@@ -10,7 +10,7 @@ import numpy as np
 import random
 import re
 
-#from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
+# from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
@@ -26,14 +26,14 @@ AUTO = tf.data.experimental.AUTOTUNE
 options = tf.data.Options()
 tf.data.experimental.DistributeOptions()
 options.experimental_optimization.noop_elimination = True
-#options.experimental_optimization.map_vectorization.enabled = True
+# options.experimental_optimization.map_vectorization.enabled = True
 options.experimental_optimization.map_and_batch_fusion = True
 options.experimental_optimization.map_parallelization = True
 options.experimental_optimization.apply_default_optimizations = True
 options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 # Shard policy using multi-machines training
-#options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
+# options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
 
 
 # Define meta-cfg for parallel training
@@ -55,13 +55,13 @@ class Imagenet_dataset(object):
     def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None,
                  val_path=None, val_label=None, strategy=None, subset_class_num=None, seed=None):
         '''
-        Args: 
+        Args:
             img_size: Image training size
             train_batch: Distributed Batch_size for training multi-GPUs
 
-            image_path: Directory to train data 
+            image_path: Directory to train data
             val_path:   Directory to validation or testing data
-            subset_class_num: subset class 
+            subset_class_num: subset class
         '''
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch
@@ -86,7 +86,7 @@ class Imagenet_dataset(object):
             self.x_train = dataset[len(self.x_val) + 1:]
             for image_path in self.x_train:
                 label = re.split(r"/|\|//|\\", image_path)[-2]
-                #label = image_path.split("/")[-2]
+                # label = image_path.split("/")[-2]
                 numeric_train_cls.append(self.label[label])
             for image_path in self.x_val:
                 label = re.split(r"/|\|//|\\", image_path)[-2]
@@ -225,7 +225,12 @@ class Imagenet_dataset(object):
     # This for Supervised validation training
     def supervised_validation(self):
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        val_ds = self.wrap_da(raw_ds, supervised_augment_eval, "validate")
+
+        val_ds = raw_ds.map(lambda x, y: (supervised_augment_eval(x, FLAGS.IMG_height, FLAGS.IMG_width, FLAGS.randaug_transform, FLAGS.randaug_magnitude),
+                                          y), num_parallel_calls=AUTO)\
+            .batch(self.BATCH_SIZE, num_parallel_calls=AUTO)\
+            .prefetch(mode_prefetch)
+
         logging.info("Val_ds with option")
         val_ds.with_options(options)
 
@@ -236,14 +241,14 @@ class Imagenet_dataset(object):
         Args:
         image: A tensor [ with, height, channels]
         AutoAugment: a function to apply Policy transformation [v0, policy_simple]
-        Return: 
+        Return:
         Image: A tensor of Applied transformation [with, height, channels]
         '''
 
         '''
-        Version 1  AutoAugmentation --> 
-        Custom Design still has issue Bugs in Distor function 
-        
+        Version 1  AutoAugmentation -->
+        Custom Design still has issue Bugs in Distor function
+
         '''
 
         # augmentation_name='v1',
@@ -310,7 +315,7 @@ class Imagenet_dataset(object):
             train_ds.with_options(options)
         # else:
         #     logging.info(" dataloader without option")
-        #train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
+        # train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     def AutoAug_strategy(self, crop_type="incpt_crp"):
@@ -364,7 +369,7 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        #ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+        # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -407,7 +412,7 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        #ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+        # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
