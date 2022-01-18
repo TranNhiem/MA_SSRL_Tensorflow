@@ -60,6 +60,10 @@ def base_cfg():
         'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
         'The dataloader apply options.')
 
+    flags.DEFINE_integer(
+        'mode_prefetch', 1, #[1] is Auto, # OR Can set number of Batch want to Prefetch
+        'Prefetching batch for ahead of time training')
+
     flags.DEFINE_enum(
         'auto_augment', 'TFA_API', ['TFA_API', 'custome'],
         'The dataloader apply options.')

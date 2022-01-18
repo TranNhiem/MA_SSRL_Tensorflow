@@ -95,7 +95,7 @@ class Runner(object):
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
 
-    def train(self, exe_mode, da_crp_key="incpt_crp"):
+    def train(self, exe_mode, da_crp_key="rnd_crp"):
         # Configure the Encoder Architecture
         def get_gpu_model():
             with self.strategy.scope():
