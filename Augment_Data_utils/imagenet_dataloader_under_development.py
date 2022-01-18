@@ -24,7 +24,7 @@ import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 # Experimental options
 options = tf.data.Options()
-tf.data.experimental.DistributeOptions()
+# tf.data.experimental.DistributeOptions()
 options.experimental_optimization.noop_elimination = True
 #options.experimental_optimization.map_vectorization.enabled = True
 options.experimental_optimization.map_and_batch_fusion = True
