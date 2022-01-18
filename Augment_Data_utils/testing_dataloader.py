@@ -71,6 +71,7 @@ class Runner(object):
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
 
+
  # perform data_augmentation by calling the dataloader methods
 da_crp_key = 'rnd_crp'  # incpt_crp
 object_data = Runner(FLAGS, )
@@ -117,3 +118,4 @@ image, lable = ds
 #     plt.axis("off")
 # plt.show()
 print(image[1])
+plt.imshow(image[1])
