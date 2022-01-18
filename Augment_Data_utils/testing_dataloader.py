@@ -76,17 +76,21 @@ class Runner(object):
 da_crp_key = 'rnd_crp'  # incpt_crp
 object_data = Runner(FLAGS, )
 train_dataset = object_data.train_dataset
-# train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
-#                                           num_transform=2, magnitude=7)
+train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
+                                          num_transform=2, magnitude=5)
 # train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
 
-#  already complete, have fun ~
-train_ds = train_dataset.FastAug_strategy(
-    crop_type=da_crp_key, policy_type="imagenet")
+# #  already complete, have fun ~
+# train_ds = train_dataset.FastAug_strategy(
+#     crop_type=da_crp_key, policy_type="imagenet")
 
 # #   performing Linear-protocol
 val_ds = train_dataset.supervised_validation()
+val_ds_=[]
+for _, ds_one in enumerate(val_ds):
+    val_ds_ = ds_one
 
+    break
 ds = []
 for _, (ds_one, ds_two) in enumerate(train_ds):
     ds = ds_one
@@ -107,8 +111,8 @@ for _, (ds_one, ds_two) in enumerate(train_ds):
 # plt.show()
 # print(image[0])
 
-image, lable = ds
-
+image, _ = val_ds_
+print(image[0].shape)
 plt.figure(figsize=(10, 5))
 for n in range(3):
     ax = plt.subplot(2, 3, n + 1)
