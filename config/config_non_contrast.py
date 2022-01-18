@@ -61,7 +61,8 @@ def base_cfg():
         'The dataloader apply options.')
 
     flags.DEFINE_integer(
-        'mode_prefetch', 1, #[1] is Auto, # OR Can set number of Batch want to Prefetch
+        # [1] is Auto, # OR Can set number of Batch want to Prefetch
+        'mode_prefetch', 1,
         'Prefetching batch for ahead of time training')
 
     flags.DEFINE_enum(
@@ -87,11 +88,11 @@ def base_cfg():
         'Mask path.')
 
     flags.DEFINE_string(   # label data just put it into proj-repo with relative path..
-        'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
+        'train_label', ".Augment_Data_utils/image_net_1k_lable.txt",
         'train_label.')
 
-    flags.DEFINE_string(
-        'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
+    flags.DEFINE_string(  # ../../
+        'val_label', "./Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
         'val_label.')
 
 
@@ -361,8 +362,8 @@ def Configure_Saving_and_Restore_Model():
     # Saving Model
     flags = Mock_Flag()
     flags.DEFINE_string(
-        #'model_dir', "./model_ckpt/resnet_byol/auto_aug/",  # dkr33
-        #'model_dir', "./model_ckpt/resnet_byol/baseline/", # dkr22
+        # 'model_dir', "./model_ckpt/resnet_byol/auto_aug/",  # dkr33
+        # 'model_dir', "./model_ckpt/resnet_byol/baseline/", # dkr22
         'model_dir', "./model_ckpt/resnet_byol/fast_aa/",
         'Model directory for training.')
 
@@ -380,7 +381,6 @@ def Configure_Saving_and_Restore_Model():
     flags.DEFINE_boolean(
         'restore_checkpoint', False,
         'If True, Try to restore check point from latest or Given directory.')
-
 
     # Restore model weights only, but not global step and optimizer states
     flags.DEFINE_string(
