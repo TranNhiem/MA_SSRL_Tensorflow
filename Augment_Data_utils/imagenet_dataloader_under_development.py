@@ -24,7 +24,7 @@ import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 # Experimental options
 options = tf.data.Options()
-# tf.data.experimental.DistributeOptions()
+tf.data.experimental.DistributeOptions()
 options.experimental_optimization.noop_elimination = True
 #options.experimental_optimization.map_vectorization.enabled = True
 options.experimental_optimization.map_and_batch_fusion = True
@@ -182,7 +182,7 @@ class Imagenet_dataset(object):
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)  # .cache()
+                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
         else:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
@@ -211,14 +211,14 @@ class Imagenet_dataset(object):
                 "applying resize in wrap_ds for Caching Implementation")
             data_aug_ds = ds.map(map_func, num_parallel_calls=AUTO) \
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(20)  # AUTO
+                .prefetch(mode_prefetch)  # AUTO
 
         else:
             img_shp = (self.IMG_SIZE, self.IMG_SIZE)
             data_aug_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO) \
                             .map(map_func, num_parallel_calls=AUTO) \
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO) \
-                .prefetch(20)  # AUTO
+                .prefetch(mode_prefetch)  # AUTO
 
         return data_aug_ds
 
@@ -247,6 +247,7 @@ class Imagenet_dataset(object):
         '''
 
         # augmentation_name='v1',
+
         if FLAGS.auto_augment == "custome":
             augmenter_apply = AutoAugment(augmentation_name='v0')
 
@@ -255,7 +256,7 @@ class Imagenet_dataset(object):
         else:
             raise ValueError("Invalid AutoAugment Implementation")
 
-        image = augmenter_apply.distort(image)
+        image = augmenter_apply.distort(image*255)
 
         image = tf.cast(image, dtype=tf.float32)  # * 255.
         return image / 255.
@@ -272,10 +273,9 @@ class Imagenet_dataset(object):
         # print(image.shape)
         augmenter_apply = RandAugment(
             num_layers=num_transform, magnitude=magnitude)
-        image = augmenter_apply.distort(image)
+        image = augmenter_apply.distort(image*255.)
 
-        image = tf.cast(image[0], dtype=tf.float32)
-        return image  # / 255.
+        return image[0] / 255.
 
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)

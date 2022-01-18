@@ -75,11 +75,11 @@ def base_cfg():
         'Whether to Resize within Wrap_ds or resize in.__wrap_da')
 
     flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
-        'train_path', '/data1/share/1K_New/train',
+        'train_path', '/data/train',
         'Train dataset path.')
 
     flags.DEFINE_string(  # fixed mount point in the docker
-        'val_path', '/data1/share/1K_New/val',
+        'val_path', '/data/val',
         'Validaion dataset path.')
 
     # Mask_folder should locate in location and same level of train folder
@@ -88,11 +88,11 @@ def base_cfg():
         'Mask path.')
 
     flags.DEFINE_string(   # label data just put it into proj-repo with relative path..
-        'train_label', "image_net_1k_lable.txt",
+        'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
         'train_label.')
 
     flags.DEFINE_string(  # ../../Augment_Data_utils
-        'val_label', "ILSVRC2012_validation_ground_truth.txt",
+        'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
         'val_label.')
 
 
