@@ -44,7 +44,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    FLAGS.model_dir = "/data1/share/mutli_augment_project/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
+    FLAGS.model_dir = "/data/share/mutli_augment_project/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
 
     #FLAGS.train_mode = "finetune"
 
