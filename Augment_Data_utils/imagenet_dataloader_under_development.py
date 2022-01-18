@@ -10,11 +10,13 @@ import random
 import re
 
 #from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
-from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment import Fast_AutoAugment
+from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
+
 
 # Note : the source is different between RandAugment and AutoAugment 
-from official.vision.image_classification.augment import AutoAugment as autoaug
+#from official.vision.image_classification.augment import AutoAugment as autoaug
 
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
@@ -33,7 +35,6 @@ from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
-# rename 'Imagenet_dataset_v2' as a formal version
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -50,7 +51,6 @@ class Imagenet_dataset(object):
             val_path:   Directory to validation or testing data
             subset_class_num: subset class 
         '''
-
         self.IMG_SIZE = img_size
         self.BATCH_SIZE = train_batch
         self.val_batch = val_batch
@@ -157,7 +157,8 @@ class Imagenet_dataset(object):
             # Loading and reading Image
             img = tf.io.read_file(image_path)
             img = tf.io.decode_jpeg(img, channels=3)
-            img = tf.image.convert_image_dtype(img, tf.float32)
+            # norm into [0, 1] automatically
+            img = tf.image.convert_image_dtype(img, tf.float32) 
             return img
         return parse_images(image_path), label
 
@@ -171,7 +172,6 @@ class Imagenet_dataset(object):
                 .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)  # .cache()
 
         else:
-
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
 
@@ -238,8 +238,7 @@ class Imagenet_dataset(object):
         print(image.shape)
         image = augmenter_apply.distort(image)
 
-        image = tf.cast(image, dtype=tf.float32)/255.
-
+        image = tf.cast(image, dtype=tf.float32) / 255.
         return image
 
     def Rand_Augment(self, image, num_transform, magnitude):
@@ -257,8 +256,6 @@ class Imagenet_dataset(object):
         image = augmenter_apply.distort(image)
 
         image = tf.cast(image[0], dtype=tf.float32)
-        # tf.print(image)
-
         return image / 255.
 
     def Fast_Augment(self, image, policy_type="imagenet"):
@@ -304,7 +301,7 @@ class Imagenet_dataset(object):
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
 
-        if crop_type == "incpt_crp":
+        if crop_type == "incpt_crp":  
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
                 .map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)\
@@ -334,7 +331,7 @@ class Imagenet_dataset(object):
             train_ds_one.with_options(options)
             train_ds_two.with_options(options)
 
-        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
+        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))  
         if FLAGS.dataloader == "train_ds_options":
             logging.info("Train_ds dataloader with option")
             train_ds.with_options(options)
@@ -350,7 +347,6 @@ class Imagenet_dataset(object):
         ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         if crop_type == "incpt_crp":
-
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
                 .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
@@ -430,8 +426,8 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
-    def multi_view_data_aug(self, da_func=self.Auto_Augment):
-        mv = Multi_viewer(da_inst=da_func)
+    def multi_view_data_aug(self, da_func=None):
+        mv = Multi_viewer(da_inst=self.Auto_Augment)
 
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")

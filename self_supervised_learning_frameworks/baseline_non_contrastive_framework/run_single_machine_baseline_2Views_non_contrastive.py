@@ -202,7 +202,8 @@ class Runner(object):
 
             total_loss = 0.0
             num_batches = 0
-
+            
+            # batch_size, ((data, lab), (data, lab))
             for _, (ds_one, ds_two) in enumerate(train_ds):
 
                 total_loss += self.__distributed_train_step(ds_one, ds_two)
