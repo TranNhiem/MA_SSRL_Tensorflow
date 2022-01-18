@@ -13,7 +13,8 @@ import re
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment import Fast_AutoAugment
 
-# Note : the source is different between RandAugment and AutoAugment 
+# Note : the source is different between RandAugment and AutoAugment
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
 from official.vision.image_classification.augment import AutoAugment as autoaug
 
 import tensorflow as tf
@@ -232,18 +233,15 @@ class Imagenet_dataset(object):
         Custom Design still has issue Bugs in Distor function 
         
         '''
-<<<<<<< HEAD
 
         # augmentation_name='v1',
         if FLAGS.auto_augment == "custome":
-            augmenter_apply = (augmentation_name='v0')
-
-=======
-        # Note : it should be v1 in formal running, which is the policy of reduced-imagenet
-        #        for testing, you can keep it as plicy='v0'
->>>>>>> 8c8f31f4db04813729fc022f4f15629676b03d79
-        augmenter_apply = autoaug(augmentation_name='v0')
-        print(image.shape)
+            augmenter_apply = AutoAugment(augmentation_name='v0')
+        elif FLAGS.auto_augment == "TFA_API":
+            augmenter_apply = autoaug(augmentation_name='v0')
+        else: 
+            raise ValueError("Invalid AutoAugment Implementation")
+        
         image = augmenter_apply.distort(image)
 
         image = tf.cast(image, dtype=tf.float32)/255.

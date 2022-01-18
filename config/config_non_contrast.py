@@ -60,6 +60,10 @@ def base_cfg():
         'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
         'The dataloader apply options.')
 
+    flags.DEFINE_enum(
+        'auto_augment', 'TFA_API', ['TFA_API', 'custome'],
+        'The dataloader apply options.')
+
     flags.DEFINE_boolean(
         # set True will resize inside wrap_ds else resize in Wrap_da STEP
         'resize_wrap_ds', True,
