@@ -74,7 +74,7 @@ def base_cfg():
         'Whether to Resize within Wrap_ds or resize in.__wrap_da')
 
     flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
-        'train_path', '/data/train',
+        'train_path', '/data1/train',
         'Train dataset path.')
 
     flags.DEFINE_string(  # fixed mount point in the docker
