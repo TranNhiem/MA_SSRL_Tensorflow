@@ -4,7 +4,7 @@ from objectives import objective as obj_lib
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
 from losses_optimizers.self_supervised_losses import byol_loss
 from config.helper_functions import *
-from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset, Imagenet_dataset_v2
+from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from tensorflow import distribute as tf_dis
 import tensorflow as tf
 import wandb
@@ -74,11 +74,8 @@ class Runner(object):
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED}
-        # Dataloader V1
-        #train_dataset = Imagenet_dataset(**ds_args)
-
-        # Dataloader V2
-        train_dataset = Imagenet_dataset_v2(**ds_args)
+        # Dataloader V2 already be proposed as formal data_loader
+        train_dataset = Imagenet_dataset(**ds_args)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
         infer_ds_info(n_tra_sample, n_evl_sample,
@@ -185,11 +182,13 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-        # dataloader in version 2
+        # perform data_augmentation by calling the dataloader methods
         # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
         #                                                num_transform=2, magnitude=7)
-        train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key,
-                                                      )
+        #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+        # already complete, have fun ~
+        train_ds = self.train_dataset.FastAug_strategy(crop_type="incpt_crp", policy_type="imagenet")
+
         # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
