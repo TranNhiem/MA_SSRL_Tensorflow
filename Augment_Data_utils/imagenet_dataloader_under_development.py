@@ -32,7 +32,7 @@ options.experimental_optimization.apply_default_optimizations = True
 options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 ## Shard policy using multi-machines training
-#options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
+options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
 
 # Define meta-cfg for parallel training
 from config.absl_mock import Mock_Flag
