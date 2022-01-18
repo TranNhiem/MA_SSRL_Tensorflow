@@ -160,6 +160,126 @@ class Data_Augmentor(object):
         return tf.squeeze(post_img)
 
 
+# copy&paste, haha~ ugly but sometimes useful methods
+class Data_Augmentor_v2(object):
+    DAS_obj = namedtuple('DAS_obj', 'init, pre_proc, post_proc')
+    def_op = lambda image : tf.cast(image, dtype=tf.float32)
+    mul_op = lambda image : tf.cast(image, dtype=tf.float32) * 255.
+    div_op = lambda image : tf.cast(image, dtype=tf.float32) / 255. 
+
+    auto_aug_obj = DAS_obj(AutoAugment, mul_op, div_op)
+    fast_aug_obj = DAS_obj(Fast_AutoAugment, mul_op, def_op)
+    rnd_aug_obj = DAS_obj(RandAugment, def_op, div_op)
+    
+    # static instance, declare once use everywhere!
+    DAS_dict = {"auto_aug":auto_aug_obj, "fast_aug":fast_aug_obj, "rand_aug":rnd_aug_obj}
+    # common method name to apply the data augmentation!!
+    DA_METHOD = "distort"
+
+    def __init__(self, DAS_type="auto_aug", *aug_args, **aug_kwarg):
+        try:
+            self.DAS_type = DAS_type
+            das_obj = Data_Augmentor.DAS_dict[DAS_type]
+            self.aug_inst = das_obj.init(*aug_args, **aug_kwarg)
+        except KeyError as k_err:
+            raise KeyError("Given vlaue {} of DAS_type, \
+                            but the value should be one of that ({})".format(
+                            aug_type, Data_Augmentor.DAS_dict.keys() )
+                          )
+        except Exception as exc:
+            raise
+
+        self.pre_proc_lst = [ das_obj.pre_proc ]
+        self.post_proc_lst = [ das_obj.post_proc ]
+        self.regist_common_distort()
+
+
+    @staticmethod
+    def prnt_policies(DAS_type):
+        # please refer the DAS_dict keys
+        da_lst = Data_Augmentor.DAS_dict.keys()
+        if DAS_type == da_lst[0]:
+            print("AutoAugment Policy V0-- implementation : \n")
+            print("V0--> policy = \n")
+            print(Data_Augmentor.DAS_dict[DAS_type].policy_v0())
+            print("\n\n=================\n\n")
+            print("Policy_simple = \n")
+            print(Data_Augmentor.DAS_dict[DAS_type].policy_simple())
+
+        elif DAS_type == da_lst[1]:
+            print("RandAugment avaliable ops : \n")
+            print(Data_Augmentor.DAS_dict[DAS_type].available_ops)
+
+        elif DAS_type == da_lst[2]: 
+            print("FastAutoAugment avaliable ops : \n")
+            print(Data_Augmentor.DAS_dict[DAS_type]().prnt_policies)
+            
+        else:
+            raise ValueError("Given vlaue {} of DAS_type, \
+                            but the value should be one of that ({})".format(
+                            aug_type, Data_Augmentor.DAS_dict.keys() )
+                          )
+
+
+    # allow the augument instance have common method name to apply the data transformation
+    def regist_common_distort(self):
+        # the distort method already implemented in augument instance
+        if Data_Augmentor.DA_METHOD in dir(self.aug_inst):
+            return
+        # plz regist the correct method, which apply the data transformation.. 
+        
+
+    def data_augment(self, image, db_mod=False):
+        '''
+            The common interface for public user, which allow user only call this method 
+            to augument the given image with the corresponding behavior setting by args. 
+            Args:
+                image: A tensor [ with, height, channels]
+                db_mod : Boolean, turn debug mode on/off (True/False) 
+                other args will be removed in next commit
+            Return: 
+                Image: A tensor of Applied transformation [with, height, channels]
+        '''
+        ## HACKME : distort function can be designed in parallel pattern to improve the performance..
+        def _distort(img_tnsr_lst):
+            img_lst = []
+            for img_tnsr in img_tnsr_lst:
+                aug_img, trfs_lst = self.aug_inst.distort(img_tnsr)
+                img_lst.append(aug_img)
+                if db_mod:
+                    print(trfs_lst)
+            return img_lst
+
+        def _img_proc(img_tnsr_lst, proc_func):
+            img_lst = []
+            for img_tnsr in img_tnsr_lst:
+                img_lst.append( proc_func(img_tnsr) )
+            return img_lst
+
+        # deal with the non-batch image
+        if len(image.shape) == 3:
+            image = tf.expand_dims(image, axis=0)
+
+        # 1. image pre-processing 
+        pre_img = image
+        for preproc in self.pre_proc_lst:
+            pre_img = _img_proc(pre_img, preproc)
+
+        # 2. apply the data augmentation of the image
+        aug_img = _distort(pre_img)
+        
+        # 3. image post-processing 
+        post_img = aug_img
+        for postproc in self.post_proc_lst:
+            post_img = _img_proc(post_img, postproc)
+        
+        # convert numpy dtype into the tf.Tensor for tf.Model processing..
+        tf_cnvt = lambda img_lst : tf.convert_to_tensor(img_lst, dtype=tf.float32)
+        post_img = tf_cnvt(post_img)
+
+        return tf.squeeze(post_img)
+
+
 if __name__ == '__main__':
     # simple test
     import numpy as np

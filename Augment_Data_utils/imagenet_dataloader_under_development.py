@@ -429,6 +429,19 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
+    # in some degree, multi-view is complete ~ ~
+    def multi_view_data_aug(self, da_func=self.Auto_Augment):
+        mv = Multi_viewer(da_inst=da_func)
+
+        raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
+        tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
+        train_ds = tf.data.Dataset.zip(tra_ds_lst)
+
+        logging.info("Train_ds_multiview dataloader with option")
+        train_ds.with_options(options)
+
+        return self.strategy.experimental_distribute_dataset(train_ds)
+
 
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
