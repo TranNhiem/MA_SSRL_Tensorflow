@@ -112,7 +112,7 @@ image, lable = ds
 plt.figure(figsize=(10, 5))
 for n in range(3):
     ax = plt.subplot(2, 3, n + 1)
-    plt.imshow(image[n])  # .numpy().astype("int")
+    plt.imshow(image[n]/255.)  # .numpy().astype("int")
     # ax = plt.subplot(2, 10, n + 11)
     # plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
     plt.axis("off")
