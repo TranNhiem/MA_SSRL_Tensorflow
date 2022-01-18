@@ -11,7 +11,7 @@ from .visualize import Visualize
 # -------------------------------------------------------------
 
 #FLAGS= flags.FLAGS
-import objectives.metrics
+import objectives.metrics as metrics
 from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
