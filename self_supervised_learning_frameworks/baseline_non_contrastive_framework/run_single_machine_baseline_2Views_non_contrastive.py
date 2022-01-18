@@ -95,7 +95,7 @@ class Runner(object):
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
 
-    def train(self, exe_mode, da_crp_key="rnd_crp"):
+    def train(self, exe_mode, da_crp_key="incpt_crp"):
         # Configure the Encoder Architecture
         def get_gpu_model():
             with self.strategy.scope():
@@ -187,7 +187,11 @@ class Runner(object):
         #                                                num_transform=2, magnitude=7)
         #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
         # already complete, have fun ~
+<<<<<<< HEAD
         train_ds = self.train_dataset.FastAug_strategy(crop_type="incpt_crp", policy_type="imagenet")
+=======
+        # train_ds = self.train_dataset.FastAug_strategy(crop_type=da_crp_key, policy_type="imagenet")
+>>>>>>> 5f5937d7f6e475b4035f114320d8d1239b70beab
 
         # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
