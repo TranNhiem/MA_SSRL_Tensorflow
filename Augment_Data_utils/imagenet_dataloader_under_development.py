@@ -263,7 +263,6 @@ class Imagenet_dataset(object):
 
         image = augmenter_apply.distort(image*255)
 
-        image = tf.cast(image, dtype=tf.float32)  # * 255.
         return image / 255.
 
     def Rand_Augment(self, image, num_transform, magnitude):
@@ -278,7 +277,7 @@ class Imagenet_dataset(object):
         # print(image.shape)
         augmenter_apply = RandAugment(
             num_layers=num_transform, magnitude=magnitude)
-        image = augmenter_apply.distort(image*255.)
+        image = augmenter_apply.distort(image*255)
 
         return image[0] / 255.
 
