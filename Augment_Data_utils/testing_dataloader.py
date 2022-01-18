@@ -76,9 +76,9 @@ class Runner(object):
 da_crp_key = 'rnd_crp'  # incpt_crp
 object_data = Runner(FLAGS, )
 train_dataset = object_data.train_dataset
-train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                          num_transform=2, magnitude=7)
-# train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+# train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
+#                                           num_transform=2, magnitude=7)
+train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
 
 #  already complete, have fun ~
 # train_ds = self.train_dataset.FastAug_strategy(
