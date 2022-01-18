@@ -247,6 +247,7 @@ class Imagenet_dataset(object):
         '''
 
         # augmentation_name='v1',
+
         if FLAGS.auto_augment == "custome":
             augmenter_apply = AutoAugment(augmentation_name='v0')
 
@@ -255,7 +256,7 @@ class Imagenet_dataset(object):
         else:
             raise ValueError("Invalid AutoAugment Implementation")
 
-        image = augmenter_apply.distort(image)
+        image = augmenter_apply.distort(image*255)
 
         image = tf.cast(image, dtype=tf.float32)  # * 255.
         return image / 255.
@@ -272,10 +273,9 @@ class Imagenet_dataset(object):
         # print(image.shape)
         augmenter_apply = RandAugment(
             num_layers=num_transform, magnitude=magnitude)
-        image = augmenter_apply.distort(image)
+        image = augmenter_apply.distort(image*255.)
 
-        image = tf.cast(image[0], dtype=tf.float32)
-        return image / 255.
+        return image[0] / 255.
 
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
