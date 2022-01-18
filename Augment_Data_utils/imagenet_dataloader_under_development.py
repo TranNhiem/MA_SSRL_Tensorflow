@@ -16,14 +16,9 @@ from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
 
-<<<<<<< HEAD
-# Note : the source is different between RandAugment and AutoAugment 
-#from official.vision.image_classification.augment import AutoAugment as autoaug
-=======
 # Note : the source is different between RandAugment and AutoAugment
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
 from official.vision.image_classification.augment import AutoAugment as autoaug
->>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
 
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
@@ -41,12 +36,7 @@ options.experimental_threading.max_intra_op_parallelism = 1
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
-<<<<<<< HEAD
-=======
-# rename 'Imagenet_dataset_v2' as a formal version
 
-
->>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -445,17 +435,12 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
-<<<<<<< HEAD
     def multi_view_data_aug(self, da_func=None):
         mv = Multi_viewer(da_inst=self.Auto_Augment)
 
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         train_ds = tf.data.Dataset.zip(tra_ds_lst)
-=======
-    # def multi_view_data_aug(self, da_func=self.Auto_Augment):
-    #     mv = Multi_viewer(da_inst=da_func)
->>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
 
     #     raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
     #     tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
