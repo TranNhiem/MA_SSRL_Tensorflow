@@ -185,9 +185,9 @@ class Runner(object):
         # perform data_augmentation by calling the dataloader methods
         # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
         #                                                num_transform=2, magnitude=7)
-        #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+        train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
         # already complete, have fun ~
-        train_ds = self.train_dataset.FastAug_strategy(crop_type="incpt_crp", policy_type="imagenet")
+        # train_ds = self.train_dataset.FastAug_strategy(crop_type="incpt_crp", policy_type="imagenet")
 
         # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()

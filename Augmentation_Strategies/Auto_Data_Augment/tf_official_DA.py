@@ -722,7 +722,13 @@ class AutoAugment(ImageAugment):
       translate_const: multiplier for applying translation.
     """
     super(AutoAugment, self).__init__()
-
+    
+    self.available_policies = {
+          'v0': self.policy_v0(),
+          'v1': self.policy_v1(),
+          'test': self.policy_test(),
+          'simple': self.policy_simple(),
+      }
     if policies is None:
       self.available_policies = {
           'v0': self.policy_v0(),
@@ -750,7 +756,6 @@ class AutoAugment(ImageAugment):
       the `policies` pass into the function.
     """
     input_image_type = image.dtype
-
     if input_image_type != tf.uint8:
       image = tf.clip_by_value(image, 0.0, 255.0)
       image = tf.cast(image, dtype=tf.uint8)
@@ -788,7 +793,8 @@ class AutoAugment(ImageAugment):
 
     image, op_idxs = select_and_apply_random_policy(tf_policies, image)
     image = tf.cast(image, dtype=input_image_type)
-    return image, self.policies[op_idxs]
+    
+    return image #, self.policies[op_idxs]
 
   @staticmethod
   def policy_v0():

@@ -240,6 +240,7 @@ class Imagenet_dataset(object):
         # augmentation_name='v1',
         if FLAGS.auto_augment == "custome":
             augmenter_apply = AutoAugment(augmentation_name='v0')
+        
         elif FLAGS.auto_augment == "TFA_API":
             augmenter_apply = autoaug(augmentation_name='v0')
         else:
