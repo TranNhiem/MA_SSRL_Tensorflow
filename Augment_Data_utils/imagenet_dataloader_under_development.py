@@ -13,6 +13,7 @@ import random
 import re
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import
 from official.vision.image_classification.augment import AutoAugment as autoaug
 
 
@@ -504,6 +505,9 @@ class Imagenet_dataset_v2(object):
         '''
 
         # augmentation_name='v1',
+        if FLAGS.auto_augment == "custome":
+            augmenter_apply = (augmentation_name='v0')
+
         augmenter_apply = autoaug(augmentation_name='v0')
         print(image.shape)
         image = augmenter_apply.distort(image)
