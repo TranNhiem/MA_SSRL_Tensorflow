@@ -15,7 +15,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "Auto_Augment_RandomCrop_FP32"
-    FLAGS.wandb_mod = "run"
+    FLAGS.wandb_mod = "dryrun"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
@@ -44,7 +44,19 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
+<<<<<<< HEAD
     FLAGS.model_dir = "/data1/share/mutli_augment_project/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+    FLAGS.model_dir = "./model_ckpt/test"
+=======
+    FLAGS.model_dir = "/data1/share/mutli_augment_project/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
+>>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
+=======
+    FLAGS.model_dir = "/data/share/mutli_augment_project/resnet_byol/resnet18/RandAug_2_7_inception_crop_FP32"
+>>>>>>> d3c57de75db86b1475df6597a87fc999202f8bb0
+>>>>>>> 4b2c782918889bc89d8d4d2eb79eb11b11263c46
 
     #FLAGS.train_mode = "finetune"
 
