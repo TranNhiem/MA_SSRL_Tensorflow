@@ -116,4 +116,4 @@ image, lable = ds
 #     # plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
 #     plt.axis("off")
 # plt.show()
-print(image)
+print(image[1])
