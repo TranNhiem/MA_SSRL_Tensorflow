@@ -224,11 +224,11 @@ class Imagenet_dataset(object):
 
     # This for Supervised validation training
     def supervised_validation(self):
-        raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        raw_ds = self.wrap_ds(self.x_val, self.x_val_lable)
 
         val_ds = raw_ds.map(lambda x, y: (supervised_augment_eval(x, FLAGS.IMG_height, FLAGS.IMG_width, FLAGS.randaug_transform, FLAGS.randaug_magnitude),
                                           y), num_parallel_calls=AUTO)\
-            .batch(self.BATCH_SIZE, num_parallel_calls=AUTO)\
+            .batch(self.val_batch, num_parallel_calls=AUTO)\
             .prefetch(mode_prefetch)
 
         logging.info("Val_ds with option")
