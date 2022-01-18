@@ -1,6 +1,6 @@
 from config.non_contrast_config_v1 import read_cfg_base
 from config.absl_mock import Mock_Flag
-from byol_simclr_imagenet_data import imagenet_dataset_single_machine
+
 import numpy as np
 from absl import logging
 import tensorflow as tf
