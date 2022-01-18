@@ -1,4 +1,3 @@
-from config.absl_mock import Mock_Flag
 __author__ = "Rick & Josef (refactor)"
 __date__ = "2021/01/18"
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
@@ -34,15 +33,19 @@ options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 ## Shard policy using multi-machines training
 #options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
+
 # Define meta-cfg for parallel training
+from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
+FLAGS.mode_prefetch = 1
 
 if FLAGS.mode_prefetch == 1: 
     mode_prefetch= AUTO
 else: 
     mode_prefetch= FLAGS.mode_prefetch
-    
+
+
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -276,8 +279,7 @@ class Imagenet_dataset(object):
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
         # this return (trfs_img, apply_policies)
-        image, _ = augmenter_apply.distort(image*255.)
-        image = tf.cast(image, dtype=tf.float32)
+        image = tf.py_function(augmenter_apply.distort, [image*255.], Tout=[tf.float32])
         return image
 
     def simclr_crop_da(self, crop_type="incpt_crp"):
@@ -408,22 +410,22 @@ class Imagenet_dataset(object):
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
             train_ds_two = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         elif crop_type == "rnd_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
                                   num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
             train_ds_two = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
                                   num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
         else:
             raise ValueError("Cropping strategy is Invalid")

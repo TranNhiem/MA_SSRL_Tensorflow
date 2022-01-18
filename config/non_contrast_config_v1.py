@@ -12,9 +12,9 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.auto_augment = "custome"
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
     FLAGS.resize_wrap_ds = True
-    FLAGS.mode_prefetch = 1 # [1, number_batch] 1 is set Auto
+
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "AutoAugment_Random_Croping_FP32"
+    FLAGS.wandb_run_name = "Auto_Augment_RandomCrop_FP32"
     FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -45,6 +45,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
     FLAGS.model_dir = "./model_ckpt/test"
+    
     #FLAGS.train_mode = "finetune"
 
     # plz return FLAGS for easy implementation
