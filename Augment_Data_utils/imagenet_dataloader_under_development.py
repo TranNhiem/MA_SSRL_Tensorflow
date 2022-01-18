@@ -1,3 +1,4 @@
+from config.absl_mock import Mock_Flag
 __author__ = "Rick & Josef (refactor)"
 __date__ = "2021/01/18"
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
@@ -31,20 +32,19 @@ options.experimental_optimization.map_parallelization = True
 options.experimental_optimization.apply_default_optimizations = True
 options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
-## Shard policy using multi-machines training
+# Shard policy using multi-machines training
 options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
 
 
 # Define meta-cfg for parallel training
-from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 FLAGS.mode_prefetch = 1
 
-if FLAGS.mode_prefetch == 1: 
-    mode_prefetch= AUTO
-else: 
-    mode_prefetch= FLAGS.mode_prefetch
+if FLAGS.mode_prefetch == 1:
+    mode_prefetch = AUTO
+else:
+    mode_prefetch = FLAGS.mode_prefetch
 
 
 class Imagenet_dataset(object):
@@ -170,7 +170,7 @@ class Imagenet_dataset(object):
             img = tf.io.read_file(image_path)
             img = tf.io.decode_jpeg(img, channels=3)
             # norm into [0, 1] automatically
-            img = tf.image.convert_image_dtype(img, tf.float32) 
+            img = tf.image.convert_image_dtype(img, tf.float32)
             return img
         return parse_images(image_path), label
 
@@ -249,7 +249,7 @@ class Imagenet_dataset(object):
         # augmentation_name='v1',
         if FLAGS.auto_augment == "custome":
             augmenter_apply = AutoAugment(augmentation_name='v0')
-        
+
         elif FLAGS.auto_augment == "TFA_API":
             augmenter_apply = autoaug(augmentation_name='v0')
         else:
@@ -257,7 +257,7 @@ class Imagenet_dataset(object):
 
         image = augmenter_apply.distort(image)
 
-        image = tf.cast(image, dtype=tf.float32) / 255.
+        image = tf.cast(image, dtype=tf.float32)  # / 255.
         return image
 
     def Rand_Augment(self, image, num_transform, magnitude):
@@ -275,12 +275,13 @@ class Imagenet_dataset(object):
         image = augmenter_apply.distort(image)
 
         image = tf.cast(image[0], dtype=tf.float32)
-        return image / 255.
+        return image  # / 255.
 
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
         # this return (trfs_img, apply_policies)
-        image = tf.py_function(augmenter_apply.distort, [image*255.], Tout=[tf.float32])
+        image = tf.py_function(augmenter_apply.distort, [
+                               image*255.], Tout=[tf.float32])
         return image
 
     def simclr_crop_da(self, crop_type="incpt_crp"):
@@ -320,7 +321,7 @@ class Imagenet_dataset(object):
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
 
-        if crop_type == "incpt_crp":  
+        if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
                 .map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)\
@@ -350,7 +351,7 @@ class Imagenet_dataset(object):
             train_ds_one.with_options(options)
             train_ds_two.with_options(options)
 
-        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))  
+        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         if FLAGS.dataloader == "train_ds_options":
             logging.info("Train_ds dataloader with option")
             train_ds.with_options(options)
