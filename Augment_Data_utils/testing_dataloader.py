@@ -65,9 +65,6 @@ class Runner(object):
         infer_ds_info(n_tra_sample, n_evl_sample,
                       train_global_batch, val_global_batch)
 
-        # initial record utils
-        wanda_cfg['Batch_size'] = train_global_batch
-        wandb_init(wanda_cfg)
         self.summary_writer = tf.summary.create_file_writer(self.model_dir)
 
         checkpoint_steps = (self.checkpoint_steps or (
@@ -78,7 +75,6 @@ class Runner(object):
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
-
 
  # perform data_augmentation by calling the dataloader methods
 da_crp_key = 'rnd_crp'  # incpt_crp
