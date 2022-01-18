@@ -24,7 +24,7 @@ import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 # Experimental options
 options = tf.data.Options()
-# tf.data.experimental.DistributeOptions()
+tf.data.experimental.DistributeOptions()
 options.experimental_optimization.noop_elimination = True
 #options.experimental_optimization.map_vectorization.enabled = True
 options.experimental_optimization.map_and_batch_fusion = True
@@ -182,7 +182,7 @@ class Imagenet_dataset(object):
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)  # .cache()
+                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
         else:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
@@ -275,7 +275,7 @@ class Imagenet_dataset(object):
         image = augmenter_apply.distort(image)
 
         image = tf.cast(image[0], dtype=tf.float32)
-        return image  # / 255.
+        return image  / 255.
 
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
