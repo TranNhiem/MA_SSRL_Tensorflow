@@ -1,3 +1,4 @@
+from config.absl_mock import Mock_Flag
 __author__ = "Rick & Josef (refactor)"
 __date__ = "2021/01/18"
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
@@ -15,12 +16,18 @@ from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
 
+<<<<<<< HEAD
 # Note : the source is different between RandAugment and AutoAugment 
 #from official.vision.image_classification.augment import AutoAugment as autoaug
+=======
+# Note : the source is different between RandAugment and AutoAugment
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
+from official.vision.image_classification.augment import AutoAugment as autoaug
+>>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
 
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
-## Experimental options
+# Experimental options
 options = tf.data.Options()
 options.experimental_optimization.noop_elimination = True
 #options.experimental_optimization.map_vectorization.enabled = True
@@ -30,16 +37,21 @@ options.experimental_optimization.apply_default_optimizations = True
 options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 
-## Define meta-cfg for parallel training
-from config.absl_mock import Mock_Flag
+# Define meta-cfg for parallel training
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 
+<<<<<<< HEAD
+=======
+# rename 'Imagenet_dataset_v2' as a formal version
+
+
+>>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
                  "rnd_crp": simclr_augment_randcrop_global_views}
-            
+
     def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None,
                  val_path=None, val_label=None, strategy=None, subset_class_num=None, seed=None):
         '''
@@ -168,11 +180,13 @@ class Imagenet_dataset(object):
 
         if FLAGS.resize_wrap_ds:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
                 .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)  # .cache()
 
         else:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
 
         return img_lab_ds
@@ -217,7 +231,6 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(val_ds)
 
-    @classmethod
     def Auto_Augment(self, image):
         '''
         Args:
@@ -232,10 +245,16 @@ class Imagenet_dataset(object):
         Custom Design still has issue Bugs in Distor function 
         
         '''
-        # Note : it should be v1 in formal running, which is the policy of reduced-imagenet
-        #        for testing, you can keep it as plicy='v0'
-        augmenter_apply = autoaug(augmentation_name='v0')
-        print(image.shape)
+
+        # augmentation_name='v1',
+        if FLAGS.auto_augment == "custome":
+            augmenter_apply = AutoAugment(augmentation_name='v0')
+        
+        elif FLAGS.auto_augment == "TFA_API":
+            augmenter_apply = autoaug(augmentation_name='v0')
+        else:
+            raise ValueError("Invalid AutoAugment Implementation")
+
         image = augmenter_apply.distort(image)
 
         image = tf.cast(image, dtype=tf.float32) / 255.
@@ -260,10 +279,11 @@ class Imagenet_dataset(object):
 
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
-        image, _ = augmenter_apply.distort(image*255.)  # this return (trfs_img, apply_policies)
+        # this return (trfs_img, apply_policies)
+        image, _ = augmenter_apply.distort(image*255.)
         image = tf.cast(image, dtype=tf.float32)
         return image
-        
+
     def simclr_crop_da(self, crop_type="incpt_crp"):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
@@ -299,7 +319,7 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+        # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
 
         if crop_type == "incpt_crp":  
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -344,7 +364,7 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+        #ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -381,14 +401,13 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-
     def FastAug_strategy(self, crop_type="incpt_crp", policy_type="imagenet"):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+        #ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -426,18 +445,26 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
+<<<<<<< HEAD
     def multi_view_data_aug(self, da_func=None):
         mv = Multi_viewer(da_inst=self.Auto_Augment)
 
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         train_ds = tf.data.Dataset.zip(tra_ds_lst)
+=======
+    # def multi_view_data_aug(self, da_func=self.Auto_Augment):
+    #     mv = Multi_viewer(da_inst=da_func)
+>>>>>>> 7f159ea1eb93bea00275b2707f55951c7bb0cd7d
 
-        logging.info("Train_ds_multiview dataloader with option")
-        train_ds.with_options(options)
+    #     raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
+    #     tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
+    #     train_ds = tf.data.Dataset.zip(tra_ds_lst)
 
-        return self.strategy.experimental_distribute_dataset(train_ds)
+    #     logging.info("Train_ds_multiview dataloader with option")
+    #     train_ds.with_options(options)
 
+    #     return self.strategy.experimental_distribute_dataset(train_ds)
 
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
