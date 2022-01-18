@@ -21,7 +21,6 @@ import os
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
-
 # Utils function
 # Setting GPU
 def set_gpu_env(n_gpus=8):
@@ -37,8 +36,6 @@ def set_gpu_env(n_gpus=8):
         except RuntimeError as e:
             print(e)
 
-
-
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
 
@@ -47,8 +44,8 @@ class Runner(object):
             if wanda_cfg:
                 wandb.init(project=self.wandb_project_name, name=FLAGS.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
+        
         #   calculate the training related meta-info
-
         def infer_ds_info(n_tra_sample, n_evl_sample, train_global_batch, val_global_batch):
             self.train_steps = self.eval_steps or int(
                 n_tra_sample * self.train_epochs // train_global_batch)*2
@@ -185,9 +182,6 @@ class Runner(object):
         # perform data_augmentation by calling the dataloader methods
         # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
         #                                                num_transform=2, magnitude=7)
-        train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
-        # already complete, have fun ~
-        # train_ds = self.train_dataset.FastAug_strategy(crop_type="incpt_crp", policy_type="imagenet")
 
         # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -202,11 +196,12 @@ class Runner(object):
 
             total_loss = 0.0
             num_batches = 0
-            
-            # batch_size, ((data, lab), (data, lab))
-            for _, (ds_one, ds_two) in enumerate(train_ds):
 
-                total_loss += self.__distributed_train_step(ds_one, ds_two)
+            ## batch_size, ((data, lab), (data, lab))
+            #      2 global view vs. 3 local view
+            #for _, (ds_pkg1, ds_pkg2, ds_pkg3, ds_pkg4, ds_pkg5) in enumerate(train_ds):
+            for _, ds_pkgs in enumerate(train_ds):
+                total_loss += self.__distributed_train_step(*ds_pkgs)
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
@@ -288,14 +283,14 @@ class Runner(object):
     # Training sub_procedure :
 
     @tf.function
-    def __distributed_train_step(self, ds_one, ds_two):
+    def __distributed_train_step(self, *ds_pkgs):
         per_replica_losses = self.strategy.run(
-            self.__train_step, args=(ds_one, ds_two))
+            self.__train_step, args=(*ds_pkgs))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_one, ds_two):
+    def __train_step(self, *ds_pkgs):
         # Scale loss  --> Aggregating all Gradients
         def distributed_loss(x1, x2):
             # each GPU loss per_replica batch loss
@@ -308,8 +303,13 @@ class Runner(object):
             return loss, logits_ab, labels
 
         # Get the data from
-        images_one, lable_one = ds_one
-        images_two, lable_two = ds_two
+        img_lst = tf.TensorArray(tf.float32, size=5, dynamic_size=True, clear_after_read=False)
+        for ds_pkg in ds_pkgs:
+            img, lab = ds_pkg
+            img_lst.write(img)
+
+        images_one, lable_one = ds_pkgs[0]
+        images_two, lable_two = ds_pkgs[1]
 
         with tf.GradientTape(persistent=True) as tape:
 
