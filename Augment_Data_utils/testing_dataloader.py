@@ -39,8 +39,6 @@ class Runner(object):
             self.train_steps = self.eval_steps or int(
                 n_tra_sample * self.train_epochs // train_global_batch)*2
             self.epoch_steps = round(n_tra_sample / train_global_batch)
-            eval_steps = self.eval_steps or ceil(
-                n_evl_sample / val_global_batch)
 
             # logging the ds info
             logging.info(f"# Subset_training class {self.num_classes}")
