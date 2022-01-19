@@ -9,15 +9,13 @@ import numpy as np
 import random
 import re
 
-#from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
 
 # Note : the source is different between RandAugment and AutoAugment
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
-from official.vision.image_classification.augment import AutoAugment as autoaug
+#from official.vision.image_classification.augment import AutoAugment as autoaug
 
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE

@@ -77,7 +77,7 @@ class Fast_AutoAugment(object):
         da_ims = self.trfs_cntr(pil_im)
         # PIL format have different channel order from tf.tensor : e.g. (-, c(3), h, w) -> (-, h, w, c(3)), batch channel omit..
         da_ims = np.einsum('chw->hwc', da_ims)
-        return da_ims #, [*self.policy_info.items()]
+        return da_ims
 
 
 # sample code snippet..
