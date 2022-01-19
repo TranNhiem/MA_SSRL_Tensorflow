@@ -1,7 +1,6 @@
 from .absl_mock import Mock_Flag
 from .config_non_contrast import read_cfg
 
-
 def read_cfg_base(mod="non_contrastive"):
     flag = read_cfg(mod)
     FLAGS = flag.FLAGS
@@ -16,7 +15,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "Auto_Augment_RandomCrop_FP32"
-    FLAGS.wandb_mod = "run"
+    FLAGS.wandb_mod = "dryrun"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
@@ -45,7 +44,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    FLAGS.model_dir = "./model_ckpt/test"
+    FLAGS.model_dir = "./model_ckpt/testtt"
 
     #FLAGS.train_mode = "finetune"
 

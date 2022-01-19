@@ -604,6 +604,7 @@ def select_and_apply_random_policy(policies: Any, image: tf.Tensor):
         tf.equal(i, policy_to_select),
         lambda selected_policy=policy: selected_policy(image),
         lambda: image)
+  
   return image, policy_to_select
 
 
@@ -757,8 +758,8 @@ class AutoAugment(ImageAugment):
     """
     input_image_type = image.dtype
     if input_image_type != tf.uint8:
-      image = tf.clip_by_value(image, 0.0, 255.0)
-      image = tf.cast(image, dtype=tf.uint8)
+        image = tf.clip_by_value(image, 0.0, 255.0)
+        image = tf.cast(image, dtype=tf.uint8)
 
     replace_value = [128] * 3
 
@@ -793,8 +794,7 @@ class AutoAugment(ImageAugment):
 
     image, op_idxs = select_and_apply_random_policy(tf_policies, image)
     image = tf.cast(image, dtype=input_image_type)
-    
-    return image #, self.policies[op_idxs]
+    return image 
 
   @staticmethod
   def policy_v0():
@@ -947,7 +947,7 @@ class RandAugment(ImageAugment):
     if input_image_type != tf.uint8:
       image = tf.clip_by_value(image, 0.0, 255.0)
       image = tf.cast(image, dtype=tf.uint8)
-
+    
     replace_value = [128] * 3
     min_prob, max_prob = 0.2, 0.8
 
@@ -967,16 +967,13 @@ class RandAugment(ImageAugment):
                                            self.translate_const)
         branch_fns.append((
             i,
-            # pylint:disable=g-long-lambda
             lambda selected_func=func, selected_args=args: selected_func(
                 image, *selected_args)))
-        # pylint:enable=g-long-lambda
-      
       
       image = tf.switch_case(
           branch_index=op_to_select,
           branch_fns=branch_fns,
           default=lambda: tf.identity(image))
-    
+      
     image = tf.cast(image, dtype=input_image_type)
-    return image, [] # HACKME : see how can we collect the selected_op..
+    return image

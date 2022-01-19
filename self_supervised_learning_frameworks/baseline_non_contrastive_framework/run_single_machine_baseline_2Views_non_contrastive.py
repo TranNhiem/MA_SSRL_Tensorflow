@@ -286,7 +286,6 @@ class Runner(object):
                 logging.info('Evaluation complete. Existing-->')
 
     # Training sub_procedure :
-
     @tf.function
     def __distributed_train_step(self, ds_one, ds_two):
         per_replica_losses = self.strategy.run(
