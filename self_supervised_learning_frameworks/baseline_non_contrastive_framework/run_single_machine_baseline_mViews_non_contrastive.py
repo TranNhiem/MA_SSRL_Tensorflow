@@ -180,7 +180,8 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        train_ds = train_dataset.multi_view_data_aug(train_dataset.Fast_Augment, policy_type=policy_type)
+        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Fast_Augment, 
+                                                            policy_type="imagenet")
 
         ##   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -199,7 +200,7 @@ class Runner(object):
             ## batch_size, ((data, lab), (data, lab))
             #      2 global view vs. 3 local view
             for _, ds_pkgs in enumerate(train_ds):
-                total_loss += self.__distributed_train_step(*ds_pkgs)
+                total_loss += self.__distributed_train_step(ds_pkgs)
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
@@ -279,16 +280,15 @@ class Runner(object):
                 logging.info('Evaluation complete. Existing-->')
 
     # Training sub_procedure :
-
     @tf.function
-    def __distributed_train_step(self, *ds_pkgs):
+    def __distributed_train_step(self, ds_pkgs):
         per_replica_losses = self.strategy.run(
-            self.__train_step, args=(*ds_pkgs))
+            self.__train_step, args=(ds_pkgs))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, *ds_pkgs):
+    def __train_step(self, ds_pkgs):
         # Scale loss  --> Aggregating all Gradients
         def distributed_loss(x1, x2, x3, x4, x5):
             # each GPU loss per_replica batch loss
@@ -656,7 +656,6 @@ if __name__ == '__main__':
         "opt": FLAGS.up_scale
     }
     runer = Runner(FLAGS, wanda_cfg)
-
     if "train" in FLAGS.mode:
         runer.train(FLAGS.mode)
     else:  # perform evaluation

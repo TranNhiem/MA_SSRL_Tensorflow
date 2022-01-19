@@ -446,8 +446,8 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
-    def multi_view_data_aug(self, da_func=None, *kwargs):
-        mv = Multi_viewer(da_inst=da_func(*kwargs))
+    def multi_view_data_aug(self, da_func=None, **kwargs):
+        mv = Multi_viewer(da_inst=da_func(**kwargs))
 
         raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
         tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
