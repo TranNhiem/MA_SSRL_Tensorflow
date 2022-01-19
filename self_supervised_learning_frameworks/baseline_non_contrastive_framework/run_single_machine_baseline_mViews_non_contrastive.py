@@ -180,8 +180,7 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                        num_transform=2, magnitude=7)
+        train_ds = train_dataset.multi_view_data_aug(train_dataset.Fast_Augment, policy_type=policy_type)
 
         ##   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -291,17 +290,6 @@ class Runner(object):
     @tf.function
     def __train_step(self, *ds_pkgs):
         # Scale loss  --> Aggregating all Gradients
-        def distributed_loss(x1, x2): 
-            # each GPU loss per_replica batch loss
-            per_example_loss, logits_ab, labels = byol_loss(
-                x1, x2,  temperature=self.temperature)
-
-            # total sum loss //Global batch_size
-            loss = tf.reduce_sum(per_example_loss) * \
-                (1./self.train_global_batch)
-            return loss, logits_ab, labels
-
-        '''
         def distributed_loss(x1, x2, x3, x4, x5):
             # each GPU loss per_replica batch loss
             per_example_loss_1, logits_ab, labels = byol_loss(
@@ -320,17 +308,14 @@ class Runner(object):
                 (1./self.train_global_batch)
 
             return loss, logits_ab, labels
-        '''
 
-
-        # Get the data from
-        img_lst = tf.TensorArray(tf.float32, size=5, dynamic_size=True, clear_after_read=False)
-        for ds_pkg in ds_pkgs:
-            img, lab = ds_pkg
-            img_lst.write(img)
-
-        images_one, lable_one = ds_pkgs[0]
-        images_two, lable_two = ds_pkgs[1]
+        # Unpacking the data:
+        #   only performs supervised on global view 
+        ds_1, lable_one = ds_pkgs[0]
+        ds_2, lable_two = ds_pkgs[1]
+        ds_3, _ = ds_pkgs[2]
+        ds_4, _ = ds_pkgs[3]
+        ds_5, _ = ds_pkgs[4]
 
         with tf.GradientTape(persistent=True) as tape:
 
@@ -400,6 +385,7 @@ class Runner(object):
                                                                   self.metric_dict['contrast_entropy_metric'],
                                                                   loss, logits_ab,
                                                                   labels)
+                ## 
                 else: 
                     #(ds_1, ds_2, ds_3, ds_4, ds_5)
                     ## Global view :  (ds_1, ds_2)
@@ -454,28 +440,15 @@ class Runner(object):
                                                               self.metric_dict['contrast_entropy_metric'],
                                                               loss, logits_ab,
                                                               labels)
-
+            
+            ## now we are in this branch!!
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
                 # -------------------------------------------------------------
 
-                ## Global view : 
-                # Online
-                proj_head_output_1, supervised_head_output_1 = self.online_model(
-                    images_one, training=True)
-
-                proj_head_output_1 = self.prediction_model(  # asym MLP
-                    proj_head_output_1, training=True)
-
-                # Target
-                proj_head_output_2, supervised_head_output_2 = self.target_model(
-                    images_two, training=True)
-
-
                 ## Global / Local view : 
-                '''
                 # global view 
                 proj_head_output_1, supervised_head_output_1 = self.online_model(
                     ds_1, training=True)
@@ -499,21 +472,15 @@ class Runner(object):
                 # pair-target
                 proj_head_output_35, _ = self.target_model(
                     ds_5, training=True)
-                '''
-
+                
 
                 # Compute Contrastive Train Loss -->
                 loss = None
                 if proj_head_output_1 is not None:
                     # Compute Contrastive Loss model
-                    # Loss of the image 1, 2 --> Online, Target Encoder
-                    loss, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2)
-                    '''
                     ## loss measurement : 
                     loss, logits_ab, labels = distributed_loss(
                         proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35)
-                    '''
 
                     if loss is None:
                         loss = loss
