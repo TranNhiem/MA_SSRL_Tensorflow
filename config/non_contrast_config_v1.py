@@ -5,6 +5,8 @@ def read_cfg_base(mod="non_contrastive"):
     flag = read_cfg(mod)
     FLAGS = flag.FLAGS
 
+    print(f"\n\n Great! seems you import the code under {__file__} \n\n")
+
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
     FLAGS.mode_prefetch = 20  # if set it to 1 will Use AUTO
@@ -29,7 +31,7 @@ def read_cfg_base(mod="non_contrastive"):
         '1': 1, '2': 1, '3': 1, '4': 1, '5': 1}
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
-    FLAGS.loss_type = "byol_symmetrized_loss"
+    FLAGS.loss_type = "byol_asymmetrized_loss"
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision

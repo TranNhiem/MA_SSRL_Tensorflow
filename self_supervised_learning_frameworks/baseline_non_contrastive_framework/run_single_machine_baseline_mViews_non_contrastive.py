@@ -180,8 +180,7 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Fast_Augment, 
-                                                            policy_type="imagenet")
+        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Fast_Augment)
 
         ##   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -197,11 +196,16 @@ class Runner(object):
             total_loss = 0.0
             num_batches = 0
 
-            ## batch_size, ((data, lab), (data, lab))
+            ## Golden principle : if it's work...  DO NOT TOUCH IT!!!
             #      2 global view vs. 3 local view
-            for _, ds_pkgs in enumerate(train_ds):
-                total_loss += self.__distributed_train_step(ds_pkgs)
+            for ds_1, lab_1, ds_2, lab_2, ds_3, _, ds_4, _, ds_5, _ in train_ds:
+                #print(f"Global view shape v1 >> {ds_1.values[0].shape} | v2 >> {ds_2.values[0].shape}\n")
+                #print(f"label shape lab1 >> {lab_1.values[0].shape} | lab2 >> {lab_2.values[0].shape}\n")
+                #print(f"Local view shape v3 >> {ds_3.values[0].shape} | v4 >> {ds_4.values[0].shape} | v5 >> {ds_5.values[0].shape}\n")
+                #break
+                total_loss += self.__distributed_train_step(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
                 num_batches += 1
+
 
                 # Update weight of Target Encoder Every Step
                 if FLAGS.moving_average == "fixed_value":
@@ -281,14 +285,14 @@ class Runner(object):
 
     # Training sub_procedure :
     @tf.function
-    def __distributed_train_step(self, ds_pkgs):
+    def __distributed_train_step(self, ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2):
         per_replica_losses = self.strategy.run(
-            self.__train_step, args=(ds_pkgs))
+            self.__train_step, args=(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_pkgs):
+    def __train_step(self, ds_1, ds_2, ds_3, ds_4, ds_5, lable_one, lable_two):
         # Scale loss  --> Aggregating all Gradients
         def distributed_loss(x1, x2, x3, x4, x5):
             # each GPU loss per_replica batch loss
@@ -302,23 +306,15 @@ class Runner(object):
                 x3, x5,  temperature=self.temperature)
 
             per_example_loss = per_example_loss_1 + per_example_loss_2 + per_example_loss_3
-
+            
             # total sum loss //Global batch_size
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_global_batch)
 
             return loss, logits_ab, labels
 
-        # Unpacking the data:
-        #   only performs supervised on global view 
-        ds_1, lable_one = ds_pkgs[0]
-        ds_2, lable_two = ds_pkgs[1]
-        ds_3, _ = ds_pkgs[2]
-        ds_4, _ = ds_pkgs[3]
-        ds_5, _ = ds_pkgs[4]
 
         with tf.GradientTape(persistent=True) as tape:
-
             if FLAGS.loss_type == "byol_symmetrized_loss":
                 logging.info("You implement Symmetrized loss")
                 '''
@@ -621,6 +617,7 @@ class Runner(object):
             raise ValueError("Not supporting training Precision")
 
         del tape
+        tf.print(loss)
         return loss
 
 

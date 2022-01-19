@@ -9,7 +9,7 @@ import numpy as np
 import random
 import re
 
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment #as autoaug
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
@@ -197,8 +197,8 @@ class Imagenet_dataset(object):
                 *tf.py_function(trfs, [x], Tout=[tf.float32]), y)
 
         else:  # ignore the label to simplify mixing view implementation
-            def map_func(x, y): return tf.py_function(trfs, [x], Tout=[
-                tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
+            def map_func(x, y): return (tf.py_function(trfs, [x], Tout=[
+                tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]), y)
 
         if FLAGS.resize_wrap_ds:
             logging.info(
@@ -281,9 +281,6 @@ class Imagenet_dataset(object):
         image = tf.py_function(augmenter_apply.distort, [
                                image*255.], Tout=[tf.float32])
         return image
-
-    def multi_view(self, image):
-        ...
 
     def simclr_crop_da(self, crop_type="incpt_crp"):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
@@ -446,12 +443,13 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
-    def multi_view_data_aug(self, da_func=None, **kwargs):
-        mv = Multi_viewer(da_inst=da_func(**kwargs))
+    def multi_view_data_aug(self, da_func=None):
+        mv = Multi_viewer(da_inst=da_func)
 
-        raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
-        tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
-        train_ds = tf.data.Dataset.zip(tra_ds_lst)
+        raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
+        #tra_ds_lst = self.wrap_da(raw_ds,  mv.multi_view, "mv_aug")
+        #train_ds = tf.data.Dataset.zip(tra_ds_lst)
         logging.info("Train_ds_multiview dataloader with option")
         train_ds.with_options(options)
         return self.strategy.experimental_distribute_dataset(train_ds)

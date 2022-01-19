@@ -245,9 +245,6 @@ class Runner(object):
             for metric in metric_dict.values():
                 metric.reset_states()
 
-            # perform_evaluation(self.online_model, val_ds, eval_steps,
-            #                    checkpoint_manager.latest_checkpoint, self.strategy)
-
             # Saving Entire Model
             if (epoch+1) % 20 == 0:
                 save_encoder = os.path.join(

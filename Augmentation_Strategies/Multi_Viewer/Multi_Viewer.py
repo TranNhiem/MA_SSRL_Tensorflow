@@ -21,10 +21,9 @@ class Multi_viewer(object):
                             else Multi_viewer.two_view
         self.util = {'cnvt_typ':lambda x : tf.image.convert_image_dtype(x, tf.float32),
                         'cast':lambda x : tf.cast(x, tf.int32)[0],
-                        'incpt_crp':lambda x, **_ : simclr_augment_inception_style(x),          # self.__inception_style_crop(x),
-                        'rnd_crp':lambda x, **args : simclr_augment_randcrop_global_views(x, **args) }         # self.__random_resize_crop(x, **args) }     # 
+                        'incpt_crp':lambda x, **_ : self.__inception_style_crop(x),                            # simclr_augment_inception_style(x), # 
+                        'rnd_crp':lambda x, **args : self.__random_resize_crop(x, **args) }                    # simclr_augment_randcrop_global_views(x, **args) }# 
         self.da_inst = da_inst if da_inst else Multi_viewer.def_da
-
 
     # for global view only : inception style cropping
     def __inception_style_crop(self, image):
@@ -55,7 +54,7 @@ class Multi_viewer(object):
         return im_view
 
     
-    def multi_view(self, batch_image, incpt_crp=False):
+    def multi_view(self, batch_image, y, incpt_crp=False):
         bth_im = self.util['cnvt_typ'](batch_image)
         bth_im_buff = []
         for viw_name, vs in self.multi_view_spec.items():
@@ -65,12 +64,11 @@ class Multi_viewer(object):
                 im_buff = []
                 kwargs = {"re_siz":vs.re_siz, "viw_siz":vs.viw_siz, 
                         "min_scale":vs.min_scale, "max_scale":vs.max_scale}
-                #for im in bth_im:
-                #    im_buff.append( self.util[crp_key](im, **kwargs) )
                 bth_im = self.util[crp_key](bth_im, **kwargs)
                     
                 # data augment perform batch image transformations
                 #bth_im_buff.append( self.da_inst.data_augment(bth_im) )
                 bth_im_buff.append( self.da_inst(bth_im) )  # now da_inst is just a function
-        
+                bth_im_buff.append( [y] )
+
         return bth_im_buff
