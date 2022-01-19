@@ -38,7 +38,6 @@ def set_gpu_env(n_gpus=8):
             print(e)
 
 
-
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
 
@@ -73,7 +72,7 @@ class Runner(object):
         val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed': self.SEED}
         # Dataloader V2 already be proposed as formal data_loader
         train_dataset = Imagenet_dataset(**ds_args)
 
@@ -187,7 +186,8 @@ class Runner(object):
         #                                                num_transform=2, magnitude=7)
         #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
         # already complete, have fun ~
-        train_ds = self.train_dataset.FastAug_strategy(crop_type=da_crp_key, policy_type="imagenet")
+        train_ds = self.train_dataset.FastAug_strategy(
+            crop_type=da_crp_key, policy_type="imagenet")
 
         # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -202,7 +202,7 @@ class Runner(object):
 
             total_loss = 0.0
             num_batches = 0
-            
+
             # batch_size, ((data, lab), (data, lab))
             for _, (ds_one, ds_two) in enumerate(train_ds):
 
@@ -258,15 +258,15 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            if (epoch + 1) % 20 == 0:
-                FLAGS.train_mode = 'finetune'
-                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
-                                            checkpoint_manager.latest_checkpoint, self.strategy)
-                wandb.log({
-                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
-                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
-                })
-                FLAGS.train_mode = 'pretrain'
+            # if (epoch + 1) % 20 == 0:
+            #     FLAGS.train_mode = 'finetune'
+            #     result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+            #                                 checkpoint_manager.latest_checkpoint, self.strategy)
+            #     wandb.log({
+            #         "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+            #         "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+            #     })
+            #     FLAGS.train_mode = 'pretrain'
         # perform eval after training
         if "eval" in exe_mode:
             self.eval(checkpoint_manager)
