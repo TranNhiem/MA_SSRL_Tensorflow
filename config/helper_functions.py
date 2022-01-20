@@ -119,17 +119,17 @@ def try_restore_from_checkpoint(model, global_step, optimizer):
             logging.info('Restoring from latest checkpoint: %s', latest_ckpt)
             checkpoint_manager.checkpoint.restore(latest_ckpt).expect_partial()
 
-    elif FLAGS.checkpoint:
-        print("in")
-        # Restore model weights only, but not global step and optimizer states
-        logging.info('Restoring from given checkpoint: %s',
-                     FLAGS.checkpoint)
-        checkpoint_manager2 = tf.train.CheckpointManager(
-            tf.train.Checkpoint(model=model),
-            directory=FLAGS.model_dir,
-            max_to_keep=FLAGS.keep_checkpoint_max)
-        checkpoint_manager2.checkpoint.restore(
-            FLAGS.checkpoint).expect_partial()
+        elif FLAGS.checkpoint:
+            print("in")
+            # Restore model weights only, but not global step and optimizer states
+            logging.info('Restoring from given checkpoint: %s',
+                         FLAGS.checkpoint)
+            checkpoint_manager2 = tf.train.CheckpointManager(
+                tf.train.Checkpoint(model=model),
+                directory=FLAGS.model_dir,
+                max_to_keep=FLAGS.keep_checkpoint_max)
+            checkpoint_manager2.checkpoint.restore(
+                FLAGS.checkpoint).expect_partial()
     else:
         logging.info('You are Not Restore from Checkpoint: %s', latest_ckpt)
 
@@ -152,7 +152,7 @@ def _restore_latest_or_from_pretrain(checkpoint_manager):
     checkpoint_manager: tf.traiin.CheckpointManager.
     """
     latest_ckpt = checkpoint_manager.latest_checkpoint
-
+    print(latest_ckpt)
     if latest_ckpt:
         # The model is not build yet so some variables may not be available in
         # the object graph. Those are lazily initialized. To suppress the warning
@@ -189,7 +189,7 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
         logging.info('Skipping eval during pretraining without linear eval.')
         return
 
-    # # Tensorboard enable
+    # Tensorboard enable
     # summary_writer = tf.summary.create_file_writer(FLAGS.model_dir)
 
     # Building the Supervised metrics
@@ -217,13 +217,10 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
     @tf.function
     def single_step(features, labels):
         # Logits output
-        print("start v")
-        _, _, _, supervised_head_outputs = model(features, training=False)
-        v = Visualize(1, FLAGS.visualize_dir)
-        v.plot_feature_map(1, supervised_head_outputs)
+        print("start eval")
+        _, supervised_head_outputs = model(features, training=False)
         assert supervised_head_outputs is not None
         outputs = supervised_head_outputs
-
         metrics.update_finetune_metrics_eval(
             label_top_1_accuracy, label_top_5_accuracy, outputs, labels)
 
@@ -244,7 +241,7 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
         logging.info("Complete validation for %d step ", i+1, val_steps)
 
     # At this step of training with Ckpt Complete evaluate model performance
-    logging.info('Finished eval for %s', ckpt)
+    # logging.info('Finished eval for %s', ckpt)
 
     # Logging to tensorboard for the information
     # Write summaries
@@ -279,7 +276,7 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
     #             serializable_flags[key] = val
     #         json.dump(serializable_flags, f)
 
-    # # Export as SavedModel for finetuning and inference.
+    # Export as SavedModel for finetuning and inference.
     # save(model, global_step=result['global_step'])
 
     return result
