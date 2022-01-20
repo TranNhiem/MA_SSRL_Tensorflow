@@ -1,4 +1,3 @@
-from config.absl_mock import Mock_Flag
 __author__ = "Rick & Josef (refactor)"
 __date__ = "2021/01/18"
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
@@ -14,11 +13,6 @@ import re
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment, Proposed_RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
-
-
-# Note : the source is different between RandAugment and AutoAugment
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
-from official.vision.image_classification.augment import AutoAugment as autoaug
 
 import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
@@ -37,6 +31,7 @@ options.experimental_threading.max_intra_op_parallelism = 1
 
 
 # Define meta-cfg for parallel training
+from config.absl_mock import Mock_Flag
 flag = Mock_Flag()
 FLAGS = flag.FLAGS
 FLAGS.mode_prefetch = 1
@@ -203,8 +198,8 @@ class Imagenet_dataset(object):
                 *tf.py_function(trfs, [x], Tout=[tf.float32]), y)
 
         else:  # ignore the label to simplify mixing view implementation
-            def map_func(x, y): return tf.py_function(trfs, [x], Tout=[
-                tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
+            def map_func(x, y): return (tf.py_function(trfs, [x], Tout=[
+                tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]), y)
 
         if FLAGS.resize_wrap_ds:
             logging.info(
@@ -263,7 +258,6 @@ class Imagenet_dataset(object):
 
         image = augmenter_apply.distort(image*255)
 
-        #image = tf.cast(image, dtype=tf.float32)  # * 255.
         return image / 255.
     @tf.function
     def Rand_Augment(self, image, num_transform, magnitude):
@@ -275,7 +269,6 @@ class Imagenet_dataset(object):
         Image: A tensor of Applied transformation [with, height, channels]
         '''
         '''Version 1 RandAug Augmentation'''
-        # print(image.shape)
         augmenter_apply = RandAugment(
             num_layers=num_transform, magnitude=magnitude)
         image = augmenter_apply.distort(image*255)
@@ -299,6 +292,7 @@ class Imagenet_dataset(object):
         # return image[0] / 255.
         return image [0]/ 255.
 
+    @tf.function
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
         # this return (trfs_img, apply_policies)
@@ -468,20 +462,15 @@ class Imagenet_dataset(object):
 
     # in some degree, multi-view is complete ~ ~
     def multi_view_data_aug(self, da_func=None):
-        mv = Multi_viewer(da_inst=self.Auto_Augment)
+        mv = Multi_viewer(da_inst=da_func)
 
-        raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
-        tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
-        train_ds = tf.data.Dataset.zip(tra_ds_lst)
-
-    #     raw_ds = self.__wrap_ds(self.x_train, self.x_train_lable)
-    #     tra_ds_lst = self.__wrap_da(raw_ds,  mv.multi_view, "mv_aug")
-    #     train_ds = tf.data.Dataset.zip(tra_ds_lst)
-
-    #     logging.info("Train_ds_multiview dataloader with option")
-    #     train_ds.with_options(options)
-
-    #     return self.strategy.experimental_distribute_dataset(train_ds)
+        raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
+        #tra_ds_lst = self.wrap_da(raw_ds,  mv.multi_view, "mv_aug")
+        #train_ds = tf.data.Dataset.zip(tra_ds_lst)
+        logging.info("Train_ds_multiview dataloader with option")
+        train_ds.with_options(options)
+        return self.strategy.experimental_distribute_dataset(train_ds)
 
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)

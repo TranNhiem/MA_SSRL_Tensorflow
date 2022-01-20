@@ -10,7 +10,7 @@ from .transform_table import augment_list
 from PIL import Image
 import numpy as np
 import random
-
+import tensorflow as tf
 
 class Augmentation(object):
     def __init__(self, policies):
@@ -74,11 +74,10 @@ class Fast_AutoAugment(object):
         # dummy transformation of tf.tensor & PIL
         pil_im = Image.fromarray( image.numpy().astype(np.uint8) )
         
-        
         da_ims = self.trfs_cntr(pil_im)
         # PIL format have different channel order from tf.tensor : e.g. (-, c(3), h, w) -> (-, h, w, c(3)), batch channel omit..
         da_ims = np.einsum('chw->hwc', da_ims)
-        return da_ims #, [*self.policy_info.items()]
+        return da_ims
 
 
 # sample code snippet..
