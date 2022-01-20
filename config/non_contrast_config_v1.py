@@ -50,12 +50,9 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-<<<<<<< HEAD
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     FLAGS.model_dir = "./model_ckpt/testMV"
-=======
-    FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_RandAug_1_10_rand_Crop/"
->>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
+    #FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_RandAug_1_10_rand_Crop/"
 
     #FLAGS.train_mode = "finetune"
 

@@ -9,14 +9,9 @@ import numpy as np
 import random
 import re
 
-<<<<<<< HEAD
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
-=======
 # from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment, Proposed_RandAugment
->>>>>>> 49e64e8b8b7434b03123d46086374b0eedbb7ae7
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
 import tensorflow as tf
@@ -267,19 +262,10 @@ class Imagenet_dataset(object):
         image = augmenter_apply.distort(image*255)
 
         return image / 255.
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 
     @tf.function
     def Rand_Augment(self, image, num_transform=2, magnitude=7):
-=======
-=======
-    
->>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
-    @tf.function
-    def Rand_Augment(self, image, num_transform, magnitude):
->>>>>>> 49e64e8b8b7434b03123d46086374b0eedbb7ae7
         '''
         Args:
         image: A tensor [ with, height, channels]
@@ -292,10 +278,8 @@ class Imagenet_dataset(object):
             num_layers=num_transform, magnitude=magnitude)
         image = augmenter_apply.distort(image*255)
 
-<<<<<<< HEAD
-        return image / 255. #image[0] / 255.
-=======
         return image[0] / 255.
+
     @tf.function
     def Rand_Augment_modif(self, image, num_transform, magnitude):
         '''
@@ -311,9 +295,7 @@ class Imagenet_dataset(object):
             num_layers=num_transform, magnitude=magnitude)
         image = augmenter_apply.distort(image*255)
 
-        # return image[0] / 255.
-        return image [0]/ 255.
->>>>>>> 49e64e8b8b7434b03123d46086374b0eedbb7ae7
+        return image [0] / 255.
 
     @tf.function
     def Fast_Augment(self, image, policy_type="imagenet"):
@@ -489,13 +471,8 @@ class Imagenet_dataset(object):
         mv = Multi_viewer(da_inst=da_func)
 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
-<<<<<<< HEAD
-        train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y, da_type], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
-       # train_ds = raw_ds.map( lambda x, y : mv.multi_view(x, y) )
-=======
         #train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
         train_ds = raw_ds.map( lambda x, y : mv.multi_view (x,  y), num_parallel_calls=AUTO)
->>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
         
         #tra_ds_lst = self.wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         #train_ds = tf.data.Dataset.zip(tra_ds_lst)
@@ -525,7 +502,6 @@ class Imagenet_dataset(object):
     def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10, augment_strategy="RandAug"): 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
         train_ds= tuple()
-        
         
         for i, num_crop in enumerate(num_crops): 
             for _ in range(num_crop):

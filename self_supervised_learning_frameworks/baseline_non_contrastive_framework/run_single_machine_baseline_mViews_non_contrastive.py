@@ -216,26 +216,12 @@ class Runner(object):
             total_loss = 0.0
             num_batches = 0
 
-<<<<<<< HEAD
-            # Golden principle : if it's work...  DO NOT TOUCH IT!!!
-            #      2 global view vs. 3 local view
-            for ds_1, lab_1, ds_2, lab_2, ds_3, _, ds_4, _, ds_5, _ in train_ds:
-                #print(f"Global view shape v1 >> {ds_1.values[0].shape} | v2 >> {ds_2.values[0].shape}\n")
-                #print(f"label shape lab1 >> {lab_1.values[0].shape} | lab2 >> {lab_2.values[0].shape}\n")
-                #print(f"Local view shape v3 >> {ds_3.values[0].shape} | v4 >> {ds_4.values[0].shape} | v5 >> {ds_5.values[0].shape}\n")
-                #break
-                total_loss += self.__distributed_train_step(
-                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
-
-=======
             for _,  ds_train in enumerate(train_ds):
-                
                 (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
-
+                
                 total_loss += self.__distributed_train_step(
                     ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
                 
->>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
                 num_batches += 1
               
                 # Update weight of Target Encoder Every Step
