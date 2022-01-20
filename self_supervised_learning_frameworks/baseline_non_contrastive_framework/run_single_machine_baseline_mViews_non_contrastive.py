@@ -72,12 +72,7 @@ class Runner(object):
         val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-<<<<<<< HEAD
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed':self.SEED}
-=======
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed': self.SEED}
->>>>>>> d24aed0fd712cb74379a2f56c326c17cb841ea90
-        # Dataloader V2 already be proposed as formal data_loader
         train_dataset = Imagenet_dataset(**ds_args)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
@@ -185,12 +180,7 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-<<<<<<< HEAD
         train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Rand_Augment, da_type="rnd")
-=======
-        train_ds = self.train_dataset.multi_view_data_aug(
-            self.train_dataset.Fast_Augment)
->>>>>>> d24aed0fd712cb74379a2f56c326c17cb841ea90
 
         # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -212,15 +202,10 @@ class Runner(object):
                 #print(f"Global view shape v1 >> {ds_1.values[0].shape} | v2 >> {ds_2.values[0].shape}\n")
                 #print(f"label shape lab1 >> {lab_1.values[0].shape} | lab2 >> {lab_2.values[0].shape}\n")
                 #print(f"Local view shape v3 >> {ds_3.values[0].shape} | v4 >> {ds_4.values[0].shape} | v5 >> {ds_5.values[0].shape}\n")
-<<<<<<< HEAD
                 #break
-                
-                total_loss += self.__distributed_train_step(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
-=======
-                # break
                 total_loss += self.__distributed_train_step(
                     ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
->>>>>>> d24aed0fd712cb74379a2f56c326c17cb841ea90
+
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
@@ -322,8 +307,6 @@ class Runner(object):
                 x3, x5,  temperature=self.temperature)
 
             per_example_loss_local = per_example_loss_2 + per_example_loss_3
-
-<<<<<<< HEAD
             loss_glob = tf.reduce_sum(per_example_loss_1) * \
                 (1./self.train_global_batch)
             loss_local = tf.reduce_sum(per_example_loss_local) * \
@@ -335,14 +318,6 @@ class Runner(object):
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_global_batch)
             '''
-=======
-            # total sum loss //Global batch_size
-            loss_glob = tf.reduce_sum(per_example_loss_1) * \
-                (1./self.train_global_batch)
-            loss_local = tf.reduce_sum(per_example_loss_local) * \
-                (1./self.train_global_batch)
-            loss = loss_glob + loss_local
->>>>>>> d24aed0fd712cb74379a2f56c326c17cb841ea90
             return loss, logits_ab, labels
 
         with tf.GradientTape(persistent=True) as tape:
