@@ -336,6 +336,11 @@ def Configure_Model_Training():
             'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
         'List of loss objective for optimize model.')
 
+    flags.DEFINE_enum(
+        'Loss_global_local', 'schedule', [
+            'schedule', 'original'],
+        'Aggregate loss between Local & Global Loss.')
+
     flags.DEFINE_float(
         # Weighted loss is the scaling term between  [weighted_loss]*mixed_loss & [1-weighted_loss]*original_contrastive loss)
         'weighted_loss', 0.8,

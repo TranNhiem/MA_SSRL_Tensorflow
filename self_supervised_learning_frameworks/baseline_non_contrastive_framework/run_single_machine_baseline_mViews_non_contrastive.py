@@ -180,12 +180,7 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-<<<<<<< HEAD
-        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Rand_Augment, da_type="rnd")
-=======
-        # train_ds = self.train_dataset.multi_view_data_aug(
-        #     self.train_dataset.Fast_Augment)
->>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
+        #train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Rand_Augment, da_type="rnd")
 
         # train_ds = self.train_dataset.multi_view_data_aug(
             #     self.train_dataset.Fast_Augment)
@@ -199,7 +194,7 @@ class Runner(object):
         num_transform=1
         magnitude=10
 
-        augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+        augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
         train_ds = self.train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
                                                             num_transform, magnitude,augment_strategy )
@@ -256,12 +251,26 @@ class Runner(object):
                     self.summary_writer.flush()
 
             epoch_loss = total_loss/num_batches
+            
+
+            # perform_evaluation(self.online_model, val_ds, eval_steps,
+            #                    checkpoint_manager.latest_checkpoint, self.strategy)
+
+
+            if (epoch + 1) % 20 == 0:
+                FLAGS.train_mode = 'finetune'
+                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+                                            checkpoint_manager.latest_checkpoint, self.strategy)
+                wandb.log({
+                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+                })
+                FLAGS.train_mode = 'pretrain'
+        
             log_wandb(epoch, epoch_loss, metric_dict)
             for metric in metric_dict.values():
                 metric.reset_states()
 
-            # perform_evaluation(self.online_model, val_ds, eval_steps,
-            #                    checkpoint_manager.latest_checkpoint, self.strategy)
 
             # Saving Entire Model
             if (epoch+1) % 20 == 0:
@@ -275,17 +284,6 @@ class Runner(object):
                 self.online_model.save_weights(save_online_model)
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
-
-            if (epoch + 1) % 20 == 0:
-                FLAGS.train_mode = 'finetune'
-                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
-                                            checkpoint_manager.latest_checkpoint, self.strategy)
-                wandb.log({
-                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
-                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
-                })
-                FLAGS.train_mode = 'pretrain'
-        
 
 
         # perform eval after training
@@ -330,7 +328,17 @@ class Runner(object):
                 (1./self.train_global_batch)
             loss_local = tf.reduce_sum(per_example_loss_local) * \
                 (1./self.train_global_batch)
-            loss = loss_glob + loss_local
+
+            if FLAGS.Loss_global_local == "schedule":
+                # This update the Beta value schedule along with Trainign steps Follow BYOL
+                alpha_base = 0.5
+                cur_step = global_step.numpy()
+                alpha = 1 - (1-alpha_base) * \
+                    (cos(pi*cur_step/self.train_steps)+1)/2
+
+                loss = alpha*loss_glob + (1-alpha)*loss_local
+            else: 
+                loss = loss_glob + loss_local
 
             ''' # old version bkup
             per_example_loss = per_example_loss_1 + per_example_loss_2 + per_example_loss_3
