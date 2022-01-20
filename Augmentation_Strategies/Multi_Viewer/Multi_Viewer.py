@@ -54,7 +54,7 @@ class Multi_viewer(object):
         return im_view
 
     
-    def multi_view(self, batch_image, y, incpt_crp=False):
+    def multi_view(self, batch_image, y, da_type=None, incpt_crp=False):
         bth_im = self.util['cnvt_typ'](batch_image)
         bth_im_buff = []
 
@@ -70,7 +70,13 @@ class Multi_viewer(object):
                     
                 # data augment perform batch image transformations
                 #bth_im_buff.append( self.da_inst.data_augment(bth_im) )
-                bth_im_buff.append( self.da_inst(bth_im) )  # now da_inst is just a function
+                trfs_im = self.da_inst(bth_im)
+                print(f"img shape : {trfs_im.shape}\n\n")
+                
+                if da_type == "fastaa":
+                    bth_im_buff.append( trfs_im )  # now da_inst is just a function
+                else:
+                    bth_im_buff.append( [trfs_im] )  # now da_inst is just a function
                 bth_im_buff.append( [y] )
 
         return bth_im_buff

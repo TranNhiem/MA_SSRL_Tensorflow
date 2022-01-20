@@ -1,0 +1,49 @@
+
+
+ Great! seems you import the code under /code_spec/config/non_contrast_config_v1.py 
+
+
+8 Physical GPUs, 8 Logical GPU
+../../Augment_Data_utils/image_net_1k_lable.txt
+train_path: /data/train
+val_path: /data/val
+
+Implement reduce dimention
+You are implement LARS weight decay optimizer
+img shape : (224, 224, 3)
+
+
+img shape : (224, 224, 3)
+
+
+img shape : (96, 96, 3)
+
+
+img shape : (96, 96, 3)
+
+
+img shape : (96, 96, 3)
+
+
+img shape : (224, 224, 3)
+
+
+img shape : (224, 224, 3)
+
+
+img shape : (96, 96, 3)
+
+
+Global view shape v1 >> (1, 224, 224, 3) | v2 >> (1, 224, 224, 3)
+
+label shape lab1 >> (1, 10) | lab2 >> (1, 10)
+
+Local view shape v3 >> (1, 96, 96, 3) | v4 >> (1, 96, 96, 3) | v5 >> (1, 96, 96, 3)
+
+img shape : (96, 96, 3)
+
+
+img shape : (96, 96, 3)
+
+
+

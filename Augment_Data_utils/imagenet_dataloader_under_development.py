@@ -232,6 +232,7 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(val_ds)
 
+    @tf.function
     def Auto_Augment(self, image):
         '''
         Args:
@@ -248,21 +249,23 @@ class Imagenet_dataset(object):
         '''
 
         # augmentation_name='v1',
-
+        '''
         if FLAGS.auto_augment == "custome":
-            augmenter_apply = AutoAugment(augmentation_name='v0')
+            augmenter_apply = AutoAugment(augmentation_name='v1')
 
         elif FLAGS.auto_augment == "TFA_API":
-            augmenter_apply = autoaug(augmentation_name='v0')
+            augmenter_apply = autoaug(augmentation_name='v1')
         else:
             raise ValueError("Invalid AutoAugment Implementation")
-
+        '''
+        augmenter_apply = AutoAugment(augmentation_name='v1')
         image = augmenter_apply.distort(image*255)
 
         return image / 255.
-    
+
+
     @tf.function
-    def Rand_Augment(self, image, num_transform, magnitude):
+    def Rand_Augment(self, image, num_transform=2, magnitude=7):
         '''
         Args:
         image: A tensor [ with, height, channels]
@@ -276,6 +279,7 @@ class Imagenet_dataset(object):
         image = augmenter_apply.distort(image*255)
 
         return image[0] / 255.
+
     @tf.function
     def Rand_Augment_modif(self, image, num_transform, magnitude):
         '''
@@ -291,8 +295,7 @@ class Imagenet_dataset(object):
             num_layers=num_transform, magnitude=magnitude)
         image = augmenter_apply.distort(image*255)
 
-        # return image[0] / 255.
-        return image [0]/ 255.
+        return image [0] / 255.
 
     @tf.function
     def Fast_Augment(self, image, policy_type="imagenet"):
@@ -464,7 +467,7 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
-    def multi_view_data_aug(self, da_func=None):
+    def multi_view_data_aug(self, da_func=None, da_type=None):
         mv = Multi_viewer(da_inst=da_func)
 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
@@ -499,7 +502,6 @@ class Imagenet_dataset(object):
     def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10, augment_strategy="RandAug"): 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
         train_ds= tuple()
-        
         
         for i, num_crop in enumerate(num_crops): 
             for _ in range(num_crop):

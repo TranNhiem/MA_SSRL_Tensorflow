@@ -67,14 +67,12 @@ class Runner(object):
         self.__dict__ = FLAGS.__dict__
 
         # 1. Prepare imagenet dataset
-        strategy = tf_dis.MirroredStrategy()
-        self.strategy = strategy
-        train_global_batch = self.train_batch_size * strategy.num_replicas_in_sync
-        val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
+        self.strategy = tf_dis.MirroredStrategy()
+        train_global_batch = self.train_batch_size * self.strategy.num_replicas_in_sync
+        val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed': self.SEED}
-        # Dataloader V2 already be proposed as formal data_loader
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed':self.SEED}
         train_dataset = Imagenet_dataset(**ds_args)
 
         n_tra_sample, n_evl_sample = train_dataset.get_data_size()
@@ -90,7 +88,6 @@ class Runner(object):
             self.checkpoint_epochs * self.epoch_steps))
 
         # record var into self
-        self.strategy = strategy
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
@@ -183,8 +180,12 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
+<<<<<<< HEAD
+        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Rand_Augment, da_type="rnd")
+=======
         # train_ds = self.train_dataset.multi_view_data_aug(
         #     self.train_dataset.Fast_Augment)
+>>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
 
         # train_ds = self.train_dataset.multi_view_data_aug(
             #     self.train_dataset.Fast_Augment)
@@ -216,9 +217,8 @@ class Runner(object):
             num_batches = 0
 
             for _,  ds_train in enumerate(train_ds):
-                
                 (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
-
+                
                 total_loss += self.__distributed_train_step(
                     ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
                 
@@ -326,13 +326,17 @@ class Runner(object):
                 x3, x5,  temperature=self.temperature)
 
             per_example_loss_local = per_example_loss_2 + per_example_loss_3
-
-            # total sum loss //Global batch_size
             loss_glob = tf.reduce_sum(per_example_loss_1) * \
                 (1./self.train_global_batch)
             loss_local = tf.reduce_sum(per_example_loss_local) * \
                 (1./self.train_global_batch)
             loss = loss_glob + loss_local
+
+            ''' # old version bkup
+            per_example_loss = per_example_loss_1 + per_example_loss_2 + per_example_loss_3
+            loss = tf.reduce_sum(per_example_loss) * \
+                (1./self.train_global_batch)
+            '''
             return loss, logits_ab, labels
 
         with tf.GradientTape(persistent=True) as tape:
