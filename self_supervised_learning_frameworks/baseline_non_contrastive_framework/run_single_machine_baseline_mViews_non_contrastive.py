@@ -23,6 +23,8 @@ os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
 # Utils function
 # Setting GPU
+
+
 def set_gpu_env(n_gpus=8):
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
@@ -36,6 +38,7 @@ def set_gpu_env(n_gpus=8):
         except RuntimeError as e:
             print(e)
 
+
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
 
@@ -44,7 +47,7 @@ class Runner(object):
             if wanda_cfg:
                 wandb.init(project=self.wandb_project_name, name=FLAGS.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
-        
+
         #   calculate the training related meta-info
         def infer_ds_info(n_tra_sample, n_evl_sample, train_global_batch, val_global_batch):
             self.train_steps = self.eval_steps or int(
@@ -70,7 +73,7 @@ class Runner(object):
         val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed': self.SEED}
         # Dataloader V2 already be proposed as formal data_loader
         train_dataset = Imagenet_dataset(**ds_args)
 
@@ -180,9 +183,10 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Fast_Augment)
+        train_ds = self.train_dataset.multi_view_data_aug(
+            self.train_dataset.Fast_Augment)
 
-        ##   performing Linear-protocol
+        # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
@@ -196,16 +200,16 @@ class Runner(object):
             total_loss = 0.0
             num_batches = 0
 
-            ## Golden principle : if it's work...  DO NOT TOUCH IT!!!
+            # Golden principle : if it's work...  DO NOT TOUCH IT!!!
             #      2 global view vs. 3 local view
             for ds_1, lab_1, ds_2, lab_2, ds_3, _, ds_4, _, ds_5, _ in train_ds:
                 #print(f"Global view shape v1 >> {ds_1.values[0].shape} | v2 >> {ds_2.values[0].shape}\n")
                 #print(f"label shape lab1 >> {lab_1.values[0].shape} | lab2 >> {lab_2.values[0].shape}\n")
                 #print(f"Local view shape v3 >> {ds_3.values[0].shape} | v4 >> {ds_4.values[0].shape} | v5 >> {ds_5.values[0].shape}\n")
-                #break
-                total_loss += self.__distributed_train_step(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
+                # break
+                total_loss += self.__distributed_train_step(
+                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
                 num_batches += 1
-
 
                 # Update weight of Target Encoder Every Step
                 if FLAGS.moving_average == "fixed_value":
@@ -305,14 +309,15 @@ class Runner(object):
             per_example_loss_3, _, _ = byol_loss(
                 x3, x5,  temperature=self.temperature)
 
-            per_example_loss = per_example_loss_1 + per_example_loss_2 + per_example_loss_3
-            
+            per_example_loss_local = per_example_loss_2 + per_example_loss_3
+
             # total sum loss //Global batch_size
-            loss = tf.reduce_sum(per_example_loss) * \
+            loss_glob = tf.reduce_sum(per_example_loss_1) * \
                 (1./self.train_global_batch)
-
+            loss_local = tf.reduce_sum(per_example_loss_local) * \
+                (1./self.train_global_batch)
+            loss = loss_glob + loss_local
             return loss, logits_ab, labels
-
 
         with tf.GradientTape(persistent=True) as tape:
             if FLAGS.loss_type == "byol_symmetrized_loss":
@@ -381,10 +386,10 @@ class Runner(object):
                                                                   self.metric_dict['contrast_entropy_metric'],
                                                                   loss, logits_ab,
                                                                   labels)
-                ## 
-                else: 
+                ##
+                else:
                     #(ds_1, ds_2, ds_3, ds_4, ds_5)
-                    ## Global view :  (ds_1, ds_2)
+                    # Global view :  (ds_1, ds_2)
                     # Online
                     proj_head_output_1, supervised_head_output_1 = self.online_model(
                         images_one, training=True)
@@ -393,7 +398,6 @@ class Runner(object):
                     # Target
                     proj_head_output_2, supervised_head_output_2 = self.target_model(
                         images_two, training=True)
-
 
                     # -------------------------------------------------------------
                     # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
@@ -436,16 +440,16 @@ class Runner(object):
                                                               self.metric_dict['contrast_entropy_metric'],
                                                               loss, logits_ab,
                                                               labels)
-            
-            ## now we are in this branch!!
+
+            # now we are in this branch!!
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
                 # Passing image 1, image 2 to Online Encoder , Target Encoder
                 # -------------------------------------------------------------
 
-                ## Global / Local view : 
-                # global view 
+                # Global / Local view :
+                # global view
                 proj_head_output_1, supervised_head_output_1 = self.online_model(
                     ds_1, training=True)
 
@@ -456,7 +460,7 @@ class Runner(object):
                 proj_head_output_2, supervised_head_output_2 = self.target_model(
                     ds_2, training=True)
 
-                # Local view 
+                # Local view
                 proj_head_output_3, _ = self.online_model(
                     ds_3, training=True)
                 proj_head_output_3 = self.prediction_model(
@@ -468,13 +472,12 @@ class Runner(object):
                 # pair-target
                 proj_head_output_35, _ = self.target_model(
                     ds_5, training=True)
-                
 
                 # Compute Contrastive Train Loss -->
                 loss = None
                 if proj_head_output_1 is not None:
                     # Compute Contrastive Loss model
-                    ## loss measurement : 
+                    # loss measurement :
                     loss, logits_ab, labels = distributed_loss(
                         proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35)
 
@@ -485,10 +488,10 @@ class Runner(object):
 
                     # Update Self-Supervised Metrics
                     metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                            self.metric_dict['contrast_acc_metric'],
-                                                            self.metric_dict['contrast_entropy_metric'],
-                                                            loss, logits_ab,
-                                                            labels)
+                                                          self.metric_dict['contrast_acc_metric'],
+                                                          self.metric_dict['contrast_entropy_metric'],
+                                                          loss, logits_ab,
+                                                          labels)
             else:
                 raise ValueError("Invalid Type loss")
 
