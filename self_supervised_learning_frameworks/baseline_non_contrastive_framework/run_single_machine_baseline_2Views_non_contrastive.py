@@ -261,15 +261,15 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            # if (epoch + 1) % 20 == 0:
-            #     FLAGS.train_mode = 'finetune'
-            #     result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
-            #                                 checkpoint_manager.latest_checkpoint, self.strategy)
-            #     wandb.log({
-            #         "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
-            #         "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
-            #     })
-            #     FLAGS.train_mode = 'pretrain'
+            if (epoch + 1) % 20 == 0:
+                FLAGS.train_mode = 'finetune'
+                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+                                            checkpoint_manager.latest_checkpoint, self.strategy)
+                wandb.log({
+                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+                })
+                FLAGS.train_mode = 'pretrain'
         # perform eval after training
         if "eval" in exe_mode:
             self.eval(checkpoint_manager)

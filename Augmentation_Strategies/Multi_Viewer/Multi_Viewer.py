@@ -57,6 +57,8 @@ class Multi_viewer(object):
     def multi_view(self, batch_image, y, da_type=None, incpt_crp=False):
         bth_im = self.util['cnvt_typ'](batch_image)
         bth_im_buff = []
+
+        
         for viw_name, vs in self.multi_view_spec.items():
             crp_key = "incpt_crp" if viw_name == "glb" and incpt_crp \
                                 else "rnd_crp"

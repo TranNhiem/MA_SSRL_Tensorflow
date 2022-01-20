@@ -180,9 +180,29 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
+<<<<<<< HEAD
         train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Rand_Augment, da_type="rnd")
+=======
+        # train_ds = self.train_dataset.multi_view_data_aug(
+        #     self.train_dataset.Fast_Augment)
+>>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
 
+        # train_ds = self.train_dataset.multi_view_data_aug(
+            #     self.train_dataset.Fast_Augment)
         # performing Linear-protocol
+        
+        SIZE_CROPS = [224, 96]
+        NUM_CROPS = [2,3]
+        min_scale = [0.5, 0.14] 
+        max_scale = [1., 0.5]
+        ## This two variable for RandAug
+        num_transform=1
+        magnitude=10
+
+        augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+
+        train_ds = self.train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
+                                                            num_transform, magnitude,augment_strategy )
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
@@ -196,6 +216,7 @@ class Runner(object):
             total_loss = 0.0
             num_batches = 0
 
+<<<<<<< HEAD
             # Golden principle : if it's work...  DO NOT TOUCH IT!!!
             #      2 global view vs. 3 local view
             for ds_1, lab_1, ds_2, lab_2, ds_3, _, ds_4, _, ds_5, _ in train_ds:
@@ -206,8 +227,17 @@ class Runner(object):
                 total_loss += self.__distributed_train_step(
                     ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
 
-                num_batches += 1
+=======
+            for _,  ds_train in enumerate(train_ds):
+                
+                (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
 
+                total_loss += self.__distributed_train_step(
+                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
+                
+>>>>>>> c1d00806635f3033650c53f59b78f2fd736709ca
+                num_batches += 1
+              
                 # Update weight of Target Encoder Every Step
                 if FLAGS.moving_average == "fixed_value":
                     beta = 0.99
@@ -269,6 +299,9 @@ class Runner(object):
                     "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
                 })
                 FLAGS.train_mode = 'pretrain'
+        
+
+
         # perform eval after training
         if "eval" in exe_mode:
             self.eval(checkpoint_manager)
