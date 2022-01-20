@@ -194,7 +194,7 @@ class Runner(object):
         num_transform=1
         magnitude=10
 
-        augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+        augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
         train_ds = self.train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
                                                             num_transform, magnitude,augment_strategy )
@@ -204,7 +204,7 @@ class Runner(object):
         # Restore checkpoint if available.
         checkpoint_manager = try_restore_from_checkpoint(
             self.online_model, optimizer.iterations, optimizer)
-
+        #lr_schedule, optimizer = _, self.opt = get_optimizer()
         global_step = optimizer.iterations
         for epoch in trange(self.train_epochs):
 
@@ -212,10 +212,13 @@ class Runner(object):
             num_batches = 0
 
             for _,  ds_train in enumerate(train_ds):
+                
+                self.cur_step = global_step.numpy()
+
                 (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
                 
                 total_loss += self.__distributed_train_step(
-                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
+                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, )
                 
                 num_batches += 1
               
@@ -312,6 +315,8 @@ class Runner(object):
     @tf.function
     def __train_step(self, ds_1, ds_2, ds_3, ds_4, ds_5, lable_one, lable_two):
         # Scale loss  --> Aggregating all Gradients
+    
+
         def distributed_loss(x1, x2, x3, x4, x5):
             # each GPU loss per_replica batch loss
             per_example_loss_1, logits_ab, labels = byol_loss(
@@ -330,11 +335,14 @@ class Runner(object):
                 (1./self.train_global_batch)
 
             if FLAGS.Loss_global_local == "schedule":
-                # This update the Beta value schedule along with Trainign steps Follow BYOL
+                # This update the Cosie FUnctions
                 alpha_base = 0.5
-                cur_step = global_step.numpy()
+                cur_step = float(self.cur_step)
+                
                 alpha = 1 - (1-alpha_base) * \
                     (cos(pi*cur_step/self.train_steps)+1)/2
+
+
 
                 loss = alpha*loss_glob + (1-alpha)*loss_local
             else: 
