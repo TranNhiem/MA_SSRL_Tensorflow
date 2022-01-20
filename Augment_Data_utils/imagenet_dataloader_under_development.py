@@ -514,7 +514,7 @@ class Imagenet_dataset(object):
                     trainloader.map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)
                 elif augment_strategy =="SimCLR":
                     logging.info("You implement Multi-View --> SimCLR") 
-                    trainloader.map(lambda x, y: (self.simclr_augment_style(x, ), y), num_parallel_calls=AUTO)
+                    trainloader.map(lambda x, y: (simclr_augment_style(x, ), y), num_parallel_calls=AUTO)
                 elif augment_strategy =="FastAA":
                     logging.info("You implement Multi-View --> FASTAA") 
                     trainloader.map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)
