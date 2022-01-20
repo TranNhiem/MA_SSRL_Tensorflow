@@ -1,7 +1,7 @@
 __author__ = "Rick & Josef (refactor)"
 __date__ = "2021/01/18"
 from .Byol_simclr_multi_croping_augmentation import simclr_augment_randcrop_global_views, \
-    simclr_augment_inception_style, supervised_augment_eval
+    simclr_augment_inception_style, supervised_augment_eval, simclr_augment_style
 from Augmentation_Strategies.Multi_Viewer.Multi_Viewer import Multi_viewer
 from absl import logging
 from imutils import paths
@@ -40,6 +40,7 @@ if FLAGS.mode_prefetch == 1:
     mode_prefetch = AUTO
 else:
     mode_prefetch = FLAGS.mode_prefetch
+
 
 
 class Imagenet_dataset(object):
@@ -177,7 +178,7 @@ class Imagenet_dataset(object):
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                 .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
                 .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)#.cache()
 
         else:
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
@@ -259,6 +260,7 @@ class Imagenet_dataset(object):
         image = augmenter_apply.distort(image*255)
 
         return image / 255.
+    
     @tf.function
     def Rand_Augment(self, image, num_transform, magnitude):
         '''
@@ -301,6 +303,7 @@ class Imagenet_dataset(object):
         return image
 
     def simclr_crop_da(self, crop_type="incpt_crp"):
+        
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
@@ -465,15 +468,73 @@ class Imagenet_dataset(object):
         mv = Multi_viewer(da_inst=da_func)
 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
+        #train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
+        train_ds = raw_ds.map( lambda x, y : mv.multi_view (x,  y), num_parallel_calls=AUTO)
+        
         #tra_ds_lst = self.wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         #train_ds = tf.data.Dataset.zip(tra_ds_lst)
         logging.info("Train_ds_multiview dataloader with option")
         train_ds.with_options(options)
         return self.strategy.experimental_distribute_dataset(train_ds)
 
+    @tf.function
+    def random_resize_crop(self, image, min_scale, max_scale, crop_size):
+        
+        # conditional resizing
+        if crop_size == 224:
+            image_shape = 260
+            image = tf.image.resize(image, (image_shape, image_shape))
+        else:
+            image_shape = 160
+            image = tf.image.resize(image, (image_shape, image_shape))
+        # get the crop size for given min and max scale
+        size = tf.random.uniform(shape=(1,), minval=min_scale*image_shape, maxval=max_scale*image_shape, dtype=tf.float32)
+        size = tf.cast(size, tf.int32)[0]
+        # get the crop from the image
+        crop = tf.image.random_crop(image, (size,size,3))
+        crop_resize = tf.image.resize(crop, (crop_size, crop_size))    
+        return crop_resize
+
+
+    def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10): 
+        raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        train_ds= tuple()
+        
+        
+        for i, num_crop in enumerate(num_crops): 
+            for _ in range(num_crop):
+                trainloader= (raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                , num_parallel_calls=AUTO)
+                )
+                if augment_strategy =="RandAug": 
+                    logging.info("You implement Multi-View --> RandAugment")
+                    trainloader.map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)
+                elif augment_strategy =="AutoAug":
+                    logging.info("You implement Multi-View --> AutoAug") 
+                    trainloader.map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)
+                elif augment_strategy =="SimCLR":
+                    logging.info("You implement Multi-View --> SimCLR") 
+                    trainloader.map(lambda x, y: (self.simclr_augment_style(x, ), y), num_parallel_calls=AUTO)
+                elif augment_strategy =="FastAA":
+                    logging.info("You implement Multi-View --> FASTAA") 
+                    trainloader.map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)
+                else: 
+                    raise ValueError ("Invalid Data Augmentation Strategies")
+                ## Directly apply with_option
+                trainloader = trainloader.with_options(options)
+                train_ds +=(trainloader,)
+
+        # Train_ds ziping multiple (train_ds_global, train_ds_local) 
+        train_ds = tf.data.Dataset.zip(train_ds)
+        train_ds=train_ds.batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+        
+        return self.strategy.experimental_distribute_dataset(train_ds)
+
     def get_data_size(self):
         return len(self.x_train), len(self.x_val)
+
+
+
 
 
 if __name__ == '__main__':

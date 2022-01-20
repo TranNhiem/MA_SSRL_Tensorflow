@@ -16,8 +16,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Auto_Augment_RandomCrop_FP32"
-    FLAGS.wandb_mod = "dryrun"
+    FLAGS.wandb_run_name = "Rand_Crpt_RandAug_1_10_5_views_multi_resol"
+    FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
@@ -46,7 +46,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    FLAGS.model_dir = "./model_ckpt/testtt"
+    FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_RandAug_1_10_rand_Crop/"
 
     #FLAGS.train_mode = "finetune"
 

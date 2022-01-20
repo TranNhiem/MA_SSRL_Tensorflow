@@ -435,8 +435,21 @@ def simclr_augment_inception_style(image, IMG_SIZE):
     image = random_apply(random_blur, p=1.0, x=image,)
     #image = image/255.
     return image
-# @tf.function
 
+@tf.function
+def simclr_augment_style(image):
+    # IMG_SIZE=IMG_SIZE
+    # As discussed in the SimCLR paper, the series of augmentation
+    # transformations (except for random crops) need to be applied
+    # randomly to impose translational invariance. (Two Options implementation)
+    #image= flip_random_crop(image, crop_size)
+   
+    image = random_apply(color_jitter, p=0.8, x=image, )
+    image = random_apply(color_drop, p=0.2, x=image, )
+    image = random_apply(random_blur, p=1.0, x=image,)
+    #image = image/255.
+    return image
+# @tf.function
 
 def simclr_augment_randcrop_global_view_image_mask(image, mask, IMG_SIZE):
 

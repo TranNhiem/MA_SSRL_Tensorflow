@@ -189,8 +189,8 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
         logging.info('Skipping eval during pretraining without linear eval.')
         return
 
-    # Tensorboard enable
-    summary_writer = tf.summary.create_file_writer(FLAGS.model_dir)
+    # # Tensorboard enable
+    # summary_writer = tf.summary.create_file_writer(FLAGS.model_dir)
 
     # Building the Supervised metrics
     with strategy.scope():
@@ -251,9 +251,9 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
     cur_step = global_step.numpy()
     logging.info('Writing summaries for %d step', cur_step)
 
-    with summary_writer.as_default():
-        metrics.log_and_write_metrics_to_summary(all_metrics, cur_step)
-        summary_writer.flush()
+    # with summary_writer.as_default():
+    #     metrics.log_and_write_metrics_to_summary(all_metrics, cur_step)
+    #     summary_writer.flush()
 
     # Record results as Json.
     result_json_path = os.path.join(FLAGS.model_dir, 'result.jsoin')
