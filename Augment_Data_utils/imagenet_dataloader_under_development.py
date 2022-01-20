@@ -12,7 +12,7 @@ import re
 
 # from Augmentation_Strategies.Auto_Data_Augment.Data_Augmentor import Data_Augmentor
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment as autoaug
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment, Proposed_RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
 
@@ -263,9 +263,9 @@ class Imagenet_dataset(object):
 
         image = augmenter_apply.distort(image*255)
 
-        image = tf.cast(image, dtype=tf.float32)  # * 255.
+        #image = tf.cast(image, dtype=tf.float32)  # * 255.
         return image / 255.
-
+    @tf.function
     def Rand_Augment(self, image, num_transform, magnitude):
         '''
         Args:
@@ -278,9 +278,26 @@ class Imagenet_dataset(object):
         # print(image.shape)
         augmenter_apply = RandAugment(
             num_layers=num_transform, magnitude=magnitude)
-        image = augmenter_apply.distort(image*255.)
+        image = augmenter_apply.distort(image*255)
 
         return image[0] / 255.
+    @tf.function
+    def Rand_Augment_modif(self, image, num_transform, magnitude):
+        '''
+        Args:
+        image: A tensor [ with, height, channels]
+        RandAugment: a function to apply Random transformation
+        Return:
+        Image: A tensor of Applied transformation [with, height, channels]
+        '''
+        '''Version 1 RandAug Augmentation'''
+        # print(image.shape)
+        augmenter_apply = Proposed_RandAugment(
+            num_layers=num_transform, magnitude=magnitude)
+        image = augmenter_apply.distort(image*255)
+
+        # return image[0] / 255.
+        return image [0]/ 255.
 
     def Fast_Augment(self, image, policy_type="imagenet"):
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
@@ -363,7 +380,7 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def RandAug_strategy(self, crop_type="incpt_crp", num_transform=2, magnitude=5):
+    def RandAug_strategy(self, crop_type="incpt_crp", num_transform=3, magnitude=4):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
@@ -374,11 +391,11 @@ class Imagenet_dataset(object):
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Rand_Augment_modif(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
             train_ds_two = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Rand_Augment_modif(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         elif crop_type == "rnd_crp":

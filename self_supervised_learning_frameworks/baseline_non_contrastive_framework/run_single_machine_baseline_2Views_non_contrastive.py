@@ -183,11 +183,11 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-        #                                                num_transform=2, magnitude=7)
+        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+                                                       num_transform=1, magnitude=13)
         #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
         # already complete, have fun ~
-        train_ds = self.train_dataset.FastAug_strategy(crop_type=da_crp_key, policy_type="imagenet")
+        # train_ds = self.train_dataset.FastAug_strategy(crop_type=da_crp_key, policy_type="imagenet")
 
         # #   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -261,15 +261,15 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            if (epoch + 1) % 20 == 0:
-                FLAGS.train_mode = 'finetune'
-                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
-                                            checkpoint_manager.latest_checkpoint, self.strategy)
-                wandb.log({
-                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
-                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
-                })
-                FLAGS.train_mode = 'pretrain'
+            # if (epoch + 1) % 20 == 0:
+            #     FLAGS.train_mode = 'finetune'
+            #     result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+            #                                 checkpoint_manager.latest_checkpoint, self.strategy)
+            #     wandb.log({
+            #         "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+            #         "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+            #     })
+            #     FLAGS.train_mode = 'pretrain'
         # perform eval after training
         if "eval" in exe_mode:
             self.eval(checkpoint_manager)
