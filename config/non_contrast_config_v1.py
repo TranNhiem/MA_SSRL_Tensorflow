@@ -16,8 +16,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Auto_Augment_RandomCrop_FP32"
-    FLAGS.wandb_mod = "dryrun"
+    FLAGS.wandb_run_name = "Auto_Augmentv1_RandomCrop_FP32"
+    FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
@@ -41,14 +41,14 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.base_lr = 0.3
 
     FLAGS.resnet_depth = 18
-    FLAGS.train_epochs = 100
-    FLAGS.num_classes = 100
+    FLAGS.train_epochs = 20
+    FLAGS.num_classes = 10
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    FLAGS.model_dir = "./model_ckpt/testtt"
+    #FLAGS.model_dir = "./model_ckpt/autoDA"
+    FLAGS.model_dir = "./model_ckpt/testMV"
 
     #FLAGS.train_mode = "finetune"
 
-    # plz return FLAGS for easy implementation
     return flag

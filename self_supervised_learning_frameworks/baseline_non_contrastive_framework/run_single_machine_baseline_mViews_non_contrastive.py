@@ -64,13 +64,12 @@ class Runner(object):
         self.__dict__ = FLAGS.__dict__
 
         # 1. Prepare imagenet dataset
-        strategy = tf_dis.MirroredStrategy()
-        self.strategy = strategy
-        train_global_batch = self.train_batch_size * strategy.num_replicas_in_sync
-        val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
+        self.strategy = tf_dis.MirroredStrategy()
+        train_global_batch = self.train_batch_size * self.strategy.num_replicas_in_sync
+        val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed':self.SEED}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed':self.SEED}
         # Dataloader V2 already be proposed as formal data_loader
         train_dataset = Imagenet_dataset(**ds_args)
 
@@ -87,7 +86,6 @@ class Runner(object):
             self.checkpoint_epochs * self.epoch_steps))
 
         # record var into self
-        self.strategy = strategy
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
@@ -180,7 +178,7 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Fast_Augment)
+        train_ds = self.train_dataset.multi_view_data_aug(self.train_dataset.Rand_Augment, da_type="rnd")
 
         ##   performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -203,6 +201,7 @@ class Runner(object):
                 #print(f"label shape lab1 >> {lab_1.values[0].shape} | lab2 >> {lab_2.values[0].shape}\n")
                 #print(f"Local view shape v3 >> {ds_3.values[0].shape} | v4 >> {ds_4.values[0].shape} | v5 >> {ds_5.values[0].shape}\n")
                 #break
+                
                 total_loss += self.__distributed_train_step(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2)
                 num_batches += 1
 
@@ -305,12 +304,19 @@ class Runner(object):
             per_example_loss_3, _, _ = byol_loss(
                 x3, x5,  temperature=self.temperature)
 
+            per_example_loss_local = per_example_loss_2 + per_example_loss_3
+
+            loss_glob = tf.reduce_sum(per_example_loss_1) * \
+                (1./self.train_global_batch)
+            loss_local = tf.reduce_sum(per_example_loss_local) * \
+                (1./self.train_global_batch)
+            loss = loss_glob + loss_local
+
+            ''' # old version bkup
             per_example_loss = per_example_loss_1 + per_example_loss_2 + per_example_loss_3
-            
-            # total sum loss //Global batch_size
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_global_batch)
-
+            '''
             return loss, logits_ab, labels
 
 

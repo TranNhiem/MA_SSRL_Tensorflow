@@ -9,7 +9,7 @@ import numpy as np
 import random
 import re
 
-from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment #as autoaug
+from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import AutoAugment
 from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
@@ -230,6 +230,7 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(val_ds)
 
+    @tf.function
     def Auto_Augment(self, image):
         '''
         Args:
@@ -246,20 +247,23 @@ class Imagenet_dataset(object):
         '''
 
         # augmentation_name='v1',
-
+        '''
         if FLAGS.auto_augment == "custome":
-            augmenter_apply = AutoAugment(augmentation_name='v0')
+            augmenter_apply = AutoAugment(augmentation_name='v1')
 
         elif FLAGS.auto_augment == "TFA_API":
-            augmenter_apply = autoaug(augmentation_name='v0')
+            augmenter_apply = autoaug(augmentation_name='v1')
         else:
             raise ValueError("Invalid AutoAugment Implementation")
-
+        '''
+        augmenter_apply = AutoAugment(augmentation_name='v1')
         image = augmenter_apply.distort(image*255)
 
         return image / 255.
 
-    def Rand_Augment(self, image, num_transform, magnitude):
+
+    @tf.function
+    def Rand_Augment(self, image, num_transform=2, magnitude=7):
         '''
         Args:
         image: A tensor [ with, height, channels]
@@ -272,7 +276,7 @@ class Imagenet_dataset(object):
             num_layers=num_transform, magnitude=magnitude)
         image = augmenter_apply.distort(image*255)
 
-        return image[0] / 255.
+        return image / 255. #image[0] / 255.
 
     @tf.function
     def Fast_Augment(self, image, policy_type="imagenet"):
@@ -443,11 +447,13 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
-    def multi_view_data_aug(self, da_func=None):
+    def multi_view_data_aug(self, da_func=None, da_type=None):
         mv = Multi_viewer(da_inst=da_func)
 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
+        train_ds = raw_ds.map( lambda x, y : tf.py_function(mv.multi_view, [x, y, da_type], Tout=[tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32]) )
+       # train_ds = raw_ds.map( lambda x, y : mv.multi_view(x, y) )
+        
         #tra_ds_lst = self.wrap_da(raw_ds,  mv.multi_view, "mv_aug")
         #train_ds = tf.data.Dataset.zip(tra_ds_lst)
         logging.info("Train_ds_multiview dataloader with option")
