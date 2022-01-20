@@ -18,7 +18,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "Rand_Crpt_RandAug_1_10_5_views_multi_resol"
     FLAGS.wandb_mod = "run"
-    FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
+    FLAGS.restore_checkpoint = True  # Restore Checkpoint or Not
 
     '''
         The middle layer output control the feature map size
