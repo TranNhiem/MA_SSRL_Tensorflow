@@ -194,7 +194,12 @@ class Runner(object):
         NUM_CROPS = [2,3]
         min_scale = [0.5, 0.14] 
         max_scale = [1., 0.5]
-        augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA"]
+        ## This two variable for RandAug
+        num_transform=1
+        magnitude=10
+
+        augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+
         train_ds = self.train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
                                                             num_transform, magnitude,augment_strategy )
         val_ds = self.train_dataset.supervised_validation()

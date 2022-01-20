@@ -496,7 +496,7 @@ class Imagenet_dataset(object):
         return crop_resize
 
 
-    def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10): 
+    def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10, augment_strategy="RandAug"): 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
         train_ds= tuple()
         
