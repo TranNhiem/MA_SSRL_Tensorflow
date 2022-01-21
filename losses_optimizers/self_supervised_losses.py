@@ -234,6 +234,7 @@ def byol_multi_views_loss(v1, v2, v3, v4, v5, temperature, alpha):
     
 
     glob_loss, logits_ab, labels= byol_loss(v1, v2, temperature)
+    
     loc_loss_1, _, _ = byol_loss(v3, v4, temperature)
     loc_loss_2, _, _= byol_loss(v3, v5, temperature)
     local_loss = loc_loss_1 + loc_loss_2

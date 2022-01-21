@@ -338,7 +338,7 @@ class Runner(object):
             else: 
                 alpha = FLAGS.alpha
             
-            loss= byol_multi_views_loss(x1, x2, x3, x4, x5, temperature=self.temperature, alpha=alpha)
+            loss, logits_ab, labels= byol_multi_views_loss(x1, x2, x3, x4, x5, temperature=self.temperature, alpha=alpha)
 
             return loss, logits_ab, labels
 
