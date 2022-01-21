@@ -173,6 +173,14 @@ class Runner(object):
                 "train/supervised_acc": metric_dict['supervised_acc_metric'].result()
             })
 
+        def eval_wandb(epoch,  result):
+            # Wandb Configure for Visualize the Model Training
+            wandb.log({
+                "Valdidation at epochs_": epoch+1,
+                "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+                "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+
+            })
         # prepare train related obj
         self.online_model, self.prediction_model, self.target_model = get_gpu_model()
         # assign to self.opt to prevent the namespace covered
@@ -180,20 +188,14 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-<<<<<<< HEAD
-        #train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-        #                                               num_transform=2, magnitude=7)
-        train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
-=======
         train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
                                                        num_transform=1, magnitude=13)
         #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
->>>>>>> 49e64e8b8b7434b03123d46086374b0eedbb7ae7
         # already complete, have fun ~
-        #train_ds = self.train_dataset.FastAug_strategy(
+        # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
 
-        ##   performing Linear-protocol
+        # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
@@ -265,10 +267,8 @@ class Runner(object):
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
-                wandb.log({
-                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
-                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
-                })
+
+                eval_wandb(epoch, result)
                 FLAGS.train_mode = 'pretrain'
         # perform eval after training
         if "eval" in exe_mode:
