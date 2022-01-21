@@ -2,7 +2,7 @@ from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, Cosi
 from objectives import metrics
 from objectives import objective as obj_lib
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
-from losses_optimizers.self_supervised_losses import byol_loss
+from losses_optimizers.self_supervised_losses import byol_multi_views_loss
 from config.helper_functions import *
 from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from tensorflow import distribute as tf_dis
@@ -172,7 +172,15 @@ class Runner(object):
                 "train/supervised_loss": metric_dict['supervised_loss_metric'].result(),
                 "train/supervised_acc": metric_dict['supervised_acc_metric'].result()
             })
+        
+        def eval_wandb(epoch,  result):
+            # Wandb Configure for Visualize the Model Training
+            wandb.log({
+                "Valdidation at epochs_": epoch+1,
+                "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+                "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
 
+            })
         # prepare train related obj
         self.online_model, self.prediction_model, self.target_model = get_gpu_model()
         # assign to self.opt to prevent the namespace covered
@@ -186,7 +194,7 @@ class Runner(object):
             #     self.train_dataset.Fast_Augment)
         # performing Linear-protocol
         
-        SIZE_CROPS = [224, 96]
+        SIZE_CROPS = [224, 120]
         NUM_CROPS = [2,3]
         min_scale = [0.5, 0.14] 
         max_scale = [1., 0.5]
@@ -194,7 +202,7 @@ class Runner(object):
         num_transform=1
         magnitude=10
 
-        augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+        augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
         train_ds = self.train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
                                                             num_transform, magnitude,augment_strategy )
@@ -235,6 +243,7 @@ class Runner(object):
                 target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
                 online_encoder_weights = online_model.get_weights()
+                
                 # mean teacher update
                 for lay_idx in range(len(online_encoder_weights)):
                     target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
@@ -318,22 +327,7 @@ class Runner(object):
     
 
         def distributed_loss(x1, x2, x3, x4, x5):
-            # each GPU loss per_replica batch loss
-            per_example_loss_1, logits_ab, labels = byol_loss(
-                x1, x2,  temperature=self.temperature)
-
-            per_example_loss_2, _, _ = byol_loss(
-                x3, x4,  temperature=self.temperature)
-
-            per_example_loss_3, _, _ = byol_loss(
-                x3, x5,  temperature=self.temperature)
-
-            per_example_loss_local = per_example_loss_2 + per_example_loss_3
-            loss_glob = tf.reduce_sum(per_example_loss_1) * \
-                (1./self.train_global_batch)
-            loss_local = tf.reduce_sum(per_example_loss_local) * \
-                (1./self.train_global_batch)
-
+            
             if FLAGS.Loss_global_local == "schedule":
                 # This update the Cosie FUnctions
                 alpha_base = 0.5
@@ -341,18 +335,11 @@ class Runner(object):
                 
                 alpha = 1 - (1-alpha_base) * \
                     (cos(pi*cur_step/self.train_steps)+1)/2
-
-
-
-                loss = alpha*loss_glob + (1-alpha)*loss_local
             else: 
-                loss = loss_glob + loss_local
+                alpha = FLAGS.alpha
+            
+            loss= byol_multi_views_loss(x1, x2, x3, x4, x5, temperature=self.temperature, alpha=alpha)
 
-            ''' # old version bkup
-            per_example_loss = per_example_loss_1 + per_example_loss_2 + per_example_loss_3
-            loss = tf.reduce_sum(per_example_loss) * \
-                (1./self.train_global_batch)
-            '''
             return loss, logits_ab, labels
 
         with tf.GradientTape(persistent=True) as tape:

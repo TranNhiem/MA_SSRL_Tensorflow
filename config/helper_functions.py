@@ -204,7 +204,6 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
         all_metrics = [
             regularization_loss, label_top_1_accuracy, label_top_5_accuracy
         ]
-
         # Restore model checkpoint
         logging.info('Restoring from %s', ckpt)
         checkpoint = tf.train.Checkpoint(

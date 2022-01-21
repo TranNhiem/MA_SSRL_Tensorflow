@@ -335,6 +335,10 @@ def Configure_Model_Training():
         'loss_type', 'byol_asymmetrized_loss', [
             'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
         'List of loss objective for optimize model.')
+    
+    flags.DEFINE_float(
+        'alpha', 0.8,
+        'alpha control the weighted_loss between Global and Local Views.')
 
     flags.DEFINE_enum(
         'Loss_global_local', 'schedule', [
