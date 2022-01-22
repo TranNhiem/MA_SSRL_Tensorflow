@@ -47,7 +47,7 @@ class Runner(object):
             if wanda_cfg:
                 wandb.init(project=self.wandb_project_name, name=FLAGS.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
-
+            self.wandb= wandb
         #   calculate the training related meta-info
         def infer_ds_info(n_tra_sample, n_evl_sample, train_global_batch, val_global_batch):
             self.train_steps = self.eval_steps or int(
@@ -199,13 +199,14 @@ class Runner(object):
         min_scale = [0.5, 0.14] 
         max_scale = [1., 0.5]
         ## This two variable for RandAug
-        num_transform=1
-        magnitude=10
-
-        augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+        num_transform=2
+        magnitude=20
+        #policy_type= "v0" #["v0, v1, simple"] for Apply AutoAugmentation
+        policy_type= "imagenet" #["imagenet", "redu_cifar10", "redu_svhn"] for Apply FAST AutoAugmentation
+        augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
         train_ds = self.train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
-                                                            num_transform, magnitude,augment_strategy )
+                                                            num_transform, magnitude, policy_type, augment_strategy )
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
@@ -273,12 +274,14 @@ class Runner(object):
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
-                wandb.log({
+                self.wandb.log({
+                    "eval_at_epoch": epoch+1, 
                     "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
                     "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
                 })
                 FLAGS.train_mode = 'pretrain'
         
+            
             log_wandb(epoch, epoch_loss, metric_dict)
             for metric in metric_dict.values():
                 metric.reset_states()
