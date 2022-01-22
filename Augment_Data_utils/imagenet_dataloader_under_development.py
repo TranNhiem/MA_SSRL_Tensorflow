@@ -24,7 +24,7 @@ options.experimental_optimization.noop_elimination = True
 options.experimental_optimization.map_and_batch_fusion = True
 options.experimental_optimization.map_parallelization = True
 options.experimental_optimization.apply_default_optimizations = True
-# options.experimental_deterministic = False
+options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 # Shard policy using multi-machines training
 # options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
@@ -541,13 +541,15 @@ class Imagenet_dataset(object):
                 else: 
                     raise ValueError ("Invalid Data Augmentation Strategies")
                 ## Directly apply with_option
+                trainloader=trainloader.shuffle(self.BATCH_SIZE*10, seed=self.seed)
                 trainloader = trainloader.with_options(options)
                 train_ds +=(trainloader,)
 
         # Train_ds ziping multiple (train_ds_global, train_ds_local) 
         train_ds = tf.data.Dataset.zip(train_ds)
 
-        train_ds=train_ds.shuffle(1000, seed=self.seed).batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+        #train_ds=train_ds.shuffle(100, seed=self.seed).batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+        train_ds=train_ds.batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
         
         return self.strategy.experimental_distribute_dataset(train_ds)
 

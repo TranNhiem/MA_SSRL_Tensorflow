@@ -12,7 +12,7 @@ from sklearn.preprocessing import OneHotEncoder
 import time
 import glob
 import os
-
+import timeit
 import matplotlib.pyplot as plt
 
 from tensorflow import distribute as tf_dis
@@ -121,8 +121,10 @@ magnitude=20
 policy_type= "imagenet" #["imagenet", "redu_cifar10", "redu_svhn"] for Apply FAST AutoAugmentation
 augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
+start= timeit.timeit()
 train_ds = train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
                                                     num_transform, magnitude, policy_type,augment_strategy )
+
 ds_1=[]
 ds_2=[]
 ds_3=[]
@@ -136,7 +138,8 @@ for _,  ds_train in enumerate(train_ds):
 print(ds_1.shape)
 print(ds_2.shape)
 print(ds_3.shape)
-
+end= timeit.timeit()
+print("Time execute",end - start)
 image=ds_1
 image1=ds_2
 image2=ds_3
@@ -165,5 +168,6 @@ for n in range(10):
     # plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
     plt.axis("off")
 plt.show()
+
 
 # plt.imshow(image[1])
