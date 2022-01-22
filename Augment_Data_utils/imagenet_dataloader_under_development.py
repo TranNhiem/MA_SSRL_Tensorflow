@@ -18,13 +18,13 @@ import tensorflow as tf
 AUTO = tf.data.experimental.AUTOTUNE
 # Experimental options
 options = tf.data.Options()
-tf.data.experimental.DistributeOptions()
+#tf.data.experimental.DistributeOptions()
 options.experimental_optimization.noop_elimination = True
 # options.experimental_optimization.map_vectorization.enabled = True
 options.experimental_optimization.map_and_batch_fusion = True
 options.experimental_optimization.map_parallelization = True
 options.experimental_optimization.apply_default_optimizations = True
-options.experimental_deterministic = False
+# options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 # Shard policy using multi-machines training
 # options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
@@ -173,18 +173,27 @@ class Imagenet_dataset(object):
     def wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+        if FLAGS.training_loop =="two_views": 
+            print("Two_Views Wrap_ds")
+            if FLAGS.resize_wrap_ds:
+                img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                    .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                    .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
-        if FLAGS.resize_wrap_ds:
+            else:
+                img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                    .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+
+        elif FLAGS.training_loop =="multi_views": 
+            print("Multi_Views Wrap_ds")
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
-                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)#.cache()
+            .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+            .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
-        else:
-            img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
-                .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
-
+        else: 
+            raise ValueError("Invalid_Training loop")
         return img_lab_ds
 
     def wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -504,6 +513,7 @@ class Imagenet_dataset(object):
         train_ds= tuple()
         
         for i, num_crop in enumerate(num_crops): 
+
             for _ in range(num_crop):
                 # trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
                 # , num_parallel_calls=AUTO)
@@ -520,7 +530,8 @@ class Imagenet_dataset(object):
                 
                 elif augment_strategy =="SimCLR":
                     print("You implement Multi-View --> SimCLR")
-                    trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                    img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+                    trainloader = raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y ) 
                     , num_parallel_calls=AUTO).map(lambda x, y: (simclr_augment_style(x, ), y), num_parallel_calls=AUTO)
 
                 elif augment_strategy =="FastAA":
@@ -535,7 +546,8 @@ class Imagenet_dataset(object):
 
         # Train_ds ziping multiple (train_ds_global, train_ds_local) 
         train_ds = tf.data.Dataset.zip(train_ds)
-        train_ds=train_ds.batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+
+        train_ds=train_ds.shuffle(1000, seed=self.seed).batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
         
         return self.strategy.experimental_distribute_dataset(train_ds)
 

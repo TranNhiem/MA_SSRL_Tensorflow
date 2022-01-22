@@ -6,6 +6,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS = flag.FLAGS
 
     print(f"\n\n Great! seems you import the code under {__file__} \n\n")
+    '''ATTENTION --> Changing the training_loop FLAGS Corresponding" '''
+    FLAGS.training_loop= "multi_views" # ['two_views', "multi_views"]
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'

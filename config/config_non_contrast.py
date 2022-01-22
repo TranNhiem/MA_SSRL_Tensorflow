@@ -336,6 +336,13 @@ def Configure_Model_Training():
             'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
         'List of loss objective for optimize model.')
     
+
+
+    flags.DEFINE_enum(
+        'training_loop', 'two_views', [
+            'two_views', 'multi_views', ],
+        'training_loop type is Decided the DATALOADER.')
+
     flags.DEFINE_float(
         'alpha', 0.8,
         'alpha control the weighted_loss between Global and Local Views.')

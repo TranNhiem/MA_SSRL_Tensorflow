@@ -109,7 +109,7 @@ train_dataset = object_data.train_dataset
 ### ******************************************************
 
 
-SIZE_CROPS = [224, 96]
+SIZE_CROPS = [224, 120]
 NUM_CROPS = [2,3]
 min_scale = [0.5, 0.14] 
 max_scale = [1., 0.5]
@@ -119,11 +119,14 @@ magnitude=20
 
 #policy_type= "v0" #["v0, v1, simple"] for Apply AutoAugmentation
 policy_type= "imagenet" #["imagenet", "redu_cifar10", "redu_svhn"] for Apply FAST AutoAugmentation
-augment_strategy="FastAA" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
 train_ds = train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
                                                     num_transform, magnitude, policy_type,augment_strategy )
 ds_1=[]
+ds_2=[]
+ds_3=[]
+ds_4=[]
 ds_5=[]
 for _,  ds_train in enumerate(train_ds):
     
@@ -131,14 +134,33 @@ for _,  ds_train in enumerate(train_ds):
     break
     
 print(ds_1.shape)
-print(ds_5.shape)
-
+print(ds_2.shape)
+print(ds_3.shape)
 
 image=ds_1
+image1=ds_2
+image2=ds_3
+image3=ds_4
+image4=ds_5
 plt.figure(figsize=(10, 5))
-for n in range(3):
-    ax = plt.subplot(2, 3, n + 1)
-    plt.imshow(image[n])  # .numpy().astype("int")
+for n in range(10):
+    ax = plt.subplot(5, 2, n + 1)
+    if n <2:
+        print(n)
+        plt.imshow(image[n])  # .numpy().astype("int")
+    elif 2 <= n <4:
+        print(n-2)
+        plt.imshow(image1[n-2])
+    elif 4 <= n <6:
+        print(n-4)
+        plt.imshow(image2[n-4])
+    
+    elif 6 <= n <8:
+        print(n-6)
+        plt.imshow(image3[n-6])
+    else: 
+        print(n-8)
+        plt.imshow(image4[n-8])
     # ax = plt.subplot(2, 10, n + 11)
     # plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
     plt.axis("off")
