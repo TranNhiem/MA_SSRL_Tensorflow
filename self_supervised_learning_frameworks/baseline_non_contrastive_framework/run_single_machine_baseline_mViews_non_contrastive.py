@@ -331,7 +331,7 @@ class Runner(object):
 
         def distributed_loss(x1, x2, x3, x4, x5):
             
-            if FLAGS.Loss_global_local == "schedule":
+            if FLAGS.Loss_global_local == "cos_schedule":
                 # This update the Cosie FUnctions
                 alpha_base = 0.5
                 cur_step = float(self.cur_step)

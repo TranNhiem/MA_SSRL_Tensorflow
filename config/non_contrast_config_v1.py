@@ -16,7 +16,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Multi_Views_RandAugment_1_10_RandomCrop_FP32_Alpha_07_03_local_96"
+    FLAGS.wandb_run_name = "Multi_Views_SimCLR_RandomCrop_FP32_Alpha_08_03_local_96"
     FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -32,8 +32,8 @@ def read_cfg_base(mod="non_contrastive"):
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
     FLAGS.loss_type = "byol_asymmetrized_loss"
-    FLAGS.Loss_global_local ="fixed_val" # schedule or {passing any strings}
-    FLAGS.alpha= 0.7 # Alpha values is  weighted loss between (Global and Local) Views
+    FLAGS.Loss_global_local ="fixed_val" # cos_schedule or {passing any strings}
+    FLAGS.alpha= 0.8 # Alpha values is  weighted loss between (Global and Local) Views
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
@@ -50,7 +50,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.val_batch_size = 128
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_RandAugment_1_10_alpha_07_03_Local_96"
+    FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_SimCLR_alpha_08_02_Local_96"
 
     #FLAGS.train_mode = "finetune"
 
