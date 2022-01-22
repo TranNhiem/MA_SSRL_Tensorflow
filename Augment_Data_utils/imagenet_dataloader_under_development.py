@@ -233,7 +233,7 @@ class Imagenet_dataset(object):
         return self.strategy.experimental_distribute_dataset(val_ds)
 
     @tf.function
-    def Auto_Augment(self, image):
+    def Auto_Augment(self, image, policy_type):
         '''
         Args:
         image: A tensor [ with, height, channels]
@@ -258,7 +258,7 @@ class Imagenet_dataset(object):
         else:
             raise ValueError("Invalid AutoAugment Implementation")
         '''
-        augmenter_apply = AutoAugment(augmentation_name='v1')
+        augmenter_apply = autoaug(augmentation_name=policy_type)
         image = augmenter_apply.distort(image*255)
 
         return image / 255.
@@ -335,7 +335,7 @@ class Imagenet_dataset(object):
         # train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two))
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def AutoAug_strategy(self, crop_type="incpt_crp"):
+    def AutoAug_strategy(self, crop_type="incpt_crp", policy_type="v1"):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
@@ -346,24 +346,24 @@ class Imagenet_dataset(object):
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Auto_Augment(x,policy_type=policy_type ), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
             train_ds_two = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Auto_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         elif crop_type == "rnd_crp":
 
             train_ds_one = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
                                   num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Auto_Augment(x,policy_type=policy_type ), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
             train_ds_two = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
                                   num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Auto_Augment(x,policy_type=policy_type ), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
         else:
             raise ValueError("Cropping strategy is Invalid")
@@ -499,27 +499,34 @@ class Imagenet_dataset(object):
         return crop_resize
 
 
-    def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10, augment_strategy="RandAug"): 
+    def multi_views_loader(self, min_scale, max_scale, crop_size, num_crops, num_transform=1, magnitude=10, policy_type="input_policy", augment_strategy="RandAug"): 
         raw_ds = self.wrap_ds(self.x_train, self.x_train_lable)
         train_ds= tuple()
         
         for i, num_crop in enumerate(num_crops): 
             for _ in range(num_crop):
-                trainloader= (raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
-                , num_parallel_calls=AUTO)
-                )
+                # trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                # , num_parallel_calls=AUTO)
                 if augment_strategy =="RandAug": 
-                    logging.info("You implement Multi-View --> RandAugment")
-                    trainloader.map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)
+                    print("You implement Multi-View --> RandAugment")
+                    trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                    , num_parallel_calls=AUTO)\
+                    .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)
                 elif augment_strategy =="AutoAug":
-                    logging.info("You implement Multi-View --> AutoAug") 
-                    trainloader.map(lambda x, y: (self.Auto_Augment(x, ), y), num_parallel_calls=AUTO)
+                    print("You implement Multi-View --> AutoAug") 
+                    trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                    , num_parallel_calls=AUTO)\
+                    .map(lambda x, y: (self.Auto_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)
+                
                 elif augment_strategy =="SimCLR":
-                    logging.info("You implement Multi-View --> SimCLR") 
-                    trainloader.map(lambda x, y: (simclr_augment_style(x, ), y), num_parallel_calls=AUTO)
+                    print("You implement Multi-View --> SimCLR")
+                    trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                    , num_parallel_calls=AUTO).map(lambda x, y: (simclr_augment_style(x, ), y), num_parallel_calls=AUTO)
+
                 elif augment_strategy =="FastAA":
-                    logging.info("You implement Multi-View --> FASTAA") 
-                    trainloader.map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)
+                    print("You implement Multi-View --> FASTAA")
+                    trainloader= raw_ds.map(lambda x, y: (self.random_resize_crop(x, min_scale[i], max_scale[i], crop_size[i]),y )
+                    , num_parallel_calls=AUTO).map(lambda x, y: (*self.Fast_Augment(x, policy_type=policy_type), y), num_parallel_calls=AUTO)
                 else: 
                     raise ValueError ("Invalid Data Augmentation Strategies")
                 ## Directly apply with_option

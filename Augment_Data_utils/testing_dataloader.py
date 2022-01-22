@@ -114,13 +114,15 @@ NUM_CROPS = [2,3]
 min_scale = [0.5, 0.14] 
 max_scale = [1., 0.5]
 ## This two variable for RandAug
-num_transform=1
-magnitude=10
+num_transform=2
+magnitude=20
 
-augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+#policy_type= "v0" #["v0, v1, simple"] for Apply AutoAugmentation
+policy_type= "imagenet" #["imagenet", "redu_cifar10", "redu_svhn"] for Apply FAST AutoAugmentation
+augment_strategy="FastAA" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
 
 train_ds = train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
-                                                    num_transform, magnitude,augment_strategy )
+                                                    num_transform, magnitude, policy_type,augment_strategy )
 ds_1=[]
 ds_5=[]
 for _,  ds_train in enumerate(train_ds):
