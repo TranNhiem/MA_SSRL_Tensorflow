@@ -31,8 +31,10 @@ if gpus:
 flag = read_cfg_base()
 FLAGS = flag.FLAGS
 
-
-class Runner(object):
+###*******************************************************
+### Testing Dataloader Two Views and Multi-Views
+### ******************************************************
+class dataloader_2and_multi_views(object):
     def __init__(self, FLAGS, wanda_cfg=None):
 
         def infer_ds_info(n_tra_sample, n_evl_sample, train_global_batch, val_global_batch):
@@ -72,47 +74,65 @@ class Runner(object):
         self.train_dataset = train_dataset
 
 
+
  # perform data_augmentation by calling the dataloader methods
-da_crp_key = 'rnd_crp'  # incpt_crp
-object_data = Runner(FLAGS, )
+
+da_crp_key = 'rnd_crp'  # incpt_crp 
+object_data = dataloader_2and_multi_views(FLAGS, )
 train_dataset = object_data.train_dataset
-train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                          num_transform=2, magnitude=5)
-# train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
 
-# #  already complete, have fun ~
-# train_ds = train_dataset.FastAug_strategy(
-#     crop_type=da_crp_key, policy_type="imagenet")
 
-# #   performing Linear-protocol
-val_ds = train_dataset.supervised_validation()
-val_ds_=[]
-for _, ds_one in enumerate(val_ds):
-    val_ds_ = ds_one
+# ## Validation DS_Testing 
+# val_ds = train_dataset.supervised_validation()
+# val_ds_=[]
+# for _, ds_one in enumerate(val_ds):
+#     val_ds_ = ds_one
+#     break
 
+# ## Testing Multi-Augmentation Strategy
+# train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
+#                                           num_transform=2, magnitude=5)
+
+# # train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+
+# # train_ds = train_dataset.FastAug_strategy(
+# #     crop_type=da_crp_key, policy_type="imagenet")
+
+# ds = []
+# for _, (ds_one, ds_two) in enumerate(train_ds):
+#     ds = ds_one
+
+#     break
+
+###*******************************************************
+### Testing Dataloader Two Views and Multi-Views
+### ******************************************************
+
+
+SIZE_CROPS = [224, 96]
+NUM_CROPS = [2,3]
+min_scale = [0.5, 0.14] 
+max_scale = [1., 0.5]
+## This two variable for RandAug
+num_transform=1
+magnitude=10
+
+augment_strategy="RandAug" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+
+train_ds = train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
+                                                    num_transform, magnitude,augment_strategy )
+ds_1=[]
+ds_5=[]
+for _,  ds_train in enumerate(train_ds):
+    
+    (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
     break
-ds = []
-for _, (ds_one, ds_two) in enumerate(train_ds):
-    ds = ds_one
+    
+print(ds_1.shape)
+print(ds_5.shape)
 
-    break
 
-# image_mask, lable = ds
-# image = image_mask[0]
-# mask = image_mask[1]
-
-# plt.figure(figsize=(10, 5))
-# for n in range(10):
-#     ax = plt.subplot(2, 10, n + 1)
-#     plt.imshow(image[n])  # .numpy().astype("int")
-#     ax = plt.subplot(2, 10, n + 11)
-#     plt.imshow(tf.squeeze(mask[n])/255)  # .numpy().astype("int")
-#     plt.axis("off")
-# plt.show()
-# print(image[0])
-
-image, _ = val_ds_
-print(image[0].shape)
+image=ds_1
 plt.figure(figsize=(10, 5))
 for n in range(3):
     ax = plt.subplot(2, 3, n + 1)
@@ -121,5 +141,5 @@ for n in range(3):
     # plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
     plt.axis("off")
 plt.show()
-print(image[1])
+
 # plt.imshow(image[1])

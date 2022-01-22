@@ -194,7 +194,7 @@ class Runner(object):
             #     self.train_dataset.Fast_Augment)
         # performing Linear-protocol
         
-        SIZE_CROPS = [224, 120]
+        SIZE_CROPS = [224, 96]
         NUM_CROPS = [2,3]
         min_scale = [0.5, 0.14] 
         max_scale = [1., 0.5]
