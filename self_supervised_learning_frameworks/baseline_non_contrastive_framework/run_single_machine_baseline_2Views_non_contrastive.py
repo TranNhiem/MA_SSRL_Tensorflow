@@ -188,9 +188,10 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_transform=1, magnitude=13)
-        #train_ds = self.train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+        #                                                num_transform=1, magnitude=13)
+        train_ds = self.train_dataset.AutoAug_strategy(
+            crop_type=da_crp_key, policy_type="v0")
         # already complete, have fun ~
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
