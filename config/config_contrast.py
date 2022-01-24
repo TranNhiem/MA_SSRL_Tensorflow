@@ -55,12 +55,10 @@ def base_cfg():
 
 
     flags.DEFINE_string(
-    #'train_path', "/mnt/sharefolder/Datasets/SSL_dataset/ImageNet/1K_New/ILSVRC2012_img_train",
     'train_path', '/data/train/',
     'Train dataset path.')
 
     flags.DEFINE_string(
-    # 'val_path',"/mnt/sharefolder/Datasets/SSL_dataset/ImageNet/1K_New/val",
     'val_path', "/data/val/",
     'Validaion dataset path.')
 

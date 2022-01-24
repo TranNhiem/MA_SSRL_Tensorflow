@@ -252,7 +252,7 @@ def perform_evaluation(model, val_ds, val_steps, ckpt, strategy):
     #     summary_writer.flush()
 
     # Record results as Json.
-    result_json_path = os.path.join(FLAGS.model_dir, 'result.jsoin')
+    result_json_path = os.path.join(FLAGS.model_dir, 'result.json')
     result = {metric.name: metric.result().numpy() for metric in all_metrics}
     result['global_step'] = global_step.numpy()
     logging.info(result)

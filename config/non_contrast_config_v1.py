@@ -7,7 +7,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     print(f"\n\n Great! seems you import the code under {__file__} \n\n")
     '''ATTENTION --> Changing the training_loop FLAGS Corresponding" '''
-    FLAGS.training_loop= "multi_views" # ['two_views', "multi_views"]
+    FLAGS.training_loop = "two_views" # ['two_views', "multi_views"]
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
@@ -18,7 +18,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Multi_Views_SimCLR_RandomCrop_FP32_Alpha_08_03_local_96"
+    FLAGS.wandb_run_name = "AutoAug_v1"
     FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -50,10 +50,10 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
-    #FLAGS.model_dir = "./model_ckpt/autoDA"
-    #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_SimCLR_alpha_08_02_Local_96"
+    FLAGS.model_dir = "./model_ckpt/test"
 
+
+    #FLAGS.model_dir = "/data1/share/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_SimCLR_alpha_08_02_Local_96"
     #FLAGS.train_mode = "finetune"
 
     return flag
