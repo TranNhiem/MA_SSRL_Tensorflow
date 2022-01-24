@@ -1,13 +1,14 @@
 from .absl_mock import Mock_Flag
 from .config_non_contrast import read_cfg
 
+
 def read_cfg_base(mod="non_contrastive"):
     flag = read_cfg(mod)
     FLAGS = flag.FLAGS
 
     print(f"\n\n Great! seems you import the code under {__file__} \n\n")
     '''ATTENTION --> Changing the training_loop FLAGS Corresponding" '''
-    FLAGS.training_loop = "two_views" # ['two_views', "multi_views"]
+    FLAGS.training_loop = "two_views"  # ['two_views', "multi_views"]
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
@@ -34,8 +35,10 @@ def read_cfg_base(mod="non_contrastive"):
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
     FLAGS.loss_type = "byol_asymmetrized_loss"
-    FLAGS.Loss_global_local ="fixed_val" # cos_schedule or {passing any strings}
-    FLAGS.alpha= 0.8 # Alpha values is  weighted loss between (Global and Local) Views
+    # cos_schedule or {passing any strings}
+    FLAGS.Loss_global_local = "fixed_val"
+    # Alpha values is  weighted loss between (Global and Local) Views
+    FLAGS.alpha = 0.8
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
