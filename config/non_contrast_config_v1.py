@@ -34,7 +34,7 @@ def read_cfg_base(mod="non_contrastive"):
         '1': 1, '2': 1, '3': 1, '4': 1, '5': 1}
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
-    FLAGS.loss_type = "byol_asymmetrized_loss"
+    FLAGS.loss_type = "byol_symmetrized_loss"
     # cos_schedule or {passing any strings}
     FLAGS.Loss_global_local = "fixed_val"
     # Alpha values is  weighted loss between (Global and Local) Views

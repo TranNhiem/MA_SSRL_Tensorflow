@@ -3,3 +3,5 @@ __pycache__
 *.tmp
 *.egg-info
 .DS_Store
+# prevent un-necessary conflict
+non_contrast_config_v1.py
