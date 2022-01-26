@@ -1,13 +1,14 @@
 from .absl_mock import Mock_Flag
 from .config_non_contrast import read_cfg
 
+
 def read_cfg_base(mod="non_contrastive"):
     flag = read_cfg(mod)
     FLAGS = flag.FLAGS
 
     print(f"\n\n Great! seems you import the code under {__file__} \n\n")
     '''ATTENTION --> Changing the training_loop FLAGS Corresponding" '''
-    FLAGS.training_loop= "multi_views" # ['two_views', "multi_views"]
+    FLAGS.training_loop = "two_views"  # ['two_views', "multi_views"]
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'

@@ -173,6 +173,7 @@ class Imagenet_dataset(object):
     def wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+        
         if FLAGS.training_loop =="two_views": 
             print("Two_Views Wrap_ds")
             if FLAGS.resize_wrap_ds:
@@ -194,6 +195,7 @@ class Imagenet_dataset(object):
 
         else: 
             raise ValueError("Invalid_Training loop")
+
         return img_lab_ds
 
     def wrap_da(self, ds, trfs, wrap_type="cropping"):
@@ -400,11 +402,11 @@ class Imagenet_dataset(object):
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment_modif(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
             train_ds_two = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment_modif(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
+                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         elif crop_type == "rnd_crp":
