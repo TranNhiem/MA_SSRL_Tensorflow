@@ -89,85 +89,104 @@ train_dataset = object_data.train_dataset
 #     val_ds_ = ds_one
 #     break
 
-# ## Testing Multi-Augmentation Strategy
+## Testing Multi-Augmentation Strategy
 # train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
 #                                           num_transform=2, magnitude=5)
 
-# # train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key)
+train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key, policy_type="v1")
 
-# # train_ds = train_dataset.FastAug_strategy(
-# #     crop_type=da_crp_key, policy_type="imagenet")
+# train_ds = train_dataset.FastAug_strategy(
+#     crop_type=da_crp_key, policy_type="imagenet")
 
-# ds = []
-# for _, (ds_one, ds_two) in enumerate(train_ds):
-#     ds = ds_one
+ds_1 = []
+ds_2= []
+for _, (ds_one, ds_two) in enumerate(train_ds):
+    ds_1 = ds_one
+    ds_2 =ds_two
 
-#     break
-
-###*******************************************************
-### Testing Dataloader Two Views and Multi-Views
-### ******************************************************
-
-
-SIZE_CROPS = [224, 120]
-NUM_CROPS = [2,3]
-min_scale = [0.5, 0.14] 
-max_scale = [1., 0.5]
-## This two variable for RandAug
-num_transform=2
-magnitude=20
-
-#policy_type= "v0" #["v0, v1, simple"] for Apply AutoAugmentation
-policy_type= "imagenet" #["imagenet", "redu_cifar10", "redu_svhn"] for Apply FAST AutoAugmentation
-augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
-
-start= timeit.timeit()
-train_ds = train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
-                                                    num_transform, magnitude, policy_type,augment_strategy )
-
-ds_1=[]
-ds_2=[]
-ds_3=[]
-ds_4=[]
-ds_5=[]
-for _,  ds_train in enumerate(train_ds):
-    
-    (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
     break
-    
-print(ds_1.shape)
-print(ds_2.shape)
-print(ds_3.shape)
-end= timeit.timeit()
-print("Time execute",end - start)
-image=ds_1
-image1=ds_2
-image2=ds_3
-image3=ds_4
-image4=ds_5
+
+image, _ = ds_1
+image1, _ = ds_2
 plt.figure(figsize=(10, 5))
-for n in range(10):
-    ax = plt.subplot(5, 2, n + 1)
+for n in range(4):
+    ax = plt.subplot(2, 4, n + 1)
     if n <2:
         print(n)
         plt.imshow(image[n])  # .numpy().astype("int")
     elif 2 <= n <4:
         print(n-2)
         plt.imshow(image1[n-2])
-    elif 4 <= n <6:
-        print(n-4)
-        plt.imshow(image2[n-4])
-    
-    elif 6 <= n <8:
-        print(n-6)
-        plt.imshow(image3[n-6])
-    else: 
-        print(n-8)
-        plt.imshow(image4[n-8])
+
     # ax = plt.subplot(2, 10, n + 11)
     # plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
     plt.axis("off")
 plt.show()
+
+###*******************************************************
+### Testing Dataloader Two Views and Multi-Views
+### ******************************************************
+
+
+# SIZE_CROPS = [224, 120]
+# NUM_CROPS = [2,3]
+# min_scale = [0.5, 0.14] 
+# max_scale = [1., 0.5]
+# ## This two variable for RandAug
+# num_transform=2
+# magnitude=20
+
+# #policy_type= "v0" #["v0, v1, simple"] for Apply AutoAugmentation
+# policy_type= "imagenet" #["imagenet", "redu_cifar10", "redu_svhn"] for Apply FAST AutoAugmentation
+# augment_strategy="SimCLR" # ["RandAug", "AutoAug", "FastAA", "SimCLR"]
+
+# start= timeit.timeit()
+# train_ds = train_dataset.multi_views_loader(min_scale, max_scale, SIZE_CROPS, NUM_CROPS, 
+#                                                     num_transform, magnitude, policy_type,augment_strategy )
+
+# ds_1=[]
+# ds_2=[]
+# ds_3=[]
+# ds_4=[]
+# ds_5=[]
+# for _,  ds_train in enumerate(train_ds):
+    
+#     (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
+#     break
+    
+# print(ds_1.shape)
+# print(ds_2.shape)
+# print(ds_3.shape)
+# end= timeit.timeit()
+# print("Time execute",end - start)
+# image=ds_1
+# image1=ds_2
+# image2=ds_3
+# image3=ds_4
+# image4=ds_5
+# plt.figure(figsize=(10, 5))
+# for n in range(10):
+#     ax = plt.subplot(5, 2, n + 1)
+#     if n <2:
+#         print(n)
+#         plt.imshow(image[n])  # .numpy().astype("int")
+#     elif 2 <= n <4:
+#         print(n-2)
+#         plt.imshow(image1[n-2])
+#     elif 4 <= n <6:
+#         print(n-4)
+#         plt.imshow(image2[n-4])
+    
+#     elif 6 <= n <8:
+#         print(n-6)
+#         plt.imshow(image3[n-6])
+#     else: 
+#         print(n-8)
+#         plt.imshow(image4[n-8])
+#     # ax = plt.subplot(2, 10, n + 11)
+#     # plt.imshow(tf.squeeze(image[n])/255)  # .numpy().astype("int")
+#     plt.axis("off")
+# plt.show()
 
 
 # plt.imshow(image[1])
