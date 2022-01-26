@@ -188,11 +188,11 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         ##perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_transform=1, magnitude=5)
+        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+        #                                                num_transform=2, magnitude=9)
 
-        # train_ds = self.train_dataset.AutoAug_strategy(
-        #     crop_type=da_crp_key, policy_type="v0")
+        train_ds = self.train_dataset.AutoAug_strategy(
+            crop_type=da_crp_key, policy_type="v1")
         # already complete, have fun ~
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
@@ -313,72 +313,70 @@ class Runner(object):
 
         with tf.GradientTape(persistent=True) as tape:
 
-            if FLAGS.loss_type == "byol_symmetrized_loss":
-                logging.info("You implement Symmetrized loss")
-                '''
-                Symetrize the loss --> Need to switch image_1, image_2 to (Online -- Target Network)
-                loss 1= L2_loss*[online_model(image1), target_model(image_2)]
-                loss 2=  L2_loss*[online_model(image2), target_model(image_1)]
-                symetrize_loss= (loss 1+ loss_2)/ 2
+            '''
+            Symetrize the loss --> Need to switch image_1, image_2 to (Online -- Target Network)
+            loss 1= L2_loss*[online_model(image1), target_model(image_2)]
+            loss 2=  L2_loss*[online_model(image2), target_model(image_1)]
+            symetrize_loss= (loss 1+ loss_2)/ 2
 
-                '''
+            '''
 
-                # -------------------------------------------------------------
-                # Passing image 1, image 2 to Online Encoder , Target Encoder
-                # -------------------------------------------------------------
+            # -------------------------------------------------------------
+            # Passing image 1, image 2 to Online Encoder , Target Encoder
+            # -------------------------------------------------------------
 
-            
-                # Online
-                proj_head_output_1, supervised_head_output_1 = self.online_model(
-                    images_one, training=True)
-                proj_head_output_1 = self.prediction_model(
-                    proj_head_output_1, training=True)
+        
+            # Online
+            proj_head_output_1, supervised_head_output_1 = self.online_model(
+                images_one, training=True)
+            proj_head_output_1 = self.prediction_model(
+                proj_head_output_1, training=True)
 
-                # Target
-                proj_head_output_2, supervised_head_output_2 = self.target_model(
-                    images_two, training=True)
+            # Target
+            proj_head_output_2, supervised_head_output_2 = self.target_model(
+                images_two, training=True)
 
-                # -------------------------------------------------------------
-                # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
-                # -------------------------------------------------------------
+            # -------------------------------------------------------------
+            # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
+            # -------------------------------------------------------------
 
-                # online
-                proj_head_output_2_online, _ = self.online_model(
-                    images_two, training=True)
-                # Vector Representation from Online encoder go into Projection head again
-                proj_head_output_2_online = self.prediction_model(
-                    proj_head_output_2_online, training=True)
+            # online
+            proj_head_output_2_online, _ = self.online_model(
+                images_two, training=True)
+            # Vector Representation from Online encoder go into Projection head again
+            proj_head_output_2_online = self.prediction_model(
+                proj_head_output_2_online, training=True)
 
-                # Target
-                proj_head_output_1_target, _ = self.target_model(
-                    images_one, training=True)
+            # Target
+            proj_head_output_1_target, _ = self.target_model(
+                images_one, training=True)
 
-                # Compute Contrastive Train Loss -->
-                loss = None
-                if proj_head_output_1 is not None:
-                    # Compute Contrastive Loss model
-                    # Loss of the image 1, 2 --> Online, Target Encoder
-                    loss_1_2, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2)
+            # Compute Contrastive Train Loss -->
+            loss = None
+            if proj_head_output_1 is not None:
+                # Compute Contrastive Loss model
+                # Loss of the image 1, 2 --> Online, Target Encoder
+                loss_1_2, logits_ab, labels = distributed_loss(
+                    proj_head_output_1, proj_head_output_2)
 
-                    # Loss of the image 2, 1 --> Online, Target Encoder
-                    loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                        proj_head_output_2_online, proj_head_output_1_target)
+                # Loss of the image 2, 1 --> Online, Target Encoder
+                loss_2_1, logits_ab_2, labels_2 = distributed_loss(
+                    proj_head_output_2_online, proj_head_output_1_target)
 
-                    # symetrized loss
-                    loss = (loss_1_2 + loss_2_1)/2
+                # symetrized loss
+                loss = (loss_1_2 + loss_2_1)/2
 
-                    if loss is None:
-                        loss = loss
-                    else:
-                        loss += loss
+                if loss is None:
+                    loss = loss
+                else:
+                    loss += loss
 
-                    # Update Self-Supervised Metrics
-                    metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                            self.metric_dict['contrast_acc_metric'],
-                                                            self.metric_dict['contrast_entropy_metric'],
-                                                            loss, logits_ab,
-                                                            labels)
+                # Update Self-Supervised Metrics
+                metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                        self.metric_dict['contrast_acc_metric'],
+                                                        self.metric_dict['contrast_entropy_metric'],
+                                                        loss, logits_ab,
+                                                        labels)
 
 
             # Compute the Supervised train Loss
