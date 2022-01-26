@@ -437,11 +437,11 @@ class Runner(object):
                     # Loss of the image 1, 3 --> Online, 2, 4, 5 Target Encoder
     
                     loss_1_2, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35)
+                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35, step_run)
 
                     # Loss of the image 2, 4, 5 --> Online, 1, 3 Target Encoder
                     loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                       proj_head_output_2_online, proj_head_output_1_target,  proj_head_output_3_target,proj_head_output_4_online, proj_head_output_5_online)
+                       proj_head_output_2_online, proj_head_output_1_target,  proj_head_output_3_target,proj_head_output_4_online, proj_head_output_5_online, step_run)
 
                     # symetrized loss
                     loss = (loss_1_2 + loss_2_1)/2
