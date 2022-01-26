@@ -365,118 +365,98 @@ class Runner(object):
                 loss 2=  L2_loss*[online_model(image2), target_model(image_1)]
                 symetrize_loss= (loss 1+ loss_2)/ 2
                 '''
+                # -------------------------------------------------------------
+                # Passing image 1,  3,  to Online Encoder , 2, 4, 5 Target Encoder
+                # -------------------------------------------------------------
+
+                # Global / Local view :
+                # global view
+                proj_head_output_1, supervised_head_output_1 = self.online_model(
+                    ds_1, training=True)
+
+                proj_head_output_1 = self.prediction_model(  # asym MLP
+                    proj_head_output_1, training=True)
+
+                # Target
+                proj_head_output_2, supervised_head_output_2 = self.target_model(
+                    ds_2, training=True)
+
+                # Local view
+                proj_head_output_3, _ = self.online_model(
+                    ds_3, training=True)
+                proj_head_output_3 = self.prediction_model(
+                    proj_head_output_3, training=True)
+
+                # pair-target
+                proj_head_output_34, _ = self.target_model(
+                    ds_4, training=True)
+                # pair-target
+                proj_head_output_35, _ = self.target_model(
+                    ds_5, training=True)
 
                 # -------------------------------------------------------------
-                # Passing image 1, image 2 to Online Encoder , Target Encoder
+                # Passing Image 2, 4, 5  to  Online Encoder, 1,3  Target Encoder,
                 # -------------------------------------------------------------
-                if FLAGS.XLA_compiler == "model_only":
-                    logging.info("XLA Compiler for model")
-                    with tf.xla.experimental.jit_scope():
-                        # Online
-                        proj_head_output_1, supervised_head_output_1 = self.online_model(
-                            images_one, training=True)
-                        proj_head_output_1 = self.prediction_model(
-                            proj_head_output_1, training=True)
 
-                        # Target
-                        proj_head_output_2, supervised_head_output_2 = self.target_model(
-                            images_two, training=True)
+                # Global / Local view :
+                # global view
+                proj_head_output_2_online, _ = self.online_model(
+                    ds_2, training=True)
 
-                        # -------------------------------------------------------------
-                        # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
-                        # -------------------------------------------------------------
+                proj_head_output_2_online = self.prediction_model(  # asym MLP
+                    proj_head_output_2_online, training=True)
 
-                        # online
-                        proj_head_output_2_online, _ = self.online_model(
-                            images_two, training=True)
-                        # Vector Representation from Online encoder go into Projection head again
-                        proj_head_output_2_online = self.prediction_model(
-                            proj_head_output_2_online, training=True)
+                # Target
+                proj_head_output_1_target, _ = self.target_model(
+                    ds_1, training=True)
 
-                        # Target
-                        proj_head_output_1_target, _ = self.target_model(
-                            images_one, training=True)
 
-                        # Compute Contrastive Train Loss -->
-                        loss = None
-                        if proj_head_output_1 is not None:
-                            # Compute Contrastive Loss model
-                            # Loss of the image 1, 2 --> Online, Target Encoder
-                            loss_1_2, logits_ab, labels = distributed_loss(
-                                proj_head_output_1, proj_head_output_2)
+                # Local view 4, 5 --> Online
+                proj_head_output_4_online, _ = self.online_model(
+                    ds_4, training=True)
 
-                            # Loss of the image 2, 1 --> Online, Target Encoder
-                            loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                                proj_head_output_2_online, proj_head_output_1_target)
+                proj_head_output_4_online = self.prediction_model(
+                    proj_head_output_4_online, training=True)
 
-                            # symetrized loss
-                            loss = (loss_1_2 + loss_2_1)/2
+                proj_head_output_5_online, _ = self.online_model(
+                    ds_5, training=True)
 
-                            if loss is None:
-                                loss = loss
-                            else:
-                                loss += loss
+                proj_head_output_5_online = self.prediction_model(
+                    proj_head_output_5_online, training=True)
 
-                            # Update Self-Supervised Metrics
-                            metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                                  self.metric_dict['contrast_acc_metric'],
-                                                                  self.metric_dict['contrast_entropy_metric'],
-                                                                  loss, logits_ab,
-                                                                  labels)
-                ##
-                else:
-                    #(ds_1, ds_2, ds_3, ds_4, ds_5)
-                    # Global view :  (ds_1, ds_2)
-                    # Online
-                    proj_head_output_1, supervised_head_output_1 = self.online_model(
-                        images_one, training=True)
-                    proj_head_output_1 = self.prediction_model(
-                        proj_head_output_1, training=True)
-                    # Target
-                    proj_head_output_2, supervised_head_output_2 = self.target_model(
-                        images_two, training=True)
+                # pair-target
+                proj_head_output_3_target, _ = self.target_model(
+                    ds_3, training=True)
+          
 
-                    # -------------------------------------------------------------
-                    # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
-                    # -------------------------------------------------------------
 
-                    # online
-                    proj_head_output_2_online, _ = self.online_model(
-                        images_two, training=True)
-                    # Vector Representation from Online encoder go into Projection head again
-                    proj_head_output_2_online = self.prediction_model(
-                        proj_head_output_2_online, training=True)
+                # Compute Contrastive Train Loss -->
+                loss = None
+                if proj_head_output_1 is not None:
+                    # Compute Contrastive Loss model
+                    # Loss of the image 1, 3 --> Online, 2, 4, 5 Target Encoder
+    
+                    loss_1_2, logits_ab, labels = distributed_loss(
+                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35)
 
-                    # Target
-                    proj_head_output_1_target, _ = self.target_model(
-                        images_one, training=True)
+                    # Loss of the image 2, 4, 5 --> Online, 1, 3 Target Encoder
+                    loss_2_1, logits_ab_2, labels_2 = distributed_loss(
+                       proj_head_output_2_online, proj_head_output_1_target,  proj_head_output_3_target,proj_head_output_4_online, proj_head_output_5_online)
 
-                    # Compute Contrastive Train Loss -->
-                    loss = None
-                    if proj_head_output_1 is not None:
-                        # Compute Contrastive Loss model
-                        # Loss of the image 1, 2 --> Online, Target Encoder
-                        loss_1_2, logits_ab, labels = distributed_loss(
-                            proj_head_output_1, proj_head_output_2)
+                    # symetrized loss
+                    loss = (loss_1_2 + loss_2_1)/2
 
-                        # Loss of the image 2, 1 --> Online, Target Encoder
-                        loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                            proj_head_output_2_online, proj_head_output_1_target)
-
-                        # symetrized loss
-                        loss = (loss_1_2 + loss_2_1)/2
-
-                        if loss is None:
-                            loss = loss
-                        else:
-                            loss += loss
-
-                        # Update Self-Supervised Metrics
-                        metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                              self.metric_dict['contrast_acc_metric'],
-                                                              self.metric_dict['contrast_entropy_metric'],
-                                                              loss, logits_ab,
-                                                              labels)
+                    if loss is None:
+                        loss = loss
+                    else:
+                        loss += loss
+               
+                    # Update Self-Supervised Metrics
+                    metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
+                                                            self.metric_dict['contrast_acc_metric'],
+                                                            self.metric_dict['contrast_entropy_metric'],
+                                                            loss, logits_ab,
+                                                            labels)
 
             # now we are in this branch!!
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
