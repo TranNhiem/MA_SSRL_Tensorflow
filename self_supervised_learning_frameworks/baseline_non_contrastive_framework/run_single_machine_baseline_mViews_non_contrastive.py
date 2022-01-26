@@ -516,7 +516,7 @@ class Runner(object):
                     # Compute Contrastive Loss model
                     # loss measurement :
                     loss, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34, proj_head_output_35) # proj_head_output_35
+                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34, proj_head_output_35,step_run) # proj_head_output_35
 
                     if loss is None:
                         loss = loss
