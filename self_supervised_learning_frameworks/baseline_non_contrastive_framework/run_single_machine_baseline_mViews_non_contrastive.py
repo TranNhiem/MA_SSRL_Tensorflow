@@ -2,7 +2,7 @@ from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, Cosi
 from objectives import metrics
 from objectives import objective as obj_lib
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
-from losses_optimizers.self_supervised_losses import byol_multi_views_loss
+from losses_optimizers.self_supervised_losses import byol_multi_views_loss , byol_multi_views_loss_v1
 from config.helper_functions import *
 from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from tensorflow import distribute as tf_dis
@@ -91,6 +91,11 @@ class Runner(object):
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
+        self.training_steps =  int(
+        n_tra_sample * FLAGS.train_epochs // train_global_batch) * 2
+        self.evaluating_steps = int(
+        math.ceil(n_evl_sample / val_global_batch))
+
 
     def train(self, exe_mode, da_crp_key="rnd_crp"):
         # Configure the Encoder Architecture
@@ -215,19 +220,20 @@ class Runner(object):
             self.online_model, optimizer.iterations, optimizer)
         #lr_schedule, optimizer = _, self.opt = get_optimizer()
         global_step = optimizer.iterations
+        
         for epoch in trange(self.train_epochs):
 
             total_loss = 0.0
             num_batches = 0
 
-            for _,  ds_train in enumerate(train_ds):
+            for step_run,  ds_train in enumerate(train_ds):
                 
-                self.cur_step = global_step.numpy()
-
-                (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _)= ds_train
+               
+                
+                (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _) = ds_train # 
                 
                 total_loss += self.__distributed_train_step(
-                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, )
+                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, step_run)#
                 
                 num_batches += 1
               
@@ -272,7 +278,7 @@ class Runner(object):
 
             if (epoch + 1) % 20 == 0:
                 FLAGS.train_mode = 'finetune'
-                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+                result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
                 self.wandb.log({
                     "eval_at_epoch": epoch+1, 
@@ -318,30 +324,35 @@ class Runner(object):
 
     # Training sub_procedure :
     @tf.function
-    def __distributed_train_step(self, ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2):
+    def __distributed_train_step(self, ds_1, ds_2, ds_3, ds_4,ds_5,  lab_1, lab_2, step_run):
         per_replica_losses = self.strategy.run(
-            self.__train_step, args=(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2))
+            self.__train_step, args=(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, step_run))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_1, ds_2, ds_3, ds_4, ds_5, lable_one, lable_two):
+    def __train_step(self, ds_1, ds_2, ds_3, ds_4,ds_5, lable_one, lable_two, step_run):
         # Scale loss  --> Aggregating all Gradients
     
 
-        def distributed_loss(x1, x2, x3, x4, x5):
+        def distributed_loss(x1, x2, x3, x4,x5, step_run):
             
             if FLAGS.Loss_global_local == "cos_schedule":
-                # This update the Cosie FUnctions
-                alpha_base = 0.5
-                cur_step = float(self.cur_step)
+                # This update the Cosie Functions
+                alpha_base = FLAGS.alpha_base
+                cur_step = float(step_run)
+                print(cur_step)
                 
                 alpha = 1 - (1-alpha_base) * \
-                    (cos(pi*cur_step/self.train_steps)+1)/2
+                    (cos(pi*cur_step/self.training_steps)+1)/2
+                
+                wandb.log({"train_step": cur_step})
+                wandb.log({"alpha_Cos_schedule": alpha})
+
             else: 
                 alpha = FLAGS.alpha
             
-            loss, logits_ab, labels= byol_multi_views_loss(x1, x2, x3, x4, x5, temperature=self.temperature, alpha=alpha)
+            loss, logits_ab, labels= byol_multi_views_loss(x1, x2, x3, x4,x5, temperature=self.temperature, alpha=alpha)
 
             return loss, logits_ab, labels
 
@@ -505,7 +516,7 @@ class Runner(object):
                     # Compute Contrastive Loss model
                     # loss measurement :
                     loss, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35)
+                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34, proj_head_output_35) # proj_head_output_35
 
                     if loss is None:
                         loss = loss

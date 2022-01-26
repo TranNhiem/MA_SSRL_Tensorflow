@@ -24,7 +24,7 @@ options.experimental_optimization.noop_elimination = True
 options.experimental_optimization.map_and_batch_fusion = True
 options.experimental_optimization.map_parallelization = True
 options.experimental_optimization.apply_default_optimizations = True
-options.experimental_deterministic = False
+#options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 # Shard policy using multi-machines training
 # options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
@@ -190,7 +190,7 @@ class Imagenet_dataset(object):
             print("Multi_Views Wrap_ds")
             img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
             .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-            .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+            .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)#.cache()
 
         else: 
             raise ValueError("Invalid_Training loop")

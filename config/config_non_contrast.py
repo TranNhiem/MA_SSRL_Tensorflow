@@ -346,11 +346,14 @@ def Configure_Model_Training():
     flags.DEFINE_float(
         'alpha', 0.8,
         'alpha control the weighted_loss between Global and Local Views.')
-
     flags.DEFINE_enum(
         'Loss_global_local', 'schedule', [
             'schedule', 'original'],
         'Aggregate loss between Local & Global Loss.')
+    
+    flags.DEFINE_float(
+        'alpha_base', 0.8,
+        'alpha_base_value is starting Value --> accumulate value over training steps')
 
     flags.DEFINE_float(
         # Weighted loss is the scaling term between  [weighted_loss]*mixed_loss & [1-weighted_loss]*original_contrastive loss)
