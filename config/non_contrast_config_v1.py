@@ -19,7 +19,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Multi_Views_SimCLR_RandomCrop_FP32_Alpha_0.7_cos_schedule_local_96"
+    FLAGS.wandb_run_name = "RandAug_"
     FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -55,7 +55,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.val_batch_size = 128
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data1/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_SimCLR_Alpha_base_07_local_96"
+    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_SimCLR_Alpha_base_07_local_96"
     #FLAGS.train_mode = "finetune"
 
     return flag

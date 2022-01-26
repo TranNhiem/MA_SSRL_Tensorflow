@@ -173,7 +173,11 @@ class Imagenet_dataset(object):
     def wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
-        
+        img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+        .shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+        .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+        .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+
         if FLAGS.training_loop =="two_views": 
             print("Two_Views Wrap_ds")
             if FLAGS.resize_wrap_ds:
@@ -194,7 +198,8 @@ class Imagenet_dataset(object):
             .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)#.cache()
 
         else: 
-            raise ValueError("Invalid_Training loop")
+            #raise ValueError("Invalid_Training loop")
+            print("Using Default Option")
 
         return img_lab_ds
 
