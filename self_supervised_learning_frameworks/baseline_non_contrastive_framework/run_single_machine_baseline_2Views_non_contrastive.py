@@ -90,7 +90,10 @@ class Runner(object):
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
-
+        self.training_steps =  int(
+        n_tra_sample * FLAGS.train_epochs // train_global_batch) * 2
+        self.evaluating_steps = int(
+        math.ceil(n_evl_sample / val_global_batch))
 
     def train(self, exe_mode, da_crp_key="rnd_crp"):
         # Configure the Encoder Architecture
@@ -224,7 +227,7 @@ class Runner(object):
                     beta_base = 0.996
                     cur_step = global_step.numpy()
                     beta = 1 - (1-beta_base) * \
-                        (cos(pi*cur_step/self.train_steps)+1)/2
+                        (cos(pi*cur_step/self.training_steps)+1)/2
 
                 target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
@@ -267,7 +270,7 @@ class Runner(object):
 
             if (epoch + 1) % 20 == 0:
                 FLAGS.train_mode = 'finetune'
-                result = perform_evaluation(self.online_model, val_ds, self.eval_steps,
+                result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
                 eval_wandb(epoch, result)
                 FLAGS.train_mode = 'pretrain'
