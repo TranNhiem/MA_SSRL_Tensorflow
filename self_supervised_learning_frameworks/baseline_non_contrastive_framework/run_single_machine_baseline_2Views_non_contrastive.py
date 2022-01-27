@@ -46,6 +46,7 @@ class Runner(object):
             if wanda_cfg:
                 wandb.init(project=self.wandb_project_name, name=FLAGS.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
+                self.wandb= wandb
         #   calculate the training related meta-info
 
         def infer_ds_info(n_tra_sample, n_evl_sample, train_global_batch, val_global_batch):
@@ -87,6 +88,7 @@ class Runner(object):
         checkpoint_steps = (self.checkpoint_steps or (self.checkpoint_epochs * self.epoch_steps))
 
         # record var into self
+
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
@@ -176,14 +178,7 @@ class Runner(object):
                 "train/supervised_acc": metric_dict['supervised_acc_metric'].result()
             })
 
-        def eval_wandb(epoch,  result):
-            # Wandb Configure for Visualize the Model Training
-            wandb.log({
-                "Valdidation at epochs_": epoch+1,
-                "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
-                "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
-            })
-            
+  
         # prepare train related obj
         self.online_model, self.prediction_model, self.target_model = get_gpu_model()
         # assign to self.opt to prevent the namespace covered
@@ -192,7 +187,7 @@ class Runner(object):
 
         ##perform data_augmentation by calling the dataloader methods
         train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_transform=1, magnitude=5)
+                                                       num_transform=1, magnitude=15)
 
         # train_ds = self.train_dataset.AutoAug_strategy(
         #     crop_type=da_crp_key, policy_type="v1")
@@ -272,7 +267,12 @@ class Runner(object):
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
-                eval_wandb(epoch, result)
+                
+                wandb.log({
+                    "eval_at_epoch": epoch+1, 
+                    "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
+                    "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
+                })
                 FLAGS.train_mode = 'pretrain'
         # perform eval after training
         if "eval" in exe_mode:
@@ -385,10 +385,7 @@ class Runner(object):
                                                             labels)
 
 
-            # Compute the Supervised train Loss
-            '''Consider Sperate Supervised Loss'''
-
-            if FLAGS.loss_type == "byol_asymmetrized_loss":
+            elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
             
                 '''
@@ -433,7 +430,12 @@ class Runner(object):
                                                             loss, logits_ab,
                                                             labels)
 
-
+            else: 
+                raise ValueError("Invalid Loss Type check loss flags")
+            
+                        # Compute the Supervised train Loss
+            
+            '''Consider Sperate Supervised Loss'''
             # supervised_loss=None
             if supervised_head_output_1 is not None:
 
