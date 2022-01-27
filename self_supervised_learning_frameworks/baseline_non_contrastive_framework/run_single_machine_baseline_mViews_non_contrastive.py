@@ -260,7 +260,7 @@ class Runner(object):
                 if FLAGS.moving_average == "schedule":
                     # This update the Beta value schedule along with Trainign steps Follow BYOL
                     beta_base = 0.996
-                    cur_step = global_step.numpy()
+                    #cur_step = global_step.numpy()
                     beta = 1 - (1-beta_base) * \
                         (cos(pi*cur_step/self.training_steps)+1)/2
 
@@ -464,7 +464,6 @@ class Runner(object):
                                                             loss, logits_ab,
                                                             labels)
 
-            # now we are in this branch!!
             elif FLAGS.loss_type == "byol_asymmetrized_loss":
                 logging.info("You implement Asymmetrized loss")
                 # -------------------------------------------------------------
@@ -520,7 +519,6 @@ class Runner(object):
 
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
-
             # supervised_loss=None
             if supervised_head_output_1 is not None:
 
