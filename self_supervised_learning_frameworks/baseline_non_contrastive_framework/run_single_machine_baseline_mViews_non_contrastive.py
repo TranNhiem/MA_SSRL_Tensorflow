@@ -228,12 +228,29 @@ class Runner(object):
 
             for step_run,  ds_train in enumerate(train_ds):
                 
-               
+                # Scale loss  --> Aggregating all Gradients
+                if FLAGS.Loss_global_local == "cos_schedule":
+                    # This update the Cosie Functions
+                    alpha_base = FLAGS.alpha_base
+                    global_step = optimizer.iterations
+                    cur_step = float(global_step.numpy())
+                    print(cur_step)
+                    
+                    alpha = 1 - (1-alpha_base) * \
+                        (cos(pi*cur_step/self.training_steps)+1)/2
+                    
+                    wandb.log({"train_step": cur_step})
+                    wandb.log({"alpha_Cos_schedule": alpha})
+
+                else: 
+                    alpha = FLAGS.alpha
+                
+                self.alpha= alpha
                 
                 (ds_1 ,lab_1), (ds_2, lab_2),  (ds_3, _), (ds_4, _), (ds_5, _) = ds_train # 
                 
                 total_loss += self.__distributed_train_step(
-                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, step_run)#
+                    ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, )#
                 
                 num_batches += 1
               
@@ -245,8 +262,9 @@ class Runner(object):
                     beta_base = 0.996
                     cur_step = global_step.numpy()
                     beta = 1 - (1-beta_base) * \
-                        (cos(pi*cur_step/self.train_steps)+1)/2
+                        (cos(pi*cur_step/self.training_steps)+1)/2
 
+                    wandb.log({"moving average Beta value": beta})
                 target_model, online_model = self.target_model, self.online_model
                 target_encoder_weights = target_model.get_weights()
                 online_encoder_weights = online_model.get_weights()
@@ -324,35 +342,23 @@ class Runner(object):
 
     # Training sub_procedure :
     @tf.function
-    def __distributed_train_step(self, ds_1, ds_2, ds_3, ds_4,ds_5,  lab_1, lab_2, step_run):
+    def __distributed_train_step(self, ds_1, ds_2, ds_3, ds_4,ds_5,  lab_1, lab_2):
         per_replica_losses = self.strategy.run(
-            self.__train_step, args=(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2, step_run))
+            self.__train_step, args=(ds_1, ds_2, ds_3, ds_4, ds_5, lab_1, lab_2))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_1, ds_2, ds_3, ds_4,ds_5, lable_one, lable_two, step_run):
-        # Scale loss  --> Aggregating all Gradients
-    
+    def __train_step(self, ds_1, ds_2, ds_3, ds_4,ds_5, lable_one, lable_two):
 
-        def distributed_loss(x1, x2, x3, x4,x5, step_run):
-            
-            if FLAGS.Loss_global_local == "cos_schedule":
-                # This update the Cosie Functions
-                alpha_base = FLAGS.alpha_base
-                cur_step = float(step_run)
-                print(cur_step)
-                
-                alpha = 1 - (1-alpha_base) * \
-                    (cos(pi*cur_step/self.training_steps)+1)/2
-                
-                wandb.log({"train_step": cur_step})
-                wandb.log({"alpha_Cos_schedule": alpha})
-
-            else: 
-                alpha = FLAGS.alpha
-            
+        def distributed_loss(x1, x2, x3, x4,x5):
+            alpha=self.alpha
+            wandb.log({"alpha_value": alpha})
             loss, logits_ab, labels= byol_multi_views_loss(x1, x2, x3, x4,x5, temperature=self.temperature, alpha=alpha)
+            
+            # # total sum loss //Global batch_size
+            # loss = tf.reduce_sum(per_example_loss) * \
+            #     (1./8)
 
             return loss, logits_ab, labels
 
@@ -437,11 +443,11 @@ class Runner(object):
                     # Loss of the image 1, 3 --> Online, 2, 4, 5 Target Encoder
     
                     loss_1_2, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35, step_run)
+                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34,  proj_head_output_35)
 
                     # Loss of the image 2, 4, 5 --> Online, 1, 3 Target Encoder
                     loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                       proj_head_output_2_online, proj_head_output_1_target,  proj_head_output_3_target,proj_head_output_4_online, proj_head_output_5_online, step_run)
+                       proj_head_output_2_online, proj_head_output_1_target,  proj_head_output_3_target,proj_head_output_4_online, proj_head_output_5_online)
 
                     # symetrized loss
                     loss = (loss_1_2 + loss_2_1)/2
@@ -496,7 +502,7 @@ class Runner(object):
                     # Compute Contrastive Loss model
                     # loss measurement :
                     loss, logits_ab, labels = distributed_loss(
-                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34, proj_head_output_35,step_run) # proj_head_output_35
+                        proj_head_output_1, proj_head_output_2,  proj_head_output_3, proj_head_output_34, proj_head_output_35) # proj_head_output_35
 
                     if loss is None:
                         loss = loss
