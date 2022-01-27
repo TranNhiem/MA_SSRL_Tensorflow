@@ -229,6 +229,18 @@ def byol_loss(p, z, temperature):
     loss = 2 - 2 * tf.reduce_mean(similarities)
     return loss, logits_ab, labels
 
+def byol_loss_v1(p, z, temperature):
+    p = tf.math.l2_normalize(p, axis=1)  # (2*bs, 128)
+    z = tf.math.l2_normalize(z, axis=1)  # (2*bs, 128)
+    # Calculate contrastive Loss
+    batch_size = tf.shape(p)[0]
+    labels = tf.one_hot(tf.range(batch_size), batch_size * 2)
+    logits_ab = tf.matmul(p, z, transpose_b=True) / temperature
+    # Measure similarity
+    similarities = tf.reduce_sum(tf.multiply(p, z), axis=1)
+    loss = 2 - 2 * similarities
+    return loss, logits_ab, labels
+
 
 def byol_multi_views_loss(v1, v2, v3, v4, v5, temperature, alpha):
     
@@ -243,15 +255,12 @@ def byol_multi_views_loss(v1, v2, v3, v4, v5, temperature, alpha):
 
     return loss, logits_ab, labels
 
-def byol_multi_views_loss_v1(v1, v2, v3, v4,  temperature, alpha):
-    
-    glob_loss, logits_ab, labels= byol_loss(v1, v2, temperature)
-    
-    local_loss, _, _ = byol_loss(v3, v4, temperature)
-    #loc_loss_2, _, _= byol_loss(v3, v5, temperature)
-    #local_loss = loc_loss_1 + loc_loss_2
-    
-    loss= alpha*glob_loss +  (1-alpha)* local_loss
+def byol_2_augmentation_loss(v1, v2, v3, v4,  temperature, weight_loss=0.6):
+
+    loss_aug1, logits_ab, labels= byol_loss_v1(v1, v2, temperature)
+    loss_aug2, _, _= byol_loss_v1(v3, v4, temperature)
+
+    loss= weight_loss*loss_aug1 +  (1-weight_loss)* loss_aug2
 
     return loss, logits_ab, labels
 
