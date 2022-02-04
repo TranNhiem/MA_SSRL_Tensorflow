@@ -8,7 +8,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     print(f"\n\n Great! seems you import the code under {__file__} \n\n")
     '''ATTENTION --> Changing the training_loop FLAGS Corresponding" '''
-    FLAGS.training_loop = "Default"  # ['two_views', "multi_views", "Default"]
+    FLAGS.training_loop = "two_views"  # ['two_views', "multi_views", ]
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = 'ds_1_2_options'
@@ -19,7 +19,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "RandCrop_RandAugment_2ops_9mag"
+    FLAGS.wandb_run_name = "RandCrop_AutoAugment_V1_500cls"
     FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -34,7 +34,7 @@ def read_cfg_base(mod="non_contrastive"):
         '1': 1, '2': 1, '3': 1, '4': 1, '5': 1}
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
-    FLAGS.loss_type = "byol_asymmetrized_loss"
+    FLAGS.loss_type = "byol_symmetrized_loss"
     FLAGS.Loss_global_local ="cos_schedule" # cos_schedule or {passing any strings}
     FLAGS.alpha_base=0.7 # The base_value of Alpha
     FLAGS.alpha= 0.8 # Alpha values is  weighted loss between (Global and Local) Views
@@ -47,15 +47,15 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
 
-    FLAGS.resnet_depth = 18
+    FLAGS.resnet_depth = 50
     FLAGS.train_epochs = 100
-    FLAGS.num_classes = 100
+    FLAGS.num_classes = 500
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet18_multi_view_rand_Crop_RandAug_2op_9mag"
+    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet50_rand_Crop_AutoAugment_V1_500cls"
     #FLAGS.train_mode = "finetune"
 
     return flag

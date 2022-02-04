@@ -2,7 +2,7 @@ from losses_optimizers.learning_rate_optimizer import WarmUpAndCosineDecay, Cosi
 from objectives import metrics
 from objectives import objective as obj_lib
 from Neural_Net_Architecture.Convolution_Archs.ResNet_models import ssl_model as all_model
-from losses_optimizers.self_supervised_losses import byol_loss
+from losses_optimizers.self_supervised_losses import byol_loss, byol_loss_v1
 from config.helper_functions import *
 from Augment_Data_utils.imagenet_dataloader_under_development import Imagenet_dataset
 from tensorflow import distribute as tf_dis
@@ -186,11 +186,11 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         ##perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_transform=1, magnitude=15)
+        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+        #                                                num_transform=1, magnitude=15)
 
-        # train_ds = self.train_dataset.AutoAug_strategy(
-        #     crop_type=da_crp_key, policy_type="v1")
+        train_ds = self.train_dataset.AutoAug_strategy(
+            crop_type=da_crp_key, policy_type="v1")
         # already complete, have fun ~
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
@@ -263,7 +263,7 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            if (epoch + 1) % 20 == 0:
+            if (epoch + 1) % 10 == 0:
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
@@ -302,12 +302,13 @@ class Runner(object):
         # Scale loss  --> Aggregating all Gradients
         def distributed_loss(x1, x2):
             # each GPU loss per_replica batch loss
-            per_example_loss, logits_ab, labels = byol_loss(
+            per_example_loss, logits_ab, labels = byol_loss_v1(
                 x1, x2,  temperature=self.temperature)
 
             # total sum loss //Global batch_size
-            loss = tf.reduce_sum(per_example_loss) * \
+            loss = (per_example_loss) * \
                 (1./self.train_global_batch)
+
             return loss, logits_ab, labels
 
         # Get the data from

@@ -37,7 +37,7 @@ def base_cfg():
         'random seed use for shuffle data Generate two same image ds_one & ds_two')
 
     flags.DEFINE_integer(
-        'SEED_data_split', 100,
+        'SEED_data_split', 500000,
         'random seed for spliting data the same for all the run with the same validation dataset.')
 
     flags.DEFINE_integer(
