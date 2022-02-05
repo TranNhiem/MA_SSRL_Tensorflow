@@ -189,8 +189,10 @@ class Runner(object):
         # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
         #                                                num_transform=1, magnitude=15)
 
-        train_ds = self.train_dataset.AutoAug_strategy(
-            crop_type=da_crp_key, policy_type="v1")
+        self.train_dataset.load_by_tfds()
+        return
+        #train_ds = self.train_dataset.AutoAug_strategy(
+        #    crop_type=da_crp_key, policy_type="v1")
         # already complete, have fun ~
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
@@ -546,7 +548,7 @@ if __name__ == '__main__':
     from config.non_contrast_config_v1 import read_cfg_base
     flag = read_cfg_base()
     FLAGS = flag.FLAGS
-
+    
     if not os.path.isdir(FLAGS.model_dir):
         print("Creat the model dir: ", FLAGS.model_dir)
         os.makedirs(FLAGS.model_dir)

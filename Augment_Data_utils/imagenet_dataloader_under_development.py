@@ -29,6 +29,8 @@ options.experimental_threading.max_intra_op_parallelism = 1
 # Shard policy using multi-machines training
 # options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO
 
+from typing import List, Dict
+import tensorflow_datasets as tfds
 
 # Define meta-cfg for parallel training
 from config.absl_mock import Mock_Flag
@@ -179,7 +181,8 @@ class Imagenet_dataset(object):
 
         # It will return the tuple(img, lab) tf.dataset instance when as_supervised enable!
         #   for default split_lst : ['train', 'validation', 'test'] but you can customized!
-        ds_lst = tfds.load('imagenet2012', data_dir='/data', as_supervised=True, split=split_lst)
+        #   you can find the imagenet2012 ds under /data/tf_ds
+        ds_lst = tfds.load('imagenet2012', data_dir='/data/tf_ds', as_supervised=True, split=split_lst)
         key_lst = []
         # the key of access each ds-instance, you will need it outside! 
         if len(split_lst) == 1:
@@ -737,8 +740,6 @@ class Imagenet_dataset(object):
         return len(self.x_train), len(self.x_val)
 
 
-
-
-
 if __name__ == '__main__':
-    pass
+    # first time init the ds
+    load_by_tfds()

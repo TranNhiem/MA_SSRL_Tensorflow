@@ -20,7 +20,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "RandCrop_AutoAugment_V1_500cls"
-    FLAGS.wandb_mod = "run"
+    FLAGS.wandb_mod = "dryrun"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
