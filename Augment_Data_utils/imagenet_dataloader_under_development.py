@@ -42,7 +42,6 @@ else:
     mode_prefetch = FLAGS.mode_prefetch
 
 
-
 class Imagenet_dataset(object):
     # The cropping strategy can be applied
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
@@ -169,6 +168,59 @@ class Imagenet_dataset(object):
             img = tf.image.convert_image_dtype(img, tf.float32)
             return img
         return parse_images(image_path), label
+
+    ##############################################################################################
+    ## Load data by tfds API, time_stamp : 2022/02/05, 12:27
+    ## On of the easy way to prepare the necessary dataset is loading the data from tfds.
+    def load_by_tfds(split_lst:List=['train', 'validation', 'test']) -> Dict:
+        '''load the dataset from the tfds api
+            split_lst : the susbset you want to load from dataset, or the ratio in each subset
+        '''
+
+        # It will return the tuple(img, lab) tf.dataset instance when as_supervised enable!
+        #   for default split_lst : ['train', 'validation', 'test'] but you can customized!
+        ds_lst = tfds.load('imagenet2012', data_dir='/data', as_supervised=True, split=split_lst)
+        key_lst = []
+        # the key of access each ds-instance, you will need it outside! 
+        if len(split_lst) == 1:
+            key_lst.append('train')
+        elif len(split_lst) == 2:
+            key_lst.append('train') ; key_lst.append('test')
+        elif len(split_lst) == 3:
+            key_lst.append('train') ; key_lst.append('validation') ; key_lst.append('test')
+        else:
+            raise NotImplementedError("For simplify implementation, we only support you split dataset into 3 subset at maximum : ('train', 'validation', 'test')")
+        
+        ds_dict = {}  
+        for ds, ds_key in zip(ds_lst, key_lst):
+            ds_dict[ds_key] = ds
+        return ds_dict
+
+    # public insterface :
+    def get_imgnet_ds(split_lst=['train', 'validation', 'test']):
+        def wrap_tfds(ds):
+            ## Wrapping procedure :
+            img_shp = (self.IMG_SIZE, self.IMG_SIZE)
+            if FLAGS.training_loop =="multi_views":
+                ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)
+
+            elif FLAGS.training_loop == "two_views" and FLAGS.resize_wrap_ds:
+                ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+            else:
+                raise ValueError("Invalid_Training loop")
+            return ds
+
+        ds_dict = load_by_tfds(split_lst)
+        # did val_ds, tst_ds alos need to resize ?
+        except_lst = ['validation', 'test']
+        for ds_key, ds in ds_dict.items():  # automatic version
+            if ds_key not in except_lst:
+                ds_dict[ds_key] = wrap_tfds(ds)
+
+        # or you can directly return the ds-instance to prevent unpacking from dict, but careful about the order
+        #tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
+        return ds_dict
+    ##############################################################################################
 
     def wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
@@ -352,6 +404,10 @@ class Imagenet_dataset(object):
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+        
+        # unstable-version:
+        #ds_dict = self.get_imgnet_ds()
+        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -398,6 +454,10 @@ class Imagenet_dataset(object):
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
+        # unstable-version:
+        #ds_dict = self.get_imgnet_ds()
+        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
+
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
@@ -440,6 +500,10 @@ class Imagenet_dataset(object):
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+
+        # unstable-version:
+        #ds_dict = self.get_imgnet_ds()
+        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -486,6 +550,10 @@ class Imagenet_dataset(object):
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+
+        # unstable-version:
+        #ds_dict = self.get_imgnet_ds()
+        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -534,6 +602,10 @@ class Imagenet_dataset(object):
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+
+        # unstable-version:
+        #ds_dict = self.get_imgnet_ds()
+        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
