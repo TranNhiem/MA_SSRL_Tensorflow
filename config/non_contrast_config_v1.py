@@ -19,8 +19,13 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
+<<<<<<< HEAD
     FLAGS.wandb_run_name = "RandCrop_AutoAugment_V1_500cls"
     FLAGS.wandb_mod = "run"
+=======
+    FLAGS.wandb_run_name = "RandCrop_AutoAugment_V1_100cls"
+    FLAGS.wandb_mod = "online"
+>>>>>>> bdfe988b350d61477fe8a0cc0066e7647f9156e1
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
@@ -47,15 +52,15 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
 
-    FLAGS.resnet_depth = 50
+    FLAGS.resnet_depth = 18
     FLAGS.train_epochs = 100
-    FLAGS.num_classes = 500
+    FLAGS.num_classes = 100
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet50_rand_Crop_AutoAugment_V1_500cls"
+    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet50_rand_Crop_AutoAugment_V1_100cls"
     #FLAGS.train_mode = "finetune"
 
     # ds ratio 
