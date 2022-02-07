@@ -20,7 +20,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "RandCrop_AutoAugment_V1_500cls"
-    FLAGS.wandb_mod = "dryrun"
+    FLAGS.wandb_mod = "run"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
     '''
@@ -59,6 +59,7 @@ def read_cfg_base(mod="non_contrastive"):
     #FLAGS.train_mode = "finetune"
 
     # ds ratio 
-    FLAGS.tra_ds_ratio = 30
+    FLAGS.tra_ds_ratio = 60
+    FLAGS.n_cls = FLAGS.num_classes
 
     return flag

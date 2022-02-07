@@ -15,6 +15,7 @@ from Augmentation_Strategies.Auto_Data_Augment.tf_official_DA import RandAugment
 from Augmentation_Strategies.Auto_Data_Augment.Fast_Auto_Augment.Fast_AutoAugment import Fast_AutoAugment
 
 import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
 AUTO = tf.data.experimental.AUTOTUNE
 # Experimental options
 options = tf.data.Options()
@@ -49,8 +50,8 @@ class Imagenet_dataset(object):
     crop_dict = {"incpt_crp": simclr_augment_inception_style,
                  "rnd_crp": simclr_augment_randcrop_global_views}
 
-    def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None,
-                 val_path=None, val_label=None, strategy=None, subset_class_num=None, seed=None):
+    def __init__(self, img_size, train_batch, val_batch, train_path=None, train_label=None, tra_ds_ratio=None,
+                 val_path=None, val_label=None, strategy=None, subset_class_num=None, seed=None, n_cls=None):
         '''
         Args:
             img_size: Image training size
@@ -65,6 +66,8 @@ class Imagenet_dataset(object):
         self.val_batch = val_batch
         self.strategy = strategy
         self.seed = seed
+        self.tra_ds_ratio = tra_ds_ratio
+        self.n_cls = n_cls
 
         self.label, self.class_name = self.get_label(train_label)
         numeric_train_cls = []
@@ -174,7 +177,7 @@ class Imagenet_dataset(object):
     ##############################################################################################
     ## Load data by tfds API, time_stamp : 2022/02/05, 12:27
     ## On of the easy way to prepare the necessary dataset is loading the data from tfds.
-    def load_by_tfds(split_lst:List=['train', 'validation', 'test']) -> Dict:
+    def load_by_tfds(self, split_lst:List=['train', 'validation', 'test']) -> Dict:
         '''load the dataset from the tfds api
             split_lst : the susbset you want to load from dataset, or the ratio in each subset
         '''
@@ -200,35 +203,51 @@ class Imagenet_dataset(object):
         return ds_dict
 
     # public insterface :
-    def get_imgnet_ds(split_lst=['train']):
+    def get_imgnet_ds(self):
+        # In brief, multi-view must do resize wo cache, two have a choice to do resize or not with cache
         def wrap_tfds(ds):
-            ## Wrapping procedure :
+            # data_info record the path of imgs, it should be parsed
             img_shp = (self.IMG_SIZE, self.IMG_SIZE)
-            if FLAGS.training_loop =="multi_views":
-                ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)
+            ## Wrapping procedure : copy & paste from wrap_ds
+            if FLAGS.training_loop =="two_views": 
+                print("Two_Views Wrap_ds")
+                if FLAGS.resize_wrap_ds:
+                    img_lab_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+                
+                else:
+                    img_lab_ds = ds
 
-            elif FLAGS.training_loop == "two_views" and FLAGS.resize_wrap_ds:
-                ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
-            else:
+            elif FLAGS.training_loop =="multi_views": 
+                print("Multi_Views Wrap_ds")
+                img_lab_ds = ds.map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)#.cache()
+
+            else: 
                 raise ValueError("Invalid_Training loop")
-            return ds
+            
+            if self.n_cls == None:
+                raise ValueError("should give num of pred class")
 
-        ds_dict = load_by_tfds(split_lst)
+            return img_lab_ds.map(lambda x, y : (x, tf.one_hot(y, depth=self.n_cls)))
+
+        split_lst = [f'train[0:{self.tra_ds_ratio}%]']
+        ds_dict = self.load_by_tfds(split_lst)
+        ds = wrap_tfds(ds_dict['train'])
+        return ds
         # did val_ds, tst_ds alos need to resize ?
-        except_lst = [] # according to the code, there is not exception
-        for ds_key, ds in ds_dict.items():  # automatic version
-            if ds_key not in except_lst:
-                ds_dict[ds_key] = wrap_tfds(ds)
+        #except_lst = [] # according to the code, there is not exception
+        #for ds_key, ds in ds_dict.items():  # automatic version
+        #    if ds_key not in except_lst:
+        #        ds_dict[ds_key] = wrap_tfds(ds)
 
         # or you can directly return the ds-instance to prevent unpacking from dict, but careful about the order
         #tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
-        return ds_dict
+        #return # ds_dict['train']
     ##############################################################################################
 
     def wrap_ds(self, img_folder, labels):
         # data_info record the path of imgs, it should be parsed
         img_shp = (self.IMG_SIZE, self.IMG_SIZE)
-
+        
         if FLAGS.training_loop =="two_views": 
             print("Two_Views Wrap_ds")
             if FLAGS.resize_wrap_ds:
@@ -405,12 +424,11 @@ class Imagenet_dataset(object):
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
-        ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        #ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
         
-        # unstable-version:
-        #ds_dict = self.get_imgnet_ds()
-        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
+        # unstable-version: i guess you only need one ds, and the ds perform customized wrap_ds before
+        ds = self.get_imgnet_ds()
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
@@ -454,13 +472,13 @@ class Imagenet_dataset(object):
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
-        ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        #ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
-        # unstable-version:
-        #ds_dict = self.get_imgnet_ds()
-        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
-
+        # unstable-version: i guess you only need one ds, and the ds perform customized wrap_ds before
+        ds = self.get_imgnet_ds()
+        tf.print(f"\n\ndataset content : {ds} \n; len : {len(ds)}\n\n")
+        
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
@@ -496,22 +514,17 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def FastAug_strategy(self, crop_type="incpt_crp", policy_type="imagenet", tra_ds_ratio=None):
+    def FastAug_strategy(self, crop_type="incpt_crp", policy_type="imagenet"):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
-        if tra_ds_ratio == None:
-            raise ValueError("tra_ds_ratio is None")
-        split_lst = ["train[0:{}%]"]
-
-        ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        #ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
-        # unstable-version:
-        #ds_dict = self.get_imgnet_ds(split_lst=split_lst)
-        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
-
+        # unstable-version: i guess you only need one ds, and the ds perform customized wrap_ds before
+        ds = self.get_imgnet_ds() 
+        
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \

@@ -43,12 +43,12 @@ class Runner(object):
         
         # Configure Wandb Training & for Weight and Bias Tracking Experiment
         def wandb_init(wanda_cfg):
-            if wanda_cfg:
+            if wanda_cfg: 
                 wandb.init(project=self.wandb_project_name, name=FLAGS.wandb_run_name, mode=self.wandb_mod,
                            sync_tensorboard=True, config=wanda_cfg)
-                self.wandb= wandb
-        #   calculate the training related meta-info
+                return wandb
 
+        #   calculate the training related meta-info
         def infer_ds_info(n_tra_sample, n_evl_sample, train_global_batch, val_global_batch):
             self.train_steps = self.eval_steps or int(
                 n_tra_sample * self.train_epochs // train_global_batch)*2
@@ -72,7 +72,8 @@ class Runner(object):
         val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
-                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed': self.SEED}
+                   'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed': self.SEED,
+                   'tra_ds_ratio' : self.tra_ds_ratio, 'n_cls':self.n_cls}
         # Dataloader V2 already be proposed as formal data_loader
         train_dataset = Imagenet_dataset(**ds_args)
 
@@ -82,7 +83,7 @@ class Runner(object):
 
         # initial record utils
         wanda_cfg['Batch_size'] = train_global_batch
-        wandb_init(wanda_cfg)
+        self.wandb = wandb_init(wanda_cfg)
         self.summary_writer = tf.summary.create_file_writer(self.model_dir)
 
         checkpoint_steps = (self.checkpoint_steps or (self.checkpoint_epochs * self.epoch_steps))
@@ -185,19 +186,17 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-        ##perform data_augmentation by calling the dataloader methods
-        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-        #                                                num_transform=1, magnitude=15)
-
-        self.train_dataset.load_by_tfds()
-        return
+        ## perform data_augmentation by calling the dataloader methods
+        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+                                                        num_transform=1, magnitude=15)
+        
         #train_ds = self.train_dataset.AutoAug_strategy(
         #    crop_type=da_crp_key, policy_type="v1")
-        # already complete, have fun ~
+
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
 
-        # performing Linear-protocol
+        # performing Linear-protocol (non-tfds support)
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
