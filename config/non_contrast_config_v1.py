@@ -58,4 +58,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet50_rand_Crop_AutoAugment_V1_500cls"
     #FLAGS.train_mode = "finetune"
 
+    # ds ratio 
+    FLAGS.tra_ds_ratio = 30
+
     return flag

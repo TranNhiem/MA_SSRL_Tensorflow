@@ -182,7 +182,7 @@ class Imagenet_dataset(object):
         # It will return the tuple(img, lab) tf.dataset instance when as_supervised enable!
         #   for default split_lst : ['train', 'validation', 'test'] but you can customized!
         #   you can find the imagenet2012 ds under /data/tf_ds
-        ds_lst = tfds.load('imagenet2012', data_dir='/data/tf_ds', as_supervised=True, split=split_lst)
+        ds_lst = tfds.load('imagenet2012', data_dir='/data/tf_ds', download=True, as_supervised=True, split=split_lst)
         key_lst = []
         # the key of access each ds-instance, you will need it outside! 
         if len(split_lst) == 1:
@@ -200,7 +200,7 @@ class Imagenet_dataset(object):
         return ds_dict
 
     # public insterface :
-    def get_imgnet_ds(split_lst=['train', 'validation', 'test']):
+    def get_imgnet_ds(split_lst=['train']):
         def wrap_tfds(ds):
             ## Wrapping procedure :
             img_shp = (self.IMG_SIZE, self.IMG_SIZE)
@@ -215,7 +215,7 @@ class Imagenet_dataset(object):
 
         ds_dict = load_by_tfds(split_lst)
         # did val_ds, tst_ds alos need to resize ?
-        except_lst = ['validation', 'test']
+        except_lst = [] # according to the code, there is not exception
         for ds_key, ds in ds_dict.items():  # automatic version
             if ds_key not in except_lst:
                 ds_dict[ds_key] = wrap_tfds(ds)
@@ -496,16 +496,20 @@ class Imagenet_dataset(object):
 
         return self.strategy.experimental_distribute_dataset(train_ds)
 
-    def FastAug_strategy(self, crop_type="incpt_crp", policy_type="imagenet"):
+    def FastAug_strategy(self, crop_type="incpt_crp", policy_type="imagenet", tra_ds_ratio=None):
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
+
+        if tra_ds_ratio == None:
+            raise ValueError("tra_ds_ratio is None")
+        split_lst = ["train[0:{}%]"]
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
         # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         # unstable-version:
-        #ds_dict = self.get_imgnet_ds()
+        #ds_dict = self.get_imgnet_ds(split_lst=split_lst)
         # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
 
         if crop_type == "incpt_crp":
