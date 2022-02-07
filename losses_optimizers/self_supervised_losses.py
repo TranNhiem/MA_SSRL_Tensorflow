@@ -238,8 +238,8 @@ def byol_loss_v1(p, z, temperature):
     logits_ab = tf.matmul(p, z, transpose_b=True) / temperature
     # Measure similarity
     similarities = tf.reduce_sum(tf.multiply(p, z), axis=1)
-    loss = 2 - 2 * similarities
-    return loss, logits_ab, labels
+    #loss = 2 - 2 * similarities
+    return similarities, logits_ab, labels
 
 
 def byol_multi_views_loss(v1, v2, v3, v4, v5, temperature, alpha):

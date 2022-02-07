@@ -189,10 +189,10 @@ class Runner(object):
         # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
         #                                                num_transform=1, magnitude=15)
 
-        self.train_dataset.load_by_tfds()
-        return
-        #train_ds = self.train_dataset.AutoAug_strategy(
-        #    crop_type=da_crp_key, policy_type="v1")
+        #load_by_tfds()
+        
+        train_ds = self.train_dataset.AutoAug_strategy(
+           crop_type=da_crp_key, policy_type="v1")
         # already complete, have fun ~
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
@@ -308,9 +308,9 @@ class Runner(object):
                 x1, x2,  temperature=self.temperature)
 
             # total sum loss //Global batch_size
-            loss = (per_example_loss) * \
+            loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_global_batch)
-
+            loss= 2-2*loss
             return loss, logits_ab, labels
 
         # Get the data from

@@ -405,12 +405,13 @@ class Imagenet_dataset(object):
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
-        ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
+        #ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        # # # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
         
         # unstable-version:
-        #ds_dict = self.get_imgnet_ds()
-        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
+        ds_dict = self.get_imgnet_ds()
+        # # ds, val_ds, tst_ds = ds_dict['train[30%:]'], ds_dict['validation'], ds_dict['test']
+        ds, _, _ = ds_dict['train[30%:]'], ds_dict['validation'], ds_dict['test']
 
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
