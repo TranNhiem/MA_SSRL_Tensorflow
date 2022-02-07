@@ -425,20 +425,13 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         #ds = self.wrap_ds(self.x_train, self.x_train_lable)
-<<<<<<< HEAD
-        # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
-        
-        # unstable-version: i guess you only need one ds, and the ds perform customized wrap_ds before
-        ds = self.get_imgnet_ds()
-=======
         # # # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)\
         
         # unstable-version:
-        ds_dict = self.get_imgnet_ds()
-        # # ds, val_ds, tst_ds = ds_dict['train[30%:]'], ds_dict['validation'], ds_dict['test']
-        ds, _, _ = ds_dict['train[30%:]'], ds_dict['validation'], ds_dict['test']
->>>>>>> bdfe988b350d61477fe8a0cc0066e7647f9156e1
-
+        # ds_dict = self.get_imgnet_ds()
+        # # # ds, val_ds, tst_ds = ds_dict['train[30%:]'], ds_dict['validation'], ds_dict['test']
+        # ds, _, _ = ds_dict['train[30%:]'], ds_dict['validation'], ds_dict['test']
+        ds = self.get_imgnet_ds()
         if crop_type == "incpt_crp":
             train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
                 x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \

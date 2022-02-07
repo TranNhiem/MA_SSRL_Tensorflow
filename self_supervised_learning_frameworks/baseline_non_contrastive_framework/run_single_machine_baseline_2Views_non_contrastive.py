@@ -186,15 +186,6 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-<<<<<<< HEAD
-        ## perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                        num_transform=1, magnitude=15)
-        
-        #train_ds = self.train_dataset.AutoAug_strategy(
-        #    crop_type=da_crp_key, policy_type="v1")
-
-=======
         ##perform data_augmentation by calling the dataloader methods
         # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
         #                                                num_transform=1, magnitude=15)
@@ -204,7 +195,6 @@ class Runner(object):
         train_ds = self.train_dataset.AutoAug_strategy(
            crop_type=da_crp_key, policy_type="v1")
         # already complete, have fun ~
->>>>>>> bdfe988b350d61477fe8a0cc0066e7647f9156e1
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
 
