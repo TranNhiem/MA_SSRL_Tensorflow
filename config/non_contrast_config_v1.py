@@ -12,7 +12,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = True
-    FLAGS.mode_prefetch = 20  # if set it to 1 will Use AUTO
+    FLAGS.mode_prefetch = 25  # if set it to 1 will Use AUTO
     # ["custome", "TFA_API"] # Current suport TFA_API
     FLAGS.auto_augment = "custome"
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
