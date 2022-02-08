@@ -487,7 +487,8 @@ class Imagenet_dataset(object):
             image= simclr_augment_randcrop_global_views(image, self.IMG_SIZE)
         
         else: 
-            raise ValueError("Invalid Cropping Strategies"
+            raise ValueError("Invalid Cropping Strategies")
+            
         augmenter_apply = Fast_AutoAugment(policy_type=policy_type)
         # this return (trfs_img, apply_policies)
         image = tf.py_function(augmenter_apply.distort, [
