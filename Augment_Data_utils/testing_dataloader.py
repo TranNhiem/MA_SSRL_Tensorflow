@@ -17,17 +17,18 @@ import matplotlib.pyplot as plt
 
 from tensorflow import distribute as tf_dis
 
-'''
+
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
 
     try:
-        tf.config.experimental.set_visible_devices(gpus[7], 'GPU')
+        #tf.config.experimental.set_visible_devices(gpus[7], 'GPU')
+        tf.config.set_visible_devices([], 'GPU')
         logical_gpus = tf.config.experimental.list_logical_devices('GPU')
         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
     except RuntimeError as e:
         print(e)
-'''
+
 
 # dummy assignment, so let it in one line
 flag = read_cfg_base()
@@ -110,6 +111,10 @@ for _, (ds_one, ds_two) in enumerate(train_ds):
 
 image, _ = ds_1
 image1, _ = ds_2
+print(f"chk shape : {image.shape} ; val rng - max : {image.numpy().max()}, min - {image.numpy().min()}\n")
+print(f"chk shape : {image1.shape} ; val rng - max : {image1.numpy().max()}, min - {image1.numpy().min()}\n")
+print(image)
+print(image1)
 plt.figure(figsize=(10, 5))
 for n in range(4):
     ax = plt.subplot(2, 4, n + 1)

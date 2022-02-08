@@ -563,22 +563,22 @@ def rand_brightness(image, strength):
 
 def rand_contrast(image, strength):
     '''source code not found auto_adjustv2 is missing'''
-    strength=0.4
-    x = tf.image.random_contrast(image, lower=1-0.8 * strength, upper=1 + 0.8 * strength)
+    strength = 0.4 if strength == 0 else strength
+    x = tf.image.random_contrast(image, lower=1 - 0.8 * strength, upper=1 + 0.8 * strength)
     x = tf.clip_by_value(x, 0, 255)
     return x
 
 def rand_saturation(image, strength):
     '''no duplicate'''
-    strength=0.2
-    x = tf.image.random_saturation(image, lower=1-0.8*strength, upper=1+0.8 * strength)
+    strength = 0.2 if strength == 0 else strength
+    x = tf.image.random_saturation(image, lower=1 - 0.8*strength, upper=1 + 0.8 * strength)
     x = tf.clip_by_value(x, 0, 255)
     return x
 
 def rand_hue(image, strength):
     '''no duplicate'''
-    strength = 0.1 if strength <= 0 or strength > 0.5 else strength # strength should be non-negative
-    x = tf.image.random_hue(image, max_delta=0.2*strength)
+    strength = 0.1 if strength < 0 or strength > 0.5 else strength # strength should be non-negative
+    x = tf.image.random_hue(image, max_delta=strength)
     x = tf.clip_by_value(x, 0, 255)
     return x
 
@@ -609,6 +609,8 @@ def rand_blur(image):  # IMG_SIZE=32,
             # Tensorflow requires batched input to convolutions, which we can fake with
             # an extra dimension.
             image = tf.expand_dims(image, axis=0)
+
+        image = tf.cast(image, dtype=tf.float32)
         blurred = tf.nn.depthwise_conv2d(
             image, blur_h, strides=[1, 1, 1, 1], padding=padding)
         blurred = tf.nn.depthwise_conv2d(
@@ -623,7 +625,7 @@ def rand_blur(image):  # IMG_SIZE=32,
     sigma = tf.random.uniform([], 0.1, 2.0, dtype=tf.float32)
     image_blur = gaussian_blur(
         image, kernel_size=IMG_SIZE // 10, sigma=sigma, padding='SAME')
-    return image_blur
+    return tf.cast(image_blur, dtype=tf.uint8)
 
 def color_drop(image):
     '''
@@ -682,8 +684,9 @@ def _translate_level_to_arg(level: float, translate_const: float):
 def _mult_to_arg(level: float, multiplier: float = 1.):
   return (int((level / _MAX_LEVEL) * multiplier),)
 
-## for SimCLR args transfer
+## for SimCLR args transfer, from [0, 10] to [0, 1]
 def _id_to_arg(level: float):
+    level = (level / _MAX_LEVEL)
     return (level,)
 
 
@@ -1214,7 +1217,7 @@ class Extend_RandAugment(ImageAugment):
             'Color', 'SolarizeAdd', 'ShearX', 'ShearY', 'TranslateX', 'TranslateY',
             # SimCLR transformations
             'rand_brightness', 'rand_contrast', 'rand_saturation',   
-            'rand_hue', 'rand_blur', 'color drop',
+            'rand_hue', 'rand_blur', 'color_drop',
         ]
         
         self.select_op = []
