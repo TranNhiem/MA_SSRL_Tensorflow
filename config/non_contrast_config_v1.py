@@ -11,7 +11,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.training_loop = "two_views"  # ['two_views', "multi_views", ]
 
     # , ['ds_1_2_options', 'train_ds_options'],
-    FLAGS.dataloader = 'ds_1_2_options'
+    FLAGS.dataloader = True
     FLAGS.mode_prefetch = 20  # if set it to 1 will Use AUTO
     # ["custome", "TFA_API"] # Current suport TFA_API
     FLAGS.auto_augment = "custome"
@@ -19,7 +19,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Res-50_RandCrop_AutoAugment_V1_40per_trainset"
+    FLAGS.wandb_run_name = "Res-18_RandCrop_AutoAugment_V1_30per_trainset"
     FLAGS.wandb_mod = "online"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -47,7 +47,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
 
-    FLAGS.resnet_depth = 50
+    FLAGS.resnet_depth = 18
     FLAGS.train_epochs = 100
     FLAGS.num_classes = 1000
 
@@ -55,11 +55,12 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.val_batch_size = 128
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet50_rand_Crop_AutoAugment_V1_40per_trainset"
+    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/ResNet18_RandCrop_AutoAugment_V1_30per_trainset"
     #FLAGS.train_mode = "finetune"
 
     # ds ratio 
     FLAGS.tra_ds_ratio = 40
+    FLAGS.subset_percentage = 0.3
     FLAGS.n_cls = FLAGS.num_classes
 
     return flag

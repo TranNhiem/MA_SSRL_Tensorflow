@@ -71,7 +71,7 @@ class Runner(object):
         train_global_batch = self.train_batch_size * self.strategy.num_replicas_in_sync
         val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
-                   'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
+                   'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,"subset_percentage": self.subset_percentage,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed': self.SEED,
                    'tra_ds_ratio' : self.tra_ds_ratio, 'n_cls':self.n_cls}
         # Dataloader V2 already be proposed as formal data_loader
@@ -309,6 +309,8 @@ class Runner(object):
                 x1, x2,  temperature=self.temperature)
 
             # total sum loss //Global batch_size
+            # loss = tf.reduce_sum(per_example_loss) * \
+            #     (1./self.train_global_batch)
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_global_batch)
             loss= 2-2*loss

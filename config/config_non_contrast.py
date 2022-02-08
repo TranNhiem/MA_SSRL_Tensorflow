@@ -56,8 +56,13 @@ def base_cfg():
         'num_classes', 100,
         'Number of class in training data.')
 
-    flags.DEFINE_enum(
-        'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
+
+    flags.DEFINE_float(
+        'subset_percentage', 1.0,
+        'subset percentage of training data.')
+
+    flags.DEFINE_boolean(
+        'dataloader', True,
         'The dataloader apply options.')
 
     flags.DEFINE_integer(
