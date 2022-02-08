@@ -91,7 +91,7 @@ class Runner(object):
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
         self.training_steps =  int(
-        n_tra_sample * FLAGS.train_epochs // train_global_batch) * 2
+        n_tra_sample * FLAGS.train_epochs // train_global_batch) * 4
         self.evaluating_steps = int(
         math.ceil(n_evl_sample / val_global_batch))
 
@@ -191,14 +191,9 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         ##perform data_augmentation by calling the dataloader methods
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_transform=1, magnitude=5)
+        train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
+                                                       num_transform=1, magnitude=10)
 
-        # train_ds = self.train_dataset.AutoAug_strategy(
-        #     crop_type=da_crp_key, policy_type="v1")
-        # already complete, have fun ~
-        # train_ds = self.train_dataset.FastAug_strategy(
-        #    crop_type=da_crp_key, policy_type="imagenet")
 
         # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
@@ -215,16 +210,10 @@ class Runner(object):
             num_batches = 0
 
             for _, ds_train in enumerate(train_ds):
-                if FLAGS.2_augmentation_strategies: 
-                    ds_one, ds_two, ds_3, ds_4= ds_train
+               
+                (ds_one, lable_one), (ds_two, lable_two), (ds_3, _), (ds_4, _)= ds_train
                     
-                    total_loss += self.__distributed_train_step(ds_one, ds_two, ds_3, ds_4)
-                
-                else:   
-                    ds_one, ds_two= ds_train
-                    ds_3=None, ds_4=None
-                    total_loss += self.__distributed_train_step(ds_one, ds_two, ds_3, ds_4)
-                
+                total_loss += self.__distributed_train_step_2_strategies(ds_one, ds_two,lable_one, lable_two, ds_3, ds_4) 
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
@@ -299,47 +288,31 @@ class Runner(object):
                 logging.info('Evaluation complete. Existing-->')
 
     # Training sub_procedure :
+
     @tf.function
-    def __distributed_train_step(self, ds_one, ds_two):
+    def __distributed_train_step_2_strategies(self, ds_one, ds_two,lable_one, lable_two, ds_3, ds_4):
         per_replica_losses = self.strategy.run(
-            self.__train_step, args=(ds_one, ds_two))
-        return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                                    axis=None)
-    @tf.function
-    def __distributed_train_step_2_strategies(self, ds_one, ds_two, ds_3, ds_4):
-        per_replica_losses = self.strategy.run(
-            self.__train_step, args=(ds_one, ds_two, ds_3, ds_4))
+            self.__train_step, args=(ds_one, ds_two, lable_one, lable_two, ds_3, ds_4))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_one, ds_two, ds_3=None, ds_4=None):
+    def __train_step(self, ds_one, ds_two,,lable_one, lable_two,  ds_3=None, ds_4=None):
         # Scale loss  --> Aggregating all Gradients
-        if FLAGS.2_augmentation_strategies: 
-            def distributed_loss_2_strategies(x1, x2, x3, x4):
-                # each GPU loss per_replica batch loss
-                per_example_loss, logits_ab, labels = byol_2_augmentation_loss(
-                    x1, x2,  x3, x4, temperature=self.temperature)
 
-                # total sum loss //Global batch_size
-                loss = tf.reduce_sum(per_example_loss) * \
-                    (1./self.train_batch_size)
-                return loss, logits_ab, labels
+        def distributed_loss_2_strategies(x1, x2, x3, x4):
+            # each GPU loss per_replica batch loss
+            per_example_loss, logits_ab, labels = byol_2_augmentation_loss(
+                x1, x2,  x3, x4, temperature=self.temperature)
 
-        else: 
-            def distributed_loss(x1, x2):
-                # each GPU loss per_replica batch loss
-                per_example_loss, logits_ab, labels = byol_loss_v1(
-                    x1, x2,  temperature=self.temperature)
+            # total sum loss //Global batch_size
+            loss = tf.reduce_sum(per_example_loss) * \
+                (1./self.train_batch_size)
 
-                # total sum loss //Global batch_size
-                loss = tf.reduce_sum(per_example_loss) * \
-                    (1./self.train_global_batch)
-                return loss, logits_ab, labels
+            return loss, logits_ab, labels
 
         # Get the data from
-        images_one, lable_one = ds_one
-        images_two, lable_two = ds_two
+
 
         with tf.GradientTape(persistent=True) as tape:
 
@@ -356,42 +329,63 @@ class Runner(object):
             # -------------------------------------------------------------
 
         
-            # Online
+            # Online (ds_1; ds_3)
             proj_head_output_1, supervised_head_output_1 = self.online_model(
-                images_one, training=True)
+                ds_one, training=True)
             proj_head_output_1 = self.prediction_model(
                 proj_head_output_1, training=True)
 
-            # Target
-            proj_head_output_2, supervised_head_output_2 = self.target_model(
-                images_two, training=True)
 
+            proj_head_output_3, supervised_head_output_3 = self.online_model(
+                ds_3, training=True)
+            
+            proj_head_output_3 = self.prediction_model(
+                proj_head_output_3, training=True)
+
+            # Target (ds_2; ds_4)
+            proj_head_output_2, supervised_head_output_2 = self.target_model(
+                ds_two, training=True)
+            
+            proj_head_output_4, supervised_head_output_4 = self.target_model(
+                ds_4, training=True)
+            
+            
             # -------------------------------------------------------------
             # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
             # -------------------------------------------------------------
 
-            # online
+           # Online (ds_2; ds_4)
             proj_head_output_2_online, _ = self.online_model(
-                images_two, training=True)
-            # Vector Representation from Online encoder go into Projection head again
+                ds_two, training=True)
             proj_head_output_2_online = self.prediction_model(
                 proj_head_output_2_online, training=True)
 
-            # Target
-            proj_head_output_1_target, _ = self.target_model(
-                images_one, training=True)
 
+            proj_head_output_4_online, _ = self.online_model(
+                ds_4, training=True)
+            
+            proj_head_output_4_online = self.prediction_model(
+                proj_head_output_4_online, training=True)
+
+            # Target (ds_1; ds_3)
+            proj_head_output_1_target, _ = self.target_model(
+                ds_one, training=True)
+            
+            proj_head_output_3_target, _ = self.target_model(
+                ds_3, training=True)
+            
+            
             # Compute Contrastive Train Loss -->
             loss = None
             if proj_head_output_1 is not None:
                 # Compute Contrastive Loss model
                 # Loss of the image 1, 2 --> Online, Target Encoder
-                loss_1_2, logits_ab, labels = distributed_loss(
-                    proj_head_output_1, proj_head_output_2)
+                loss_1_2, logits_ab, labels = distributed_loss_2_strategies(
+                    proj_head_output_1, proj_head_output_2, proj_head_output_3, proj_head_output_4)
 
                 # Loss of the image 2, 1 --> Online, Target Encoder
-                loss_2_1, logits_ab_2, labels_2 = distributed_loss(
-                    proj_head_output_2_online, proj_head_output_1_target)
+                loss_2_1, _, _ = distributed_loss_2_strategies(
+                    proj_head_output_2_online, proj_head_output_1_target, proj_head_output_4_online, proj_head_output_3_target)
 
                 # symetrized loss
                 loss = (loss_1_2 + loss_2_1)/2
