@@ -509,7 +509,7 @@ class Imagenet_dataset(object):
             image= simclr_augment_randcrop_global_views(image, self.IMG_SIZE)
         
         else: 
-            raise ValueError("Invalid Cropping Strategies"
+            raise ValueError("Invalid Cropping Strategies")
         
         image=simclr_augment_style(image)
         
