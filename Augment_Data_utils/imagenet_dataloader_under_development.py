@@ -642,64 +642,30 @@ class Imagenet_dataset(object):
             
         return self.strategy.experimental_distribute_dataset(train_ds)
      
-    def RandAug_simclr_strategy(self,crop_type="incpt_crp", num_transform=3, magnitude=4 ): 
+    def Auto_and_simclr_strategy(self,crop_type="incpt_crp", auto_policy_type="v1" ): 
         
         if not crop_type in Imagenet_dataset.crop_dict.keys():
             raise ValueError(
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        # ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         # unstable-version:
         #ds_dict = self.get_imgnet_ds()
         # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
-
-        if crop_type == "incpt_crp":
-            train_ds_one = ds.map(lambda x, y: (simclr_augment_inception_style(
-                x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
-                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
-            train_ds_two = ds.map(lambda x, y: (simclr_augment_inception_style(
-                x, self.IMG_SIZE), y), num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
-                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
-
-        elif crop_type == "rnd_crp":
-            train_ds_one = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
-                                  num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
-                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
-
-            train_ds_two = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
-                                  num_parallel_calls=AUTO) \
-                .map(lambda x, y: (self.Rand_Augment(x, num_transform, magnitude), y), num_parallel_calls=AUTO)\
-                .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
-
-            train_ds3_one = ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
-                                  num_parallel_calls=AUTO) \
-                            .map(lambda x, y: (simclr_augment_style(x, ), y), num_parallel_calls=AUTO) \
+        train_ds = ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x,crop_type=crop_type ), y),
+                                        (self.SimCLR_Augment_crop(x,crop_type=crop_type ), y),
+                                        (self.Auto_Augment_crop(x,policy_type=auto_policy_type,crop_type=crop_type), y),
+                                        (self.Auto_Augment_crop(x,policy_type=auto_policy_type,crop_type=crop_type), y) ), num_parallel_calls=AUTO) \
                              .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
             
-            train_ds3_two= ds.map(lambda x, y: (simclr_augment_randcrop_global_views(x, self.IMG_SIZE), y),
-                                  num_parallel_calls=AUTO) \
-                            .map(lambda x, y: (simclr_augment_style(x, ), y), num_parallel_calls=AUTO) \
-                             .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
-        else:
-            raise ValueError("Cropping strategy is Invalid")
-
-        if FLAGS.dataloader == "ds_1_2_options":
-            logging.info("Train_ds_one and two  with option")
-            train_ds_one.with_options(options)
-            train_ds_two.with_options(options)
-            train_ds3_one.with_options(options)
-            train_ds3_two.with_options(options)
-
-        train_ds = tf.data.Dataset.zip((train_ds_one, train_ds_two, train_ds3_one, train_ds3_two))
-        if FLAGS.dataloader == "train_ds_options":
-            logging.info("Train_ds dataloader with option")
+        if FLAGS.dataloader: 
+            print("Implement dataloader with_option")
             train_ds.with_options(options)
-
+        else: 
+            print("Not implement with option")
+            
         return self.strategy.experimental_distribute_dataset(train_ds)
     
     # in some degree, multi-view is complete ~ ~
