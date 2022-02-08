@@ -255,7 +255,7 @@ def byol_multi_views_loss(v1, v2, v3, v4, v5, temperature, alpha):
 
     return loss, logits_ab, labels
 
-def byol_2_augmentation_loss(v1, v2, v3, v4,  temperature, weight_loss=0.6):
+def byol_2_augmentation_loss(v1, v2, v3, v4,  temperature, weight_loss=0.5):
 
     loss_aug1, logits_ab, labels= byol_loss_v1(v1, v2, temperature)
     loss_aug2, _, _= byol_loss_v1(v3, v4, temperature)
