@@ -510,7 +510,6 @@ class Imagenet_dataset(object):
         
         return image
 
-
     def simclr_crop_da(self, crop_type="incpt_crp"):
         
         if not crop_type in Imagenet_dataset.crop_dict.keys():

@@ -194,7 +194,7 @@ class Runner(object):
         train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
                                                        num_transform=1, magnitude=10)
 
-
+        #train_ds=Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
         # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
