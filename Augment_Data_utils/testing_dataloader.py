@@ -8,7 +8,7 @@ import os
 from imutils import paths
 from absl import flags
 import random
-from sklearn.preprocessing import OneHotEncoder
+#from sklearn.preprocessing import OneHotEncoder
 import time
 import glob
 import os
@@ -16,6 +16,8 @@ import timeit
 import matplotlib.pyplot as plt
 
 from tensorflow import distribute as tf_dis
+
+'''
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
 
@@ -25,7 +27,7 @@ if gpus:
         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
     except RuntimeError as e:
         print(e)
-
+'''
 
 # dummy assignment, so let it in one line
 flag = read_cfg_base()
@@ -53,10 +55,10 @@ class dataloader_2and_multi_views(object):
         self.__dict__ = FLAGS.__dict__
 
         # 1. Prepare imagenet dataset
-        strategy = tf_dis.MirroredStrategy()
+        strategy = None #tf_dis.MirroredStrategy()
         self.strategy = strategy
-        train_global_batch = self.train_batch_size * strategy.num_replicas_in_sync
-        val_global_batch = self.val_batch_size * strategy.num_replicas_in_sync
+        train_global_batch = self.train_batch_size #* strategy.num_replicas_in_sync
+        val_global_batch = self.val_batch_size #* strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
                    'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': strategy, 'seed': self.SEED}
@@ -90,10 +92,10 @@ train_dataset = object_data.train_dataset
 #     break
 
 ## Testing Multi-Augmentation Strategy
-# train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
-#                                           num_transform=2, magnitude=5)
+train_ds = train_dataset.RandAug_strategy(crop_type=da_crp_key,
+                                           num_transform=2, magnitude=5)
 
-train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key, policy_type="v1")
+#train_ds = train_dataset.AutoAug_strategy(crop_type=da_crp_key, policy_type="v1")
 
 # train_ds = train_dataset.FastAug_strategy(
 #     crop_type=da_crp_key, policy_type="imagenet")

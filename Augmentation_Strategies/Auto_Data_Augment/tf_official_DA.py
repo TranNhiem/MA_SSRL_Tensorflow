@@ -577,8 +577,8 @@ def rand_saturation(image, strength):
 
 def rand_hue(image, strength):
     '''no duplicate'''
-    strength = 0.1 if strength <= 0 else strength # strength should be non-negative
-    x = tf.image.random_hue(x, max_delta=0.2*strength)
+    strength = 0.1 if strength <= 0 or strength > 0.5 else strength # strength should be non-negative
+    x = tf.image.random_hue(image, max_delta=0.2*strength)
     x = tf.clip_by_value(x, 0, 255)
     return x
 
@@ -684,7 +684,7 @@ def _mult_to_arg(level: float, multiplier: float = 1.):
 
 ## for SimCLR args transfer
 def _id_to_arg(level: float):
-    return level
+    return (level,)
 
 
 def _apply_func_with_prob(func: Any, image: tf.Tensor, args: Any, prob: float):
@@ -736,7 +736,7 @@ NAME_TO_FUNC = {
     'rand_saturation' : rand_saturation,
     'rand_hue' : rand_hue,
     'rand_blur' : rand_blur,
-    'color_drop' : color drop,
+    'color_drop' : color_drop,
     
     # 'rand_saturation' : rand_saturation,
     # 'rand_hue': rand_hue, 
@@ -1194,30 +1194,30 @@ class Proposed_RandAugment(ImageAugment):
 
 
 class Extend_RandAugment(ImageAugment):
-    def __init__(self,
-               num_layers: int = 2,
-               magnitude: float = 10.,
-               cutout_const: float = 40.,
-               translate_const: float = 100.):
-    """ Extended version of RandAugment, which also contains the SimCLR transformation """
-    super(Extend_RandAugment, self).__init__()
+    def __init__(self, 
+                num_layers: int = 2, 
+                magnitude: float = 10., 
+                cutout_const: float = 40., 
+                translate_const: float = 100.):
+        """ Extended version of RandAugment, which also contains the SimCLR transformation """
+        super(Extend_RandAugment, self).__init__()
 
-    self.num_layers = num_layers
-    self.magnitude = float(magnitude)
-    self.cutout_const = float(cutout_const)
-    self.translate_const = float(translate_const)
-    self.available_ops = [
-        # rest of transformation of RandAugment
-        # remove duplicated trafs with SimCLR trfs & not suitable trfs in SSL
-        #  elim_lst = ['Contrast', 'Brightness', 'Cutout', 'Rotate']
-        'AutoContrast', 'Equalize', 'Invert', 'Posterize', 'Solarize', 'Sharpness',
-        'Color', 'SolarizeAdd', 'ShearX', 'ShearY', 'TranslateX', 'TranslateY',
-        # SimCLR transformations
-        'rand_brightness', 'rand_contrast', 'rand_saturation',   
-        'rand_hue', 'rand_blur', 'color drop',
-    ]
-    
-    self.select_op = []
+        self.num_layers = num_layers
+        self.magnitude = float(magnitude)
+        self.cutout_const = float(cutout_const)
+        self.translate_const = float(translate_const)
+        self.available_ops = [
+            # rest of transformation of RandAugment
+            # remove duplicated trafs with SimCLR trfs & not suitable trfs in SSL
+            #  elim_lst = ['Contrast', 'Brightness', 'Cutout', 'Rotate']
+            'AutoContrast', 'Equalize', 'Invert', 'Posterize', 'Solarize', 'Sharpness',
+            'Color', 'SolarizeAdd', 'ShearX', 'ShearY', 'TranslateX', 'TranslateY',
+            # SimCLR transformations
+            'rand_brightness', 'rand_contrast', 'rand_saturation',   
+            'rand_hue', 'rand_blur', 'color drop',
+        ]
+        
+        self.select_op = []
 
     def distort(self, image: tf.Tensor) -> tf.Tensor:
         """Applies the RandAugment policy to `image`.
@@ -1242,24 +1242,24 @@ class Extend_RandAugment(ImageAugment):
 
             branch_fns = []
             for (i, op_name) in enumerate(self.available_ops):
-            prob = tf.random.uniform([],
-                                    minval=min_prob,
-                                    maxval=max_prob,
-                                    dtype=tf.float32)
-            func, _, args = _parse_policy_info(op_name, prob, self.magnitude,
-                                                replace_value, self.cutout_const,
-                                                self.translate_const)
-            branch_fns.append((
-                i,
-                # pylint:disable=g-long-lambda
-                lambda selected_func=func, selected_args=args: selected_func(
-                    image, *selected_args)))
-            # pylint:enable=g-long-lambda
-            
-            image = tf.switch_case(
-                branch_index=op_to_select,
-                branch_fns=branch_fns,
-                default=lambda: tf.identity(image))
+                prob = tf.random.uniform([],
+                                        minval=min_prob,
+                                        maxval=max_prob,
+                                        dtype=tf.float32)
+                func, _, args = _parse_policy_info(op_name, prob, self.magnitude,
+                                                    replace_value, self.cutout_const,
+                                                    self.translate_const)
+                branch_fns.append((
+                    i,
+                    # pylint:disable=g-long-lambda
+                    lambda selected_func=func, selected_args=args: selected_func(
+                        image, *selected_args)))
+                # pylint:enable=g-long-lambda
+                
+                image = tf.switch_case(
+                    branch_index=op_to_select,
+                    branch_fns=branch_fns,
+                    default=lambda: tf.identity(image))
         
         image = tf.cast(image, dtype=input_image_type)
         return image, #[] # HACKME : see how can we collect the selected_op..

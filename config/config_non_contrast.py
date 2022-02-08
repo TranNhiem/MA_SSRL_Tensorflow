@@ -56,8 +56,13 @@ def base_cfg():
         'num_classes', 100,
         'Number of class in training data.')
 
-    flags.DEFINE_enum(
-        'dataloader', 'ds_1_2_options', ['ds_1_2_options', 'train_ds_options'],
+
+    flags.DEFINE_float(
+        'subset_percentage', 1.0,
+        'subset percentage of training data.')
+
+    flags.DEFINE_boolean(
+        'dataloader', True,
         'The dataloader apply options.')
 
     flags.DEFINE_integer(
@@ -88,11 +93,11 @@ def base_cfg():
         'Mask path.')
 
     flags.DEFINE_string(   # label data just put it into proj-repo with relative path..
-        'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
+        'train_label', "./image_net_1k_lable.txt",  #../../Augment_Data_utils/image_net_1k_lable.txt
         'train_label.')
 
     flags.DEFINE_string(  # ../../Augment_Data_utils
-        'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
+        'val_label', "./ILSVRC2012_validation_ground_truth.txt",  # ../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt
         'val_label.')
 
 

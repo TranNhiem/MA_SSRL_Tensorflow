@@ -71,7 +71,7 @@ class Runner(object):
         train_global_batch = self.train_batch_size * self.strategy.num_replicas_in_sync
         val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
-                   'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,
+                   'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,"subset_percentage": self.subset_percentage,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed': self.SEED,
                    'tra_ds_ratio' : self.tra_ds_ratio, 'n_cls':self.n_cls}
         # Dataloader V2 already be proposed as formal data_loader
@@ -186,25 +186,13 @@ class Runner(object):
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-<<<<<<< HEAD
-        ## perform data_augmentation by calling the dataloader methods
+        # this RandAug_strategy apply the extended version of the policy space which includeing the SimCLR policy
         train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                        num_transform=1, magnitude=15)
+                                                       num_transform=1, magnitude=15)
         
         #train_ds = self.train_dataset.AutoAug_strategy(
-        #    crop_type=da_crp_key, policy_type="v1")
-
-=======
-        ##perform data_augmentation by calling the dataloader methods
-        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-        #                                                num_transform=1, magnitude=15)
-
-        #load_by_tfds()
-        
-        train_ds = self.train_dataset.AutoAug_strategy(
-           crop_type=da_crp_key, policy_type="v1")
+        #   crop_type=da_crp_key, policy_type="v1")
         # already complete, have fun ~
->>>>>>> bdfe988b350d61477fe8a0cc0066e7647f9156e1
         # train_ds = self.train_dataset.FastAug_strategy(
         #    crop_type=da_crp_key, policy_type="imagenet")
 
@@ -319,6 +307,8 @@ class Runner(object):
                 x1, x2,  temperature=self.temperature)
 
             # total sum loss //Global batch_size
+            # loss = tf.reduce_sum(per_example_loss) * \
+            #     (1./self.train_global_batch)
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_global_batch)
             loss= 2-2*loss
