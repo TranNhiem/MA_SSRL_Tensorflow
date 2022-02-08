@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+#from dataclasses import dataclass
 
 import tensorflow as tf
 from typing import Any, Dict, List, Optional, Text, Tuple
@@ -548,11 +549,95 @@ def unwrap(image: tf.Tensor, replace: int) -> tf.Tensor:
 #   image = tf.image.random_hue(image, max_delta=0.2*0.1)
 #   return image
 
+##################################################
+## SimCLR transformations  (disable magnitude)
+def rand_brightness(image, strength):
+    '''It's almost same as brightness, but 
+    rand_brightness : rand_uniform(-delta, +delta) + image1
+    brightness : (factor*image1) + image1
+    '''
+    strength = 0.4 if strength <= 0 else strength # strength should be non-negative
+    x = tf.image.random_brightness(image, max_delta=0.8 * strength)
+    x = tf.clip_by_value(x, 0, 255)
+    return x
 
+def rand_contrast(image, strength):
+    '''source code not found auto_adjustv2 is missing'''
+    strength=0.4
+    x = tf.image.random_contrast(image, lower=1-0.8 * strength, upper=1 + 0.8 * strength)
+    x = tf.clip_by_value(x, 0, 255)
+    return x
 
+def rand_saturation(image, strength):
+    '''no duplicate'''
+    strength=0.2
+    x = tf.image.random_saturation(image, lower=1-0.8*strength, upper=1+0.8 * strength)
+    x = tf.clip_by_value(x, 0, 255)
+    return x
 
+def rand_hue(image, strength):
+    '''no duplicate'''
+    strength = 0.1 if strength <= 0 else strength # strength should be non-negative
+    x = tf.image.random_hue(x, max_delta=0.2*strength)
+    x = tf.clip_by_value(x, 0, 255)
+    return x
 
+def rand_blur(image):  # IMG_SIZE=32,
+    '''
+    Args: 
+      Image: A tensor [height, width, channels]
+      IMG_SIZE: image_size 
+      p: probability of applying transformation 
+    Returns: 
+      A image tensor that Blur
+    '''
+    def gaussian_blur(image, kernel_size, sigma, padding='SAME'):
+        radius = tf.cast((kernel_size / 2), dtype=tf.int32)
+        kernel_size = radius * 2 + 1
+        x = tf.cast(tf.range(-radius, radius + 1), dtype=tf.float32)
+        blur_filter = tf.exp(
+            -tf.pow(x, 2.0) / (2.0 * tf.pow(tf.cast(sigma, dtype=tf.float32), 2.0)))
+        blur_filter /= tf.reduce_sum(blur_filter)
+        # One vertical and one horizontal filter.
+        blur_v = tf.reshape(blur_filter, [kernel_size, 1, 1, 1])
+        blur_h = tf.reshape(blur_filter, [1, kernel_size, 1, 1])
+        num_channels = tf.shape(image)[-1]
+        blur_h = tf.tile(blur_h, [1, 1, num_channels, 1])
+        blur_v = tf.tile(blur_v, [1, 1, num_channels, 1])
+        expand_batch_dim = image.shape.ndims == 3
+        if expand_batch_dim:
+            # Tensorflow requires batched input to convolutions, which we can fake with
+            # an extra dimension.
+            image = tf.expand_dims(image, axis=0)
+        blurred = tf.nn.depthwise_conv2d(
+            image, blur_h, strides=[1, 1, 1, 1], padding=padding)
+        blurred = tf.nn.depthwise_conv2d(
+            blurred, blur_v, strides=[1, 1, 1, 1], padding=padding)
+        if expand_batch_dim:
+            blurred = tf.squeeze(blurred, axis=0)
+        return blurred
 
+    # print(image.shape)
+    IMG_SIZE = image.shape[1]
+    # print(IMG_SIZE)
+    sigma = tf.random.uniform([], 0.1, 2.0, dtype=tf.float32)
+    image_blur = gaussian_blur(
+        image, kernel_size=IMG_SIZE // 10, sigma=sigma, padding='SAME')
+    return image_blur
+
+def color_drop(image):
+    '''
+    Args: 
+      image: Tensor shape of [Height, width, channels]
+
+    Return:
+      A convert RGB-> gray transform 
+    '''
+    x = tf.image.rgb_to_grayscale(image)
+    x = tf.tile(x, [1, 1, 3])
+    return x
+
+################################################
 
 def _randomly_negate_tensor(tensor):
   """With 50% prob turn the tensor negative."""
@@ -596,6 +681,10 @@ def _translate_level_to_arg(level: float, translate_const: float):
 
 def _mult_to_arg(level: float, multiplier: float = 1.):
   return (int((level / _MAX_LEVEL) * multiplier),)
+
+## for SimCLR args transfer
+def _id_to_arg(level: float):
+    return level
 
 
 def _apply_func_with_prob(func: Any, image: tf.Tensor, args: Any, prob: float):
@@ -641,7 +730,14 @@ NAME_TO_FUNC = {
     'TranslateX': translate_x,
     'TranslateY': translate_y,
     'Cutout': cutout,
-
+    # SimCLR transformation
+    'rand_brightness' : rand_brightness,
+    'rand_contrast' : rand_contrast,
+    'rand_saturation' : rand_saturation,
+    'rand_hue' : rand_hue,
+    'rand_blur' : rand_blur,
+    'color_drop' : color drop,
+    
     # 'rand_saturation' : rand_saturation,
     # 'rand_hue': rand_hue, 
     # 'rand_blur': rand_blur, 
@@ -667,7 +763,7 @@ def level_to_arg(cutout_const: float, translate_const: float):
   solarize_add_arg = lambda level: _mult_to_arg(level, 110)
   cutout_arg = lambda level: _mult_to_arg(level, cutout_const)
   translate_arg = lambda level: _translate_level_to_arg(level, translate_const)
-
+  
   args = {
       'AutoContrast': no_arg,
       'Equalize': no_arg,
@@ -685,6 +781,15 @@ def level_to_arg(cutout_const: float, translate_const: float):
       'Cutout': cutout_arg,
       'TranslateX': translate_arg,
       'TranslateY': translate_arg,
+
+      # SimCLR transformation
+      'rand_brightness' : _id_to_arg,
+      'rand_contrast' : _id_to_arg,
+      'rand_saturation' : _id_to_arg,
+      'rand_hue' : _id_to_arg,
+      'rand_blur' : no_arg,
+      'color_drop' : no_arg,
+      
   }
   return args
 
@@ -999,8 +1104,6 @@ class RandAugment(ImageAugment):
     return image, #[] # HACKME : see how can we collect the selected_op..
 
 
-
-
 class Proposed_RandAugment(ImageAugment):
   """Proposed RandAugment policy to images.
   RandAugment is from the paper https://arxiv.org/abs/1909.13719, + Combination with SimCLR Augmentation
@@ -1089,3 +1192,74 @@ class Proposed_RandAugment(ImageAugment):
       image = tf.cast(image, dtype=input_image_type)
       return image, #[] # HACKME : see how can we collect the selected_op..
 
+
+class Extend_RandAugment(ImageAugment):
+    def __init__(self,
+               num_layers: int = 2,
+               magnitude: float = 10.,
+               cutout_const: float = 40.,
+               translate_const: float = 100.):
+    """ Extended version of RandAugment, which also contains the SimCLR transformation """
+    super(Extend_RandAugment, self).__init__()
+
+    self.num_layers = num_layers
+    self.magnitude = float(magnitude)
+    self.cutout_const = float(cutout_const)
+    self.translate_const = float(translate_const)
+    self.available_ops = [
+        # rest of transformation of RandAugment
+        # remove duplicated trafs with SimCLR trfs & not suitable trfs in SSL
+        #  elim_lst = ['Contrast', 'Brightness', 'Cutout', 'Rotate']
+        'AutoContrast', 'Equalize', 'Invert', 'Posterize', 'Solarize', 'Sharpness',
+        'Color', 'SolarizeAdd', 'ShearX', 'ShearY', 'TranslateX', 'TranslateY',
+        # SimCLR transformations
+        'rand_brightness', 'rand_contrast', 'rand_saturation',   
+        'rand_hue', 'rand_blur', 'color drop',
+    ]
+    
+    self.select_op = []
+
+    def distort(self, image: tf.Tensor) -> tf.Tensor:
+        """Applies the RandAugment policy to `image`.
+        Args:
+            image: `Tensor` of shape [height, width, 3] representing an image.
+        Returns:
+            The augmented version of `image`.
+        """
+        input_image_type = image.dtype
+
+        if input_image_type != tf.uint8:
+            image = tf.clip_by_value(image, 0.0, 255.0)
+            image = tf.cast(image, dtype=tf.uint8)
+
+        replace_value = [128] * 3
+        min_prob, max_prob = 0.2, 0.8
+
+        for _ in range(self.num_layers):
+            op_to_select = tf.random.uniform([],
+                                            maxval=len(self.available_ops) + 1,
+                                            dtype=tf.int32)
+
+            branch_fns = []
+            for (i, op_name) in enumerate(self.available_ops):
+            prob = tf.random.uniform([],
+                                    minval=min_prob,
+                                    maxval=max_prob,
+                                    dtype=tf.float32)
+            func, _, args = _parse_policy_info(op_name, prob, self.magnitude,
+                                                replace_value, self.cutout_const,
+                                                self.translate_const)
+            branch_fns.append((
+                i,
+                # pylint:disable=g-long-lambda
+                lambda selected_func=func, selected_args=args: selected_func(
+                    image, *selected_args)))
+            # pylint:enable=g-long-lambda
+            
+            image = tf.switch_case(
+                branch_index=op_to_select,
+                branch_fns=branch_fns,
+                default=lambda: tf.identity(image))
+        
+        image = tf.cast(image, dtype=input_image_type)
+        return image, #[] # HACKME : see how can we collect the selected_op..
