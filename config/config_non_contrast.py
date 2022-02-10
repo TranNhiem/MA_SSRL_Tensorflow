@@ -93,11 +93,11 @@ def base_cfg():
         'Mask path.')
 
     flags.DEFINE_string(   # label data just put it into proj-repo with relative path..
-        'train_label', "./image_net_1k_lable.txt",  #../../Augment_Data_utils/image_net_1k_lable.txt
+        'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",  #../../Augment_Data_utils/image_net_1k_lable.txt
         'train_label.')
 
     flags.DEFINE_string(  # ../../Augment_Data_utils
-        'val_label', "./ILSVRC2012_validation_ground_truth.txt",  # ../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt
+        'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",  # ../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt
         'val_label.')
 
 

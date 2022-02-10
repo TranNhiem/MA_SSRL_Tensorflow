@@ -193,12 +193,12 @@ class Runner(object):
         ##perform data_augmentation by calling the dataloader methods
         ## This mixed strategies Include 4 different Augmentation Strategies
         #[SimCLR, AutoAug, FastAA, RandAug]
-        train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
-                                                       num_transform=1, magnitude=10)
+        # train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
+        #                                                num_transform=1, magnitude=10)
         
         ## This mixed strategies Include 2 different Augmentation Strategies
         #[SimCLR, AutoAug]
-        #train_ds=Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
+        train_ds= self.train_dataset.Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
         # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
@@ -301,7 +301,7 @@ class Runner(object):
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_one, ds_two,,lable_one, lable_two,  ds_3=None, ds_4=None):
+    def __train_step(self, ds_one, ds_two,lable_one, lable_two,  ds_3=None, ds_4=None):
         # Scale loss  --> Aggregating all Gradients
 
         def distributed_loss_2_strategies(x1, x2, x3, x4):
