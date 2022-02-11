@@ -193,12 +193,12 @@ class Runner(object):
         ##perform data_augmentation by calling the dataloader methods
         ## This mixed strategies Include 4 different Augmentation Strategies
         #[SimCLR, AutoAug, FastAA, RandAug]
-        # train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
-        #                                                num_transform=1, magnitude=10)
+        train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
+                                                       num_transform=1, magnitude=10)
         
         ## This mixed strategies Include 2 different Augmentation Strategies
         #[SimCLR, AutoAug]
-        train_ds= self.train_dataset.Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
+        #train_ds= self.train_dataset.Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
         # performing Linear-protocol
         val_ds = self.train_dataset.supervised_validation()
 
@@ -270,7 +270,7 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            if (epoch + 1) % 20 == 0:
+            if (epoch + 1) % 10 == 0:
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
@@ -312,7 +312,7 @@ class Runner(object):
             # total sum loss //Global batch_size
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_batch_size)
-
+            loss= 2 - 2*loss
             return loss, logits_ab, labels
 
         # Get the data from

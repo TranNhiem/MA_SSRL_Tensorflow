@@ -187,8 +187,9 @@ class Runner(object):
         self.metric_dict = metric_dict = get_metrics()
 
         # this RandAug_strategy apply the extended version of the policy space which includeing the SimCLR policy
-        train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
-                                                       num_transform=1, magnitude=15)
+        # train_ds = self.train_dataset.RandAug_strategy(crop_type=da_crp_key,
+        #                                                num_transform=1, magnitude=15)
+        train_ds= self.train_dataset.simclr_strategy(crop_type=da_crp_key)
         
         #train_ds = self.train_dataset.AutoAug_strategy(
         #   crop_type=da_crp_key, policy_type="v1")

@@ -260,7 +260,7 @@ def byol_2_augmentation_loss(v1, v2, v3, v4,  temperature, weight_loss=0.5):
     loss_aug1, logits_ab, labels= byol_loss_v1(v1, v2, temperature)
     loss_aug2, _, _= byol_loss_v1(v3, v4, temperature)
 
-    loss= weight_loss*loss_aug1 +  (1-weight_loss)* loss_aug2
+    loss= weight_loss*loss_aug1 +  (1.0-weight_loss)* loss_aug2
 
     return loss, logits_ab, labels
 

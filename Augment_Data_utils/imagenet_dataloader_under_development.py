@@ -671,6 +671,29 @@ class Imagenet_dataset(object):
             
         return self.strategy.experimental_distribute_dataset(train_ds)
     
+    def simclr_strategy(self, crop_type="incpt_crp",):
+        if not crop_type in Imagenet_dataset.crop_dict.keys():
+            raise ValueError(
+                f"The given cropping strategy {crop_type} is not supported")
+
+        ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+
+        # unstable-version: memory issue disable
+        # ds = self.get_imgnet_ds()
+        # tf.print(f"\n\ndataset content : {ds} \n; len : {len(ds)}\n\n")
+        train_ds= ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
+                                    (self.SimCLR_Augment_crop(x,  crop_type=crop_type), y)),  num_parallel_calls=AUTO)\
+                    .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+       
+        if FLAGS.dataloader: 
+            print("Implement dataloader with_option")
+            train_ds.with_options(options)
+        else: 
+            print("Not implement with option")
+            
+        return train_ds #self.strategy.experimental_distribute_dataset(train_ds)
+
     # in some degree, multi-view is complete ~ ~
     def multi_view_data_aug(self, da_func=None, da_type=None):
         mv = Multi_viewer(da_inst=da_func)
