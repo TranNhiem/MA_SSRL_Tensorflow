@@ -692,7 +692,7 @@ class Imagenet_dataset(object):
         else: 
             print("Not implement with option")
             
-        return train_ds #self.strategy.experimental_distribute_dataset(train_ds)
+        return  self.strategy.experimental_distribute_dataset(train_ds)
 
     # in some degree, multi-view is complete ~ ~
     def multi_view_data_aug(self, da_func=None, da_type=None):
