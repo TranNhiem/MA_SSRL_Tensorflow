@@ -274,11 +274,11 @@ class Imagenet_dataset(object):
             if FLAGS.resize_wrap_ds:
                 img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                     .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                    .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+                    .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)#.cache()
 
             else:
                 img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO).cache()
+                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)#.cache()
 
         elif FLAGS.training_loop =="multi_views": 
             print("Multi_Views Wrap_ds")
