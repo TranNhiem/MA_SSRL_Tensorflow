@@ -53,8 +53,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.train_epochs = 300
     FLAGS.num_classes = 100
 
-    FLAGS.train_batch_size = 128
-    FLAGS.val_batch_size = 128
+    FLAGS.train_batch_size = 256
+    FLAGS.val_batch_size = 256
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
     FLAGS.model_dir = "/data1/data1/multi_augment_project/resnet_byol/Res-18_RandCropt_Extend_SimCLR_Augment_100CLS_300eps"
