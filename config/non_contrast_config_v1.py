@@ -19,7 +19,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Res-18_RandCropt_Extend_RandAug_1_10_SimCLR_Augment_100CLS"
+    FLAGS.wandb_run_name = "Res-18_RandCropt_SimCLR_Augment_100CLS_300eps"
     FLAGS.wandb_mod = "online"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -35,9 +35,11 @@ def read_cfg_base(mod="non_contrastive"):
 
     # byol_asymmetrized_loss (2 options --> Future Update with Mixed Loss)
     FLAGS.loss_type = "byol_symmetrized_loss"
-    FLAGS.Loss_global_local ="cos_schedule" # cos_schedule or {passing any strings}
-    FLAGS.alpha_base=0.7 # The base_value of Alpha
-    FLAGS.alpha= 0.8 # Alpha values is  weighted loss between (Global and Local) Views
+    # cos_schedule or {passing any strings}
+    FLAGS.Loss_global_local = "cos_schedule"
+    FLAGS.alpha_base = 0.7  # The base_value of Alpha
+    # Alpha values is  weighted loss between (Global and Local) Views
+    FLAGS.alpha = 0.8
     # two options [fixed_value, schedule] schedule recommend from BYOL
     FLAGS.moving_average = "schedule"
     # ['fp16', 'fp32'],  # fp32 is original precision
@@ -48,17 +50,17 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.base_lr = 0.3
 
     FLAGS.resnet_depth = 18
-    FLAGS.train_epochs = 100
+    FLAGS.train_epochs = 300
     FLAGS.num_classes = 100
 
     FLAGS.train_batch_size = 128
     FLAGS.val_batch_size = 128
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data/multi_augment_project/resnet_byol/Res-18_RandCropt_Extend_RandAug_1_10_SimCLR_Augment_100CLS"
+    FLAGS.model_dir = "/data1/data1/multi_augment_project/resnet_byol/Res-18_RandCropt_Extend_SimCLR_Augment_100CLS_300eps"
     #FLAGS.train_mode = "finetune"
 
-    # ds ratio 
+    # ds ratio
     FLAGS.tra_ds_ratio = 40
     FLAGS.subset_percentage = 1.0
     FLAGS.n_cls = FLAGS.num_classes

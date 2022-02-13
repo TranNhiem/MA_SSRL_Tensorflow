@@ -56,7 +56,6 @@ def base_cfg():
         'num_classes', 100,
         'Number of class in training data.')
 
-
     flags.DEFINE_float(
         'subset_percentage', 1.0,
         'subset percentage of training data.')
@@ -80,11 +79,11 @@ def base_cfg():
         'Whether to Resize within Wrap_ds or resize in.__wrap_da')
 
     flags.DEFINE_string(  # Mount dataset under the specific mount point in the docker (it will not chnage)
-        'train_path', '/data/train',
+        'train_path', '/data1/data1/train',
         'Train dataset path.')
 
     flags.DEFINE_string(  # fixed mount point in the docker
-        'val_path', '/data/val',
+        'val_path', '/data1/data1/val',
         'Validaion dataset path.')
 
     # Mask_folder should locate in location and same level of train folder
@@ -93,11 +92,13 @@ def base_cfg():
         'Mask path.')
 
     flags.DEFINE_string(   # label data just put it into proj-repo with relative path..
-        'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",  #../../Augment_Data_utils/image_net_1k_lable.txt
+        # ../../Augment_Data_utils/image_net_1k_lable.txt
+        'train_label', "../../Augment_Data_utils/image_net_1k_lable.txt",
         'train_label.')
 
     flags.DEFINE_string(  # ../../Augment_Data_utils
-        'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",  # ../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt
+        # ../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt
+        'val_label', "../../Augment_Data_utils/ILSVRC2012_validation_ground_truth.txt",
         'val_label.')
 
 
@@ -340,8 +341,6 @@ def Configure_Model_Training():
         'loss_type', 'byol_asymmetrized_loss', [
             'byol_asymmetrized_loss', 'byol_symmetrized_loss', 'byol_mixed_loss'],
         'List of loss objective for optimize model.')
-    
-
 
     flags.DEFINE_enum(
         'training_loop', 'two_views', [
@@ -355,7 +354,7 @@ def Configure_Model_Training():
         'Loss_global_local', 'schedule', [
             'schedule', 'original'],
         'Aggregate loss between Local & Global Loss.')
-    
+
     flags.DEFINE_float(
         'alpha_base', 0.8,
         'alpha_base_value is starting Value --> accumulate value over training steps')
