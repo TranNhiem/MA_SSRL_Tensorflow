@@ -693,7 +693,33 @@ class Imagenet_dataset(object):
             print("Not implement with option")
             
         return  self.strategy.experimental_distribute_dataset(train_ds)
+    
+    def extend_RandAug_and_simclr_strategy(self,crop_type="incpt_crp",num_transform=2, magnitude=7): 
+        
+        if not crop_type in Imagenet_dataset.crop_dict.keys():
+            raise ValueError(
+                f"The given cropping strategy {crop_type} is not supported")
 
+        ds = self.wrap_ds(self.x_train, self.x_train_lable)
+        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+
+        # unstable-version:
+        #ds_dict = self.get_imgnet_ds()
+        # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
+        train_ds = ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x,crop_type=crop_type ), y),
+                                        (self.SimCLR_Augment_crop(x,crop_type=crop_type ), y),
+                                        (self.Rand_Augment_crop(x,num_transform=num_transform, magnitude=magnitude,crop_type=crop_type), y),
+                                        (self.Rand_Augment_crop(x,num_transform=num_transform, magnitude=magnitude,crop_type=crop_type), y) ), num_parallel_calls=AUTO) \
+                             .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+            
+        if FLAGS.dataloader: 
+            print("Implement dataloader with_option")
+            train_ds.with_options(options)
+        else: 
+            print("Not implement with option")
+            
+        return self.strategy.experimental_distribute_dataset(train_ds)
+    
     # in some degree, multi-view is complete ~ ~
     def multi_view_data_aug(self, da_func=None, da_type=None):
         mv = Multi_viewer(da_inst=da_func)

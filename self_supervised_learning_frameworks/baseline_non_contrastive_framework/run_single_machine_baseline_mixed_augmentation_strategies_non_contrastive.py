@@ -193,13 +193,14 @@ class Runner(object):
         ##perform data_augmentation by calling the dataloader methods
         ## This mixed strategies Include 4 different Augmentation Strategies
         #[SimCLR, AutoAug, FastAA, RandAug]
-        train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
-                                                       num_transform=1, magnitude=10)
+        # train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
+        #                                                num_transform=1, magnitude=10)
         
         ## This mixed strategies Include 2 different Augmentation Strategies
         #[SimCLR, AutoAug]
         #train_ds= self.train_dataset.Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
         # performing Linear-protocol
+        train_ds = self.train_dataset.extend_RandAug_and_simclr_strategy(crop_type=da_crp_key,num_transform=1, magnitude=10)
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
