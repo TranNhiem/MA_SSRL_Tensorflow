@@ -83,7 +83,7 @@ def base_cfg():
         'Train dataset path.')
 
     flags.DEFINE_string(  # fixed mount point in the docker
-        'val_path', '/data1/1k_New/val',
+        'val_path', '/data1/1K_New/val',
         'Validaion dataset path.')
 
     # Mask_folder should locate in location and same level of train folder
