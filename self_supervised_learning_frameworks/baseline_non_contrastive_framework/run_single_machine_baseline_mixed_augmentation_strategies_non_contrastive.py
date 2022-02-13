@@ -40,7 +40,7 @@ def set_gpu_env(n_gpus=8):
 
 class Runner(object):
     def __init__(self, FLAGS, wanda_cfg=None):
-        
+
         # Configure Wandb Training & for Weight and Bias Tracking Experiment
         def wandb_init(wanda_cfg):
             if wanda_cfg:
@@ -70,7 +70,7 @@ class Runner(object):
         train_global_batch = self.train_batch_size * self.strategy.num_replicas_in_sync
         val_global_batch = self.val_batch_size * self.strategy.num_replicas_in_sync
         ds_args = {'img_size': self.image_size, 'train_path': self.train_path, 'val_path': self.val_path,
-                   'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes,"subset_percentage": self.subset_percentage,
+                   'train_label': self.train_label, 'val_label': self.val_label, 'subset_class_num': self.num_classes, "subset_percentage": self.subset_percentage,
                    'train_batch': train_global_batch, 'val_batch': val_global_batch, 'strategy': self.strategy, 'seed': self.SEED}
         # Dataloader V2 already be proposed as formal data_loader
         train_dataset = Imagenet_dataset(**ds_args)
@@ -84,16 +84,17 @@ class Runner(object):
         wandb_init(wanda_cfg)
         self.summary_writer = tf.summary.create_file_writer(self.model_dir)
 
-        checkpoint_steps = (self.checkpoint_steps or (self.checkpoint_epochs * self.epoch_steps))
+        checkpoint_steps = (self.checkpoint_steps or (
+            self.checkpoint_epochs * self.epoch_steps))
 
         # record var into self
         self.train_global_batch, self.val_global_batch = train_global_batch, val_global_batch
         self.n_tra_sample = n_tra_sample
         self.train_dataset = train_dataset
-        self.training_steps =  int(
-        n_tra_sample * FLAGS.train_epochs // train_global_batch) * 4
+        self.training_steps = int(
+            n_tra_sample * FLAGS.train_epochs // train_global_batch) * 4
         self.evaluating_steps = int(
-        math.ceil(n_evl_sample / val_global_batch))
+            math.ceil(n_evl_sample / val_global_batch))
 
     def train(self, exe_mode, da_crp_key="rnd_crp"):
         # Configure the Encoder Architecture
@@ -183,24 +184,25 @@ class Runner(object):
                 "eval/label_top_1_accuracy": result["eval/label_top_1_accuracy"],
                 "eval/label_top_5_accuracy": result["eval/label_top_5_accuracy"],
             })
-            
+
         # prepare train related obj
         self.online_model, self.prediction_model, self.target_model = get_gpu_model()
         # assign to self.opt to prevent the namespace covered
         lr_schedule, optimizer = _, self.opt = get_optimizer()
         self.metric_dict = metric_dict = get_metrics()
 
-        ##perform data_augmentation by calling the dataloader methods
-        ## This mixed strategies Include 4 different Augmentation Strategies
+        # perform data_augmentation by calling the dataloader methods
+        # This mixed strategies Include 4 different Augmentation Strategies
         #[SimCLR, AutoAug, FastAA, RandAug]
-        # train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key,auto_policy_type="v1", Fast_policy_type="imagenet", 
-        #                                                num_transform=1, magnitude=10)
-        
-        ## This mixed strategies Include 2 different Augmentation Strategies
+        train_ds = self.train_dataset.mixed_strategy(crop_type=da_crp_key, auto_policy_type="v1", Fast_policy_type="imagenet",
+                                                     num_transform=1, magnitude=10)
+
+        # This mixed strategies Include 2 different Augmentation Strategies
         #[SimCLR, AutoAug]
         #train_ds= self.train_dataset.Auto_and_simclr_strategy(crop_type=da_crp_key,auto_policy_type="v1",)
         # performing Linear-protocol
-        train_ds = self.train_dataset.extend_RandAug_and_simclr_strategy(crop_type=da_crp_key,num_transform=1, magnitude=10)
+        # train_ds = self.train_dataset.extend_RandAug_and_simclr_strategy(
+        #     crop_type=da_crp_key, num_transform=1, magnitude=10)
         val_ds = self.train_dataset.supervised_validation()
 
         # Check and restore Ckpt if it available
@@ -215,10 +217,12 @@ class Runner(object):
             num_batches = 0
 
             for _, ds_train in enumerate(train_ds):
-               
-                (ds_one, lable_one), (ds_two, lable_two), (ds_3, _), (ds_4, _)= ds_train
-                    
-                total_loss += self.__distributed_train_step_2_strategies(ds_one, ds_two,lable_one, lable_two, ds_3, ds_4) 
+
+                (ds_one, lable_one), (ds_two,
+                                      lable_two), (ds_3, _), (ds_4, _) = ds_train
+
+                total_loss += self.__distributed_train_step_2_strategies(
+                    ds_one, ds_two, lable_one, lable_two, ds_3, ds_4)
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
@@ -251,7 +255,6 @@ class Runner(object):
                     tf.summary.scalar('learning_rate', lr_schedule(tf.cast(global_step, dtype=tf.float32)),
                                       global_step)
                     self.summary_writer.flush()
-
 
             epoch_loss = total_loss/num_batches
             log_wandb(epoch, epoch_loss, metric_dict)
@@ -295,14 +298,14 @@ class Runner(object):
     # Training sub_procedure :
 
     @tf.function
-    def __distributed_train_step_2_strategies(self, ds_one, ds_two,lable_one, lable_two, ds_3, ds_4):
+    def __distributed_train_step_2_strategies(self, ds_one, ds_two, lable_one, lable_two, ds_3, ds_4):
         per_replica_losses = self.strategy.run(
             self.__train_step, args=(ds_one, ds_two, lable_one, lable_two, ds_3, ds_4))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                     axis=None)
 
     @tf.function
-    def __train_step(self, ds_one, ds_two,lable_one, lable_two,  ds_3=None, ds_4=None):
+    def __train_step(self, ds_one, ds_two, lable_one, lable_two,  ds_3=None, ds_4=None):
         # Scale loss  --> Aggregating all Gradients
 
         def distributed_loss_2_strategies(x1, x2, x3, x4):
@@ -313,11 +316,10 @@ class Runner(object):
             # total sum loss //Global batch_size
             loss = tf.reduce_sum(per_example_loss) * \
                 (1./self.train_batch_size)
-            loss= 2 - 2*loss
+            loss = 2 - 2*loss
             return loss, logits_ab, labels
 
         # Get the data from
-
 
         with tf.GradientTape(persistent=True) as tape:
 
@@ -333,28 +335,25 @@ class Runner(object):
             # Passing image 1, image 2 to Online Encoder , Target Encoder
             # -------------------------------------------------------------
 
-        
             # Online (ds_1; ds_3)
             proj_head_output_1, supervised_head_output_1 = self.online_model(
                 ds_one, training=True)
             proj_head_output_1 = self.prediction_model(
                 proj_head_output_1, training=True)
 
-
             proj_head_output_3, supervised_head_output_3 = self.online_model(
                 ds_3, training=True)
-            
+
             proj_head_output_3 = self.prediction_model(
                 proj_head_output_3, training=True)
 
             # Target (ds_2; ds_4)
             proj_head_output_2, supervised_head_output_2 = self.target_model(
                 ds_two, training=True)
-            
+
             proj_head_output_4, supervised_head_output_4 = self.target_model(
                 ds_4, training=True)
-            
-            
+
             # -------------------------------------------------------------
             # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
             # -------------------------------------------------------------
@@ -365,21 +364,19 @@ class Runner(object):
             proj_head_output_2_online = self.prediction_model(
                 proj_head_output_2_online, training=True)
 
-
             proj_head_output_4_online, _ = self.online_model(
                 ds_4, training=True)
-            
+
             proj_head_output_4_online = self.prediction_model(
                 proj_head_output_4_online, training=True)
 
             # Target (ds_1; ds_3)
             proj_head_output_1_target, _ = self.target_model(
                 ds_one, training=True)
-            
+
             proj_head_output_3_target, _ = self.target_model(
                 ds_3, training=True)
-            
-            
+
             # Compute Contrastive Train Loss -->
             loss = None
             if proj_head_output_1 is not None:
@@ -402,11 +399,10 @@ class Runner(object):
 
                 # Update Self-Supervised Metrics
                 metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                        self.metric_dict['contrast_acc_metric'],
-                                                        self.metric_dict['contrast_entropy_metric'],
-                                                        loss, logits_ab,
-                                                        labels)
-
+                                                      self.metric_dict['contrast_acc_metric'],
+                                                      self.metric_dict['contrast_entropy_metric'],
+                                                      loss, logits_ab,
+                                                      labels)
 
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
@@ -415,7 +411,6 @@ class Runner(object):
             if supervised_head_output_1 is not None:
 
                 if self.train_mode == 'pretrain' and self.lineareval_while_pretraining:
-
 
                     outputs = tf.concat(
                         [supervised_head_output_1, supervised_head_output_2], 0)
@@ -432,8 +427,8 @@ class Runner(object):
                     #     sup_loss) * (1./train_global_batch)
                     # Update Supervised Metrics
                     metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
-                                                            self.metric_dict['supervised_acc_metric'],
-                                                            scale_sup_loss, supervise_lable, outputs)
+                                                          self.metric_dict['supervised_acc_metric'],
+                                                          scale_sup_loss, supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient

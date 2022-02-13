@@ -19,7 +19,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Res-18_RandCropt_SimCLR_Augment_100CLS_300eps"
+    FLAGS.wandb_run_name = "Res-18_RandCropt_mixed_Augment_100CLS_300eps"
     FLAGS.wandb_mod = "online"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -57,7 +57,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.val_batch_size = 256
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "/data1/multi_augment_project/resnet_byol/Res_18_RandCropt_Extend_SimCLR_Augment_100CLS_300eps"
+    FLAGS.model_dir = "./multi_augment_project/resnet_byol/18_RandCropt_mixed_Augment_100CLS_300eps"
     #FLAGS.train_mode = "finetune"
 
     # ds ratio
