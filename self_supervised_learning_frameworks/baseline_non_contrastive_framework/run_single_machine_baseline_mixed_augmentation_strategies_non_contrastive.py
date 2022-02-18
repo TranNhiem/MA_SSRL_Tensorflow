@@ -96,7 +96,7 @@ class Runner(object):
         self.evaluating_steps = int(
             math.ceil(n_evl_sample / val_global_batch))
 
-    def train(self, exe_mode, da_crp_key="rnd_crp"):
+    def train(self, exe_mode, da_crp_key="incpt_crp"):
         # Configure the Encoder Architecture
         def get_gpu_model():
             with self.strategy.scope():
