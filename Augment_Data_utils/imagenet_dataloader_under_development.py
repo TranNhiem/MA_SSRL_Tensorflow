@@ -29,7 +29,7 @@ options.experimental_optimization.noop_elimination = True
 options.experimental_optimization.map_and_batch_fusion = True
 options.experimental_optimization.map_parallelization = True
 options.experimental_optimization.apply_default_optimizations = True
-#options.experimental_deterministic = False
+options.experimental_deterministic = False
 options.experimental_threading.max_intra_op_parallelism = 1
 # Shard policy using multi-machines training
 # options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.AUTO

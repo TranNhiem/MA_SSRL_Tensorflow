@@ -263,7 +263,7 @@ class Runner(object):
                 metric.reset_states()
 
             # Saving Entire Model
-            if (epoch+1) % 20 == 0:
+            if (epoch+1) % 200 == 0:
                 save_encoder = os.path.join(
                     self.model_dir, f"encoder_model_{epoch}.h5")
                 save_online_model = os.path.join(
@@ -275,7 +275,7 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            if (epoch + 1) % 10 == 0:
+            if (epoch + 1) % 50 == 0:
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
@@ -484,10 +484,10 @@ class Runner(object):
             fp16_grads = [tf.cast(grad, 'float16') for grad in fp32_grads]
             all_reduce_fp16_grads = tf.distribute.get_replica_context(
             ).all_reduce(tf.distribute.ReduceOp.SUM, fp16_grads)
-            # all_reduce_fp32_grads = [
-            #     tf.cast(grad, 'float32') for grad in all_reduce_fp16_grads]
-            all_reduce_fp32_grads = self.opt.get_unscaled_gradients(
-                all_reduce_fp16_grads)
+            all_reduce_fp32_grads = [
+                tf.cast(grad, 'float32') for grad in all_reduce_fp16_grads]
+            # all_reduce_fp32_grads = self.opt.get_unscaled_gradients(
+            #     all_reduce_fp16_grads)
 
             self.opt.apply_gradients(zip(all_reduce_fp32_grads, self.online_model.trainable_variables),
                                      experimental_aggregate_gradients=False)
@@ -497,10 +497,10 @@ class Runner(object):
             fp16_grads = [tf.cast(grad, 'float16')for grad in fp32_grads]
             all_reduce_fp16_grads = tf.distribute.get_replica_context(
             ).all_reduce(tf.distribute.ReduceOp.SUM, fp16_grads)
-            # all_reduce_fp32_grads = [
-            #     tf.cast(grad, 'float32') for grad in all_reduce_fp16_grads]
-            all_reduce_fp32_grads = self.opt.get_unscaled_gradients(
-                all_reduce_fp16_grads)
+            all_reduce_fp32_grads = [
+                tf.cast(grad, 'float32') for grad in all_reduce_fp16_grads]
+            # all_reduce_fp32_grads = self.opt.get_unscaled_gradients(
+            #     all_reduce_fp16_grads)
             self.opt.apply_gradients(zip(
                 all_reduce_fp32_grads, self.prediction_model.trainable_variables),
                 experimental_aggregate_gradients=False)

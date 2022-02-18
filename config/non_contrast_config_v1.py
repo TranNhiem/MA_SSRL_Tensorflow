@@ -49,15 +49,15 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
 
-    FLAGS.resnet_depth = 18
+    FLAGS.resnet_depth = 50
     FLAGS.train_epochs = 300
-    FLAGS.num_classes = 100
+    FLAGS.num_classes = 1000
 
     FLAGS.train_batch_size = 256
     FLAGS.val_batch_size = 256
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
-    FLAGS.model_dir = "./multi_augment_project/resnet_byol/Res-18_RandCropt_AutoAugment_SimCLR_Augment_100CLS_300eps"
+    FLAGS.model_dir = "/data1/MASSL_Official_save_model/resnet_byol/Res-50_RandCropt_AutoAugment_SimCLR_Augment_1000eps"
     #FLAGS.train_mode = "finetune"
 
     # ds ratio
