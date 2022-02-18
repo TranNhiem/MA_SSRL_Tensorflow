@@ -12,14 +12,14 @@ def read_cfg_base(mod="non_contrastive"):
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = True
-    FLAGS.mode_prefetch = 25  # if set it to 1 will Use AUTO
+    FLAGS.mode_prefetch = 1  # if set it to 1 will Use AUTO
     # ["custome", "TFA_API"] # Current suport TFA_API
     FLAGS.auto_augment = "custome"
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
     FLAGS.resize_wrap_ds = True
 
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
-    FLAGS.wandb_run_name = "Res-18_RandCropt_AutoAugment_SimCLR_Augment_100CLS_300eps"
+    FLAGS.wandb_run_name = "Res-50_RandCropt_AutoAugment_SimCLR_Augment_1000eps"
     FLAGS.wandb_mod = "online"
     FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
 
@@ -50,11 +50,11 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.base_lr = 0.3
 
     FLAGS.resnet_depth = 50
-    FLAGS.train_epochs = 300
+    FLAGS.train_epochs = 1000
     FLAGS.num_classes = 1000
 
-    FLAGS.train_batch_size = 256
-    FLAGS.val_batch_size = 256
+    FLAGS.train_batch_size = 400
+    FLAGS.val_batch_size = 400
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
     FLAGS.model_dir = "/data1/MASSL_Official_save_model/resnet_byol/Res-50_RandCropt_AutoAugment_SimCLR_Augment_1000eps"
