@@ -246,3 +246,35 @@ WEIGHTS_HASHES = {
     "y320": ("b05e173e4ae635cfa22d06392ee3741284d17dadfee68f2aa6fd8cb2b7561112",
              "cad78f74a586e24c61d38be17f3ae53bb9674380174d2585da1a526b8c20e1fd")
 }
+
+## III. testing metadata
+import numpy as np
+# HACKME : if you can find the params table for RegNet 
+TEST_REGNET_PARAMS = {
+    # RegNet 'X' 
+    "RegNetX002" : np.inf,
+    "RegNetX004" : np.inf,
+    "RegNetX006" : np.inf,
+    "RegNetX008" : np.inf,
+    "RegNetX016" : np.inf,
+    "RegNetX032" : np.inf,
+    "RegNetX040" : np.inf,
+    "RegNetX064" : np.inf,
+    "RegNetX080" : np.inf,
+    "RegNetX120" : np.inf,
+    "RegNetX160" : np.inf,
+    "RegNetX320" : np.inf,
+    # RegNet 'Y'
+    "RegNetY002" : np.inf,
+    "RegNetY004" : np.inf,
+    "RegNetY006" : np.inf,
+    "RegNetY008" : np.inf,
+    "RegNetY016" : np.inf,
+    "RegNetY032" : np.inf,
+    "RegNetY040" : np.inf,
+    "RegNetY064" : np.inf,
+    "RegNetY080" : np.inf,
+    "RegNetY120" : np.inf,
+    "RegNetY160" : np.inf,
+    "RegNetY320" : np.inf
+}
