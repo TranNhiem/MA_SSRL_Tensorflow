@@ -12,7 +12,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     # , ['ds_1_2_options', 'train_ds_options'],
     FLAGS.dataloader = True
-    FLAGS.mode_prefetch = 1  # if set it to 1 will Use AUTO
+    FLAGS.mode_prefetch = 25  # if set it to 1 will Use AUTO
     # ["custome", "TFA_API"] # Current suport TFA_API
     FLAGS.auto_augment = "custome"
     # set True will resize inside wrap_ds else resize in Wrap_da STEP
@@ -53,8 +53,8 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.train_epochs = 1000
     FLAGS.num_classes = 1000
 
-    FLAGS.train_batch_size = 400
-    FLAGS.val_batch_size = 400
+    FLAGS.train_batch_size = 256
+    FLAGS.val_batch_size = 256
     #FLAGS.model_dir = "./model_ckpt/autoDA"
     #FLAGS.model_dir = "./model_ckpt/testMV"
     FLAGS.model_dir = "/data1/MASSL_Official_save_model/resnet_byol/Res-50_RandCropt_AutoAugment_SimCLR_Augment_1000eps"
