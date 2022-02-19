@@ -21,7 +21,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.wandb_project_name = "mutli_augmentation_strategies"
     FLAGS.wandb_run_name = "Res-50_RandCropt_AutoAugment_SimCLR_Augment_1000eps"
     FLAGS.wandb_mod = "online"
-    FLAGS.restore_checkpoint = False  # Restore Checkpoint or Not
+    FLAGS.restore_checkpoint = True  # Restore Checkpoint or Not
 
     '''
         The middle layer output control the feature map size
@@ -51,7 +51,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.resnet_depth = 50
     FLAGS.train_epochs = 1000
-    FLAGS.num_classes = 1000
+    FLAGS.num_classes = 100
 
     FLAGS.train_batch_size = 256
     FLAGS.val_batch_size = 256
