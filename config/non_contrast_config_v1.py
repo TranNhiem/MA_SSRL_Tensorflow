@@ -49,7 +49,7 @@ def read_cfg_base(mod="non_contrastive"):
     FLAGS.XLA_compiler = "original"
     FLAGS.base_lr = 0.3
 
-    FLAGS.resnet_depth = 50
+    FLAGS.resnet_depth = 18
     FLAGS.train_epochs = 1000
     FLAGS.num_classes = 100
 
