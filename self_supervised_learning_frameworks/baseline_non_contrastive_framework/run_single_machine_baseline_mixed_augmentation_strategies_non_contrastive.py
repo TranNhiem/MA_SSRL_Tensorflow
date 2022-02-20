@@ -20,8 +20,7 @@ import os
 # https://github.com/tensorflow/tensorflow/issues/25724
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 os.environ['TF_GPU_THREAD_COUNT'] = '2'
-
-
+print("teststtt ReNet50")
 # Utils function
 # Setting GPU
 def set_gpu_env(n_gpus=8):
@@ -316,7 +315,7 @@ class Runner(object):
 
             # total sum loss //Global batch_size
             loss = tf.reduce_sum(per_example_loss) * \
-                (1./self.train_batch_size)
+                (1./self.train_global_batch)
             loss = 2 - 2*loss
             return loss, logits_ab, labels
 
@@ -342,7 +341,7 @@ class Runner(object):
             proj_head_output_1 = self.prediction_model(
                 proj_head_output_1, training=True)
 
-            proj_head_output_3, supervised_head_output_3 = self.online_model(
+            proj_head_output_3, _ = self.online_model(
                 ds_3, training=True)
 
             proj_head_output_3 = self.prediction_model(
@@ -352,7 +351,7 @@ class Runner(object):
             proj_head_output_2, supervised_head_output_2 = self.target_model(
                 ds_two, training=True)
 
-            proj_head_output_4, supervised_head_output_4 = self.target_model(
+            proj_head_output_4, _ = self.target_model(
                 ds_4, training=True)
 
             # -------------------------------------------------------------

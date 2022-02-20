@@ -23,7 +23,7 @@ os.environ['TF_GPU_THREAD_COUNT'] = '2'
 
 # Utils function
 # Setting GPU
-
+print("Tesst----ResNet50")
 
 def set_gpu_env(n_gpus=8):
     gpus = tf.config.experimental.list_physical_devices('GPU')
