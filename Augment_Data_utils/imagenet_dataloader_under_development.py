@@ -280,6 +280,7 @@ class Imagenet_dataset(object):
             print("Two_Views Wrap_ds")
             if FLAGS.resize_wrap_ds:
                 img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                    .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
                     .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
                     .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
@@ -657,7 +658,7 @@ class Imagenet_dataset(object):
                 f"The given cropping strategy {crop_type} is not supported")
 
         ds = self.wrap_ds(self.x_train, self.x_train_lable)
-        ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
+        #ds = ds.shuffle(self.BATCH_SIZE * 100, seed=self.seed)
 
         # unstable-version:
         #ds_dict = self.get_imgnet_ds()

@@ -18,9 +18,12 @@ import os
 
 # For setting GPUs Thread reduce kernel Luanch Delay
 # https://github.com/tensorflow/tensorflow/issues/25724
-os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-os.environ['TF_GPU_THREAD_COUNT'] = '2'
-print("teststtt ReNet50")
+# os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+# os.environ['TF_GPU_THREAD_COUNT'] = '2'
+os.environ['TF_GPU_THREAD_MODE'] = 'gpu_shared'
+os.environ['TF_GPU_THREAD_COUNT'] = '16'
+
+
 # Utils function
 # Setting GPU
 def set_gpu_env(n_gpus=8):
@@ -262,7 +265,7 @@ class Runner(object):
                 metric.reset_states()
 
             # Saving Entire Model
-            if (epoch+1) % 200 == 0:
+            if (epoch+1) % 50 == 0:
                 save_encoder = os.path.join(
                     self.model_dir, f"encoder_model_{epoch}.h5")
                 save_online_model = os.path.join(
@@ -274,7 +277,7 @@ class Runner(object):
                 self.target_model.save_weights(save_target_model)
             logging.info('Training Complete ...')
 
-            if (epoch + 1) % 50 == 0:
+            if (epoch + 1) % 20 == 0:
                 FLAGS.train_mode = 'finetune'
                 result = perform_evaluation(self.online_model, val_ds, self.evaluating_steps,
                                             checkpoint_manager.latest_checkpoint, self.strategy)
