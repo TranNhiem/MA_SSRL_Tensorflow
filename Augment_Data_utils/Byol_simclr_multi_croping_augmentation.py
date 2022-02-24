@@ -424,9 +424,9 @@ def simclr_augment_randcrop_global_views(image, IMG_SIZE):
 
     image = rand_distribe_crop_global_local_views_flip(
         image, IMG_SIZE, min_scale, max_scale, high_resol=True)
-    image = random_apply(color_jitter, p=0.8, x=image, )
-    image = random_apply(color_drop, p=0.2, x=image, )
-    image = random_apply(random_blur, p=1.0, x=image,)
+    # image = random_apply(color_jitter, p=0.8, x=image, )
+    # image = random_apply(color_drop, p=0.2, x=image, )
+    # image = random_apply(random_blur, p=1.0, x=image,)
     #image = image/255.
     return image
 
@@ -441,9 +441,9 @@ def simclr_augment_inception_style(image, IMG_SIZE):
 
     image = inception_style_croping(image, IMG_SIZE, IMG_SIZE)
 
-    image = random_apply(color_jitter, p=0.8, x=image, )
-    image = random_apply(color_drop, p=0.2, x=image, )
-    image = random_apply(random_blur, p=1.0, x=image,)
+    # image = random_apply(color_jitter, p=0.8, x=image, )
+    # image = random_apply(color_drop, p=0.2, x=image, )
+    # image = random_apply(random_blur, p=1.0, x=image,)
     #image = image/255.
     return image
 # @tf.function

@@ -279,9 +279,15 @@ class Imagenet_dataset(object):
         if FLAGS.training_loop == "two_views":
             print("Two_Views Wrap_ds")
             if FLAGS.resize_wrap_ds:
+                # img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                #     .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+                #     .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                #     .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+                
                 img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                     .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                    .interleave(map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO),cycle_length=AUTO, num_parallel_calls=None,
+                                    deterministic=False ) \
                     .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
 
             else:
@@ -663,13 +669,19 @@ class Imagenet_dataset(object):
         # unstable-version:
         #ds_dict = self.get_imgnet_ds()
         # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
-        train_ds = ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
-                                        (self.SimCLR_Augment_crop(
-                                            x, crop_type=crop_type), y),
-                                        (self.Auto_Augment_crop(
-                                            x, policy_type=auto_policy_type, crop_type=crop_type), y),
-                                        (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO) \
-            .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+        # train_ds = ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
+        #                                 (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
+        #                                 (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
+        #                                 (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO)\
+        #                                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+
+        ## Leverage CPU multi-Cores with INTERLEAVE
+        train_ds = ds.interleave(map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
+                                        (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
+                                        (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
+                                        (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO),
+                                        cycle_length=AUTO, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
+                                        .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         if FLAGS.dataloader:
             print("Implement dataloader with_option")
@@ -721,6 +733,7 @@ class Imagenet_dataset(object):
                                             x, num_transform=num_transform, magnitude=magnitude, crop_type=crop_type), y),
                                         (self.Rand_Augment_crop(x, num_transform=num_transform, magnitude=magnitude, crop_type=crop_type), y)), num_parallel_calls=AUTO) \
             .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+
 
         if FLAGS.dataloader:
             print("Implement dataloader with_option")
