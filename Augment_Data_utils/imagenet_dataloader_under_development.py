@@ -279,19 +279,19 @@ class Imagenet_dataset(object):
         if FLAGS.training_loop == "two_views":
             print("Two_Views Wrap_ds")
             if FLAGS.resize_wrap_ds:
-                # img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
-                #     .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                #     .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                #     .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
-                def f(x, y):
-                    train_ds= tf.data.Dataset.from_tensors((x, y))\
-                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
-                    .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)
-                    return train_ds
-
                 img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
                     .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
-                    .interleave(lambda x, y: f(x, y),  cycle_length=AUTO,num_parallel_calls=AUTO).cache()
+                    .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                    .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO).cache()
+                # def f(x, y):
+                #     train_ds= tf.data.Dataset.from_tensors((x, y))\
+                #     .map(lambda x, y: (self.__parse_images_lable_pair(x, y)), num_parallel_calls=AUTO)\
+                #     .map(lambda x, y: (tf.image.resize(x, img_shp), y), num_parallel_calls=AUTO)
+                #     return train_ds
+
+                # img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
+                #     .shuffle(self.BATCH_SIZE * 100, seed=self.seed) \
+                #     .interleave(lambda x, y: f(x, y),  cycle_length=AUTO,num_parallel_calls=AUTO).cache()
                    
             else:
                 img_lab_ds = tf.data.Dataset.from_tensor_slices((img_folder, labels)) \
@@ -411,6 +411,7 @@ class Imagenet_dataset(object):
         else:
             raise ValueError("Invalid AutoAugment Implementation")
         '''
+        #image=tf.squeeze(image)
         if crop_type == "incpt_crp":
             image = simclr_augment_inception_style(image, self.IMG_SIZE)
 
@@ -516,7 +517,7 @@ class Imagenet_dataset(object):
 
     @tf.function
     def SimCLR_Augment_crop(self, image, crop_type="incpt_crp"):
-
+        #image=tf.squeeze(image)
         if crop_type == "incpt_crp":
             image = simclr_augment_inception_style(image, self.IMG_SIZE)
 
@@ -672,24 +673,34 @@ class Imagenet_dataset(object):
         # unstable-version:
         #ds_dict = self.get_imgnet_ds()
         # tra_ds, val_ds, tst_ds = ds_dict['train'], ds_dict['validation'], ds_dict['test']
-        # train_ds = ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
-        #                                 (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
-        #                                 (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
-        #                                 (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO)\
-        #                                 .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
-
-        ## Leverage CPU multi-Cores with INTERLEAVE
-        def _f(x, y): 
-            ds_interleave= tf.data.Dataset.from_tensors((x, y))\
-            .map(lambda x, y:((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
-                (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
-                (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
-                (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO)
-            return ds_interleave
-
-        train_ds = ds.interleave(lambda x, y: _f(x, y),
-                                        cycle_length=AUTO, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
+        train_ds = ds.map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
+                                        (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
+                                        (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
+                                        (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=88, deterministic=False)\
                                         .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
+
+        # Leverage CPU multi-Cores with INTERLEAVE
+        # def _f(x, y): 
+        #     # y=tf.squeeze(y)
+        #     ds_interleave= tf.data.Dataset.from_tensors((x, y))\
+        #     .map(lambda x, y:((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
+        #         (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
+        #         (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
+        #         (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO)\
+        #         .batch(self.BATCH_SIZE, num_parallel_calls=AUTO)\
+        #         .prefetch(mode_prefetch)# .batch(self.BATCH_SIZE, num_parallel_calls=AUTO)
+
+        #     return ds_interleave
+
+        # train_ds = ds.interleave(lambda x, y: _f(x, y),
+        #                                 cycle_length=AUTO, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
+                                        
+        # train_ds = ds.batch(512, num_parallel_calls=AUTO)\
+        #             .interleave(lambda x, y: (tf.data.Dataset.from_tensors((x, y)).map(lambda x, y: ((self.SimCLR_Augment_crop(x, crop_type=crop_type), tf.squeeze(y)),(self.SimCLR_Augment_crop( x, crop_type=crop_type),tf.squeeze(y)),
+        #             (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type),tf.squeeze(y)),
+        #             (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), tf.squeeze(y))), num_parallel_calls=AUTO).batch(self.BATCH_SIZE, num_parallel_calls=AUTO)),
+        #                                 cycle_length=AUTO, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
+        #             .prefetch(mode_prefetch)
 
         if FLAGS.dataloader:
             print("Implement dataloader with_option")

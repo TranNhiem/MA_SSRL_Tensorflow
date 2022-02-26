@@ -18,12 +18,16 @@ import os
 
 # For setting GPUs Thread reduce kernel Luanch Delay
 # https://github.com/tensorflow/tensorflow/issues/25724
-# os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-# os.environ['TF_GPU_THREAD_COUNT'] = '2'
-os.environ['TF_GPU_THREAD_MODE'] = 'gpu_shared'
-os.environ['TF_GPU_THREAD_COUNT'] = '16'
-
-
+os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+os.environ['TF_GPU_THREAD_COUNT'] = '2'
+# os.environ['TF_GPU_THREAD_MODE'] = 'gpu_shared'
+# os.environ['TF_GPU_THREAD_COUNT'] = '16'
+tf.keras.backend.clear_session()
+# tf.config.optimizer.set_jit(True)
+# TF_XLA_FLAGS="--tf_xla_auto_jit=2" 
+## Automatic Clustering JIT Compiler XLA
+#tf.config.optimizer.set_jit(True)
+tf.compat.v1.enable_eager_execution()
 # Utils function
 # Setting GPU
 def set_gpu_env(n_gpus=8):
@@ -219,33 +223,34 @@ class Runner(object):
             total_loss = 0.0
             num_batches = 0
 
-            for _, ds_train in enumerate(train_ds):
+            for step, ds_train in enumerate(train_ds):
 
                 (ds_one, lable_one), (ds_two,
                                       lable_two), (ds_3, _), (ds_4, _) = ds_train
-
+                #print(ds_one.shape)
                 total_loss += self.__distributed_train_step_2_strategies(
                     ds_one, ds_two, lable_one, lable_two, ds_3, ds_4)
                 num_batches += 1
 
                 # Update weight of Target Encoder Every Step
                 if FLAGS.moving_average == "fixed_value":
-                    beta = 0.99
+                    beta = 0.996
                 if FLAGS.moving_average == "schedule":
                     # This update the Beta value schedule along with Trainign steps Follow BYOL
                     beta_base = 0.996
                     cur_step = global_step.numpy()
                     beta = 1 - (1-beta_base) * \
                         (cos(pi*cur_step/self.training_steps)+1)/2
-
-                target_model, online_model = self.target_model, self.online_model
-                target_encoder_weights = target_model.get_weights()
-                online_encoder_weights = online_model.get_weights()
-                # mean teacher update
-                for lay_idx in range(len(online_encoder_weights)):
-                    target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
-                        1-beta) * online_encoder_weights[lay_idx]
-                target_model.set_weights(target_encoder_weights)
+                
+                if (step + 1) % 4 == 0:
+                    target_model, online_model = self.target_model, self.online_model
+                    target_encoder_weights = target_model.get_weights()
+                    online_encoder_weights = online_model.get_weights()
+                    # mean teacher update
+                    for lay_idx in range(len(online_encoder_weights)):
+                        target_encoder_weights[lay_idx] = beta * target_encoder_weights[lay_idx] + (
+                            1-beta) * online_encoder_weights[lay_idx]
+                    target_model.set_weights(target_encoder_weights)
 
                 with self.summary_writer.as_default():
                     cur_step = global_step.numpy()
@@ -323,6 +328,20 @@ class Runner(object):
             return loss, logits_ab, labels
 
         # Get the data from
+        #https://www.tensorflow.org/api_docs/python/tf/xla/experimental/jit_scope
+        #Compiler in the seperate Scope by using "separate_compiled_gradients=True"
+        
+        # In the example below, the computations for f, g and h will all be compiled
+        # in separate scopes.
+        # with tf.xla.experimental.jit_scope(
+        #     separate_compiled_gradients=True):
+        #     f = tf.matmul(a, b)
+        # g = tf.gradients([f], [a, b], name='mygrads1')
+        # h = tf.gradients([f], [a, b], name='mygrads2')
+
+        ##*******************************************************
+        # XLA Compiler
+        
 
         with tf.GradientTape(persistent=True) as tape:
 
@@ -333,55 +352,56 @@ class Runner(object):
             symetrize_loss= (loss 1+ loss_2)/ 2
 
             '''
-
+        
             # -------------------------------------------------------------
             # Passing image 1, image 2 to Online Encoder , Target Encoder
             # -------------------------------------------------------------
+            with tf.xla.experimental.jit_scope( compile_ops=lambda node_def: 'matmul' in node_def.op.lower()):
+                # Online (ds_1; ds_3)
+                proj_head_output_1, supervised_head_output_1 = self.online_model(
+                    ds_one, training=True)
+                proj_head_output_1 = self.prediction_model(
+                    proj_head_output_1, training=True)
 
-            # Online (ds_1; ds_3)
-            proj_head_output_1, supervised_head_output_1 = self.online_model(
-                ds_one, training=True)
-            proj_head_output_1 = self.prediction_model(
-                proj_head_output_1, training=True)
+                proj_head_output_3, _ = self.online_model(
+                    ds_3, training=True)
 
-            proj_head_output_3, _ = self.online_model(
-                ds_3, training=True)
+                proj_head_output_3 = self.prediction_model(
+                    proj_head_output_3, training=True)
 
-            proj_head_output_3 = self.prediction_model(
-                proj_head_output_3, training=True)
+                # Target (ds_2; ds_4)
+                proj_head_output_2, supervised_head_output_2 = self.target_model(
+                    ds_two, training=True)
 
-            # Target (ds_2; ds_4)
-            proj_head_output_2, supervised_head_output_2 = self.target_model(
-                ds_two, training=True)
+                proj_head_output_4, _ = self.target_model(
+                    ds_4, training=True)
 
-            proj_head_output_4, _ = self.target_model(
-                ds_4, training=True)
+                # -------------------------------------------------------------
+                # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
+                # -------------------------------------------------------------
 
-            # -------------------------------------------------------------
-            # Passing Image 1, Image 2 to Target Encoder,  Online Encoder
-            # -------------------------------------------------------------
+                # Online (ds_2; ds_4)
+                proj_head_output_2_online, _ = self.online_model(
+                    ds_two, training=True)
+                proj_head_output_2_online = self.prediction_model(
+                    proj_head_output_2_online, training=True)
 
-           # Online (ds_2; ds_4)
-            proj_head_output_2_online, _ = self.online_model(
-                ds_two, training=True)
-            proj_head_output_2_online = self.prediction_model(
-                proj_head_output_2_online, training=True)
+                proj_head_output_4_online, _ = self.online_model(
+                    ds_4, training=True)
 
-            proj_head_output_4_online, _ = self.online_model(
-                ds_4, training=True)
+                proj_head_output_4_online = self.prediction_model(
+                    proj_head_output_4_online, training=True)
 
-            proj_head_output_4_online = self.prediction_model(
-                proj_head_output_4_online, training=True)
+                # Target (ds_1; ds_3)
+                proj_head_output_1_target, _ = self.target_model(
+                    ds_one, training=True)
 
-            # Target (ds_1; ds_3)
-            proj_head_output_1_target, _ = self.target_model(
-                ds_one, training=True)
+                proj_head_output_3_target, _ = self.target_model(
+                    ds_3, training=True)
 
-            proj_head_output_3_target, _ = self.target_model(
-                ds_3, training=True)
+                # Compute Contrastive Train Loss -->
+                loss = None
 
-            # Compute Contrastive Train Loss -->
-            loss = None
             if proj_head_output_1 is not None:
                 # Compute Contrastive Loss model
                 # Loss of the image 1, 2 --> Online, Target Encoder
@@ -402,10 +422,10 @@ class Runner(object):
 
                 # Update Self-Supervised Metrics
                 metrics.update_pretrain_metrics_train(self.metric_dict['contrast_loss_metric'],
-                                                      self.metric_dict['contrast_acc_metric'],
-                                                      self.metric_dict['contrast_entropy_metric'],
-                                                      loss, logits_ab,
-                                                      labels)
+                                                    self.metric_dict['contrast_acc_metric'],
+                                                    self.metric_dict['contrast_entropy_metric'],
+                                                    loss, logits_ab,
+                                                    labels)
 
             # Compute the Supervised train Loss
             '''Consider Sperate Supervised Loss'''
@@ -430,8 +450,8 @@ class Runner(object):
                     #     sup_loss) * (1./train_global_batch)
                     # Update Supervised Metrics
                     metrics.update_finetune_metrics_train(self.metric_dict['supervised_loss_metric'],
-                                                          self.metric_dict['supervised_acc_metric'],
-                                                          scale_sup_loss, supervise_lable, outputs)
+                                                        self.metric_dict['supervised_acc_metric'],
+                                                        scale_sup_loss, supervise_lable, outputs)
 
                 '''Attention'''
                 # Noted Consideration Aggregate (Supervised + Contrastive Loss) --> Update the Model Gradient
