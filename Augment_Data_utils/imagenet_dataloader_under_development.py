@@ -684,11 +684,11 @@ class Imagenet_dataset(object):
             .map(lambda x, y:((self.SimCLR_Augment_crop(x, crop_type=crop_type), y),
                 (self.SimCLR_Augment_crop( x, crop_type=crop_type), y),
                 (self.Auto_Augment_crop( x, policy_type=auto_policy_type, crop_type=crop_type), y),
-                (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=AUTO)
+                (self.Auto_Augment_crop(x, policy_type=auto_policy_type, crop_type=crop_type), y)), num_parallel_calls=88)
             return ds_interleave
 
         train_ds = ds.interleave(lambda x, y: _f(x, y),
-                                        cycle_length=AUTO, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
+                                        cycle_length=10, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
                                         .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         if FLAGS.dataloader:
