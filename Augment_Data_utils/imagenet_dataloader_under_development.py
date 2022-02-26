@@ -689,7 +689,7 @@ class Imagenet_dataset(object):
             return ds_interleave
 
         train_ds = ds.interleave(lambda x, y: _f(x, y),
-                                        cycle_length=10, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
+                                        cycle_length=20, num_parallel_calls=tf.data.AUTOTUNE, deterministic=False)\
                                         .batch(self.BATCH_SIZE, num_parallel_calls=AUTO).prefetch(mode_prefetch)
 
         # Leverage CPU multi-Cores with INTERLEAVE

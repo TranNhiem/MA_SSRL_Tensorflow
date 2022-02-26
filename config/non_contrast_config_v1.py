@@ -51,7 +51,7 @@ def read_cfg_base(mod="non_contrastive"):
 
     FLAGS.resnet_depth = 50
     FLAGS.train_epochs = 100
-    FLAGS.num_classes = 1000
+    FLAGS.num_classes = 20
 
     FLAGS.train_batch_size = 200
     FLAGS.val_batch_size = 200

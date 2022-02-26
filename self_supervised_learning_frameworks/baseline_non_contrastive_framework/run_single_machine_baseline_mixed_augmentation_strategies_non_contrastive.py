@@ -18,16 +18,16 @@ import os
 
 # For setting GPUs Thread reduce kernel Luanch Delay
 # https://github.com/tensorflow/tensorflow/issues/25724
-os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-os.environ['TF_GPU_THREAD_COUNT'] = '2'
-# os.environ['TF_GPU_THREAD_MODE'] = 'gpu_shared'
-# os.environ['TF_GPU_THREAD_COUNT'] = '16'
+# os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+# os.environ['TF_GPU_THREAD_COUNT'] = '2'
+os.environ['TF_GPU_THREAD_MODE'] = 'gpu_shared'
+os.environ['TF_GPU_THREAD_COUNT'] = '16'
 tf.keras.backend.clear_session()
 # tf.config.optimizer.set_jit(True)
 # TF_XLA_FLAGS="--tf_xla_auto_jit=2" 
 ## Automatic Clustering JIT Compiler XLA
-#tf.config.optimizer.set_jit(True)
-tf.compat.v1.enable_eager_execution()
+tf.config.optimizer.set_jit(True)
+# tf.compat.v1.enable_eager_execution()
 # Utils function
 # Setting GPU
 def set_gpu_env(n_gpus=8):
