@@ -1,7 +1,6 @@
 ## Multi-Augmentation Strategies Disentangle represenation learning Self-Supervised
 
 <p align="center">
-  <img src="images/MA_SSRL_framework.png" width="600">
   <img src="images/MASSRL.gif" width="600">
 </p>
 
