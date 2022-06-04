@@ -2,6 +2,7 @@
 
 <p align="center">
   <img src="images/MA_SSRL_framework.png" width="600">
+  <img src="images/MASSRL.gif" width="600">
 </p>
 
 This is a Tensorflow implementation of the [MASSRL paper](https://arxiv.org/abs/1911.05722):
