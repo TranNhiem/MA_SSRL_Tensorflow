@@ -4,27 +4,48 @@
   <img src="images/MASSRL.gif" width="600">
 </p>
 
-MASSRL Official TensorFlow implementation of the [MASSRL paper](https://arxiv.org/abs/1911.05722):
+This repo is official TensorFlow implementation MASSRL.
+
+[MASSRL Paper link](https://arxiv.org/abs/1911.05722)
+
+[Blog Post]("Coming Soon")
+
+This repo contains the source code for the `MASSRL` multi-Augmentation Strategies in Tensorflow models effortless and less error-prone.
+
+## Table of Contents
+
+  - [Installation](#installation)
+  - [Visualization `MASSRL` Multi-Augmentation Strategies ](#Different-Multi-Augmentation-properties)
+  - [Configure Self-Supervised Pretraining](#Setup-self-supervised-pretraining)
+    - [Dataset](#Natural-Image-Dataset)
+    - [Hyperamters Setting](#Important-Hyperparameter-Setting)
+    - [Choosing # augmentation Strategies](#Number-Augmentation-Strategies)
+    - [Single or Multi GPUs](#Single-Multi-GPUS)
+  - [Contributing](#contributing)
+
+## Installation
+
+```
+pip or conda installs these dependents in your local machine
+```
+* tensorflow==2.7.0, tensorflow-addons==0.15.0, tensorflow-datasets==4.4.0, tensorflow-estimator==2.7.0
+* tqdm
+* wandb
+* imgaug
+
+## Visualization `MASSRL` Multi-Augmentation Strategies
 
 <a target="[_parent](https://colab.research.google.com/drive/1fquGOr_psJfDXxOmdFVkfrbedGfi1t-X?usp=sharing)"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 Visualization Multi-Augmentation Strategies on Google-Colab Notebook: https://colab.research.google.com/drive/1fquGOr_psJfDXxOmdFVkfrbedGfi1t-X?usp=sharing 
 
-### Preparation for running on local Machines
+Note the Visualization Augmentation *do not need to be trained* --- we are only Visualize Image after apply different Augmentation transformations.
+However, you need to make sure that the `dataset` is appropriately passed down to the constructor of all submodules.
+If you want to see this happen, please upvote [this Repo issue]
 
-We aims to be minimal modifications on code:
 
-```
-Install dependent packages following the [dev_requirement.txt] supporting tf_version_{2.4-> 2.9}. 
+## Configuration Self-Supervised Pretraining
 
-Downloading ImageNet-1K dataset (https://www.image-net.org/download.php).
-
-pip install -e . for initialization the relative import path of .py modules
-
-```
-
-### Self-Supervised Pre-training
-
-This implementation supports **Single-gpu**, **Multi-GPUs** training, DataParallel training is not supported.
+This implementation supports **Single-gpu**, **Multi-GPUs** training.
 
 To do self-superivsed pre-training of a ResNet-50 model on ImageNet in an (1-8)-gpus  following Three Stesp:
 
@@ -46,30 +67,44 @@ python run_MASSRL.py
 ***Note***: for 8-gpus training, we recommend following the [linear lr scaling recipe](https://arxiv.org/abs/1706.02677): `--lr 0.2 --batch-size 128`. Other Hyperparameters can set default.
 for 1-gpu training, we recommend following the [linear lr scaling recipe](https://arxiv.org/abs/1706.02677): `--lr 0.3 --batch-size 256`. Other Hyperparameters can set default.
 
+### Dataset 
+**Note:** Public ImageNet dataset is implement in this work, if you have your own dataset you can change the path corresponding. 
 
-## Downstream Tasks 
+#### Downloading ImageNet-1K dataset (https://www.image-net.org/download.php).
 
-### Linear Image Classification
-ImageNet Linear Evaluation
+#### Using your own dataset 
 
-With a pre-trained model, to train a supervised linear classifier on frozen features/weights in an 1-gpu machine, run:
+Consider dataset folder structure setup for Pytorch `ImageFolder` and `DataLoader`principle
 
-```
+#### Changing dataset path(your path) in pretraining Flags: 
 
-```
+### Hyperparameter Setting 
+You can change 
 
-Linear classification results on ImageNet using this repo with 8 NVIDIA A100 GPUs :
+### Number Augmentation Strategies Implementation
+You can select the number of Augmentation you want by setting the Flags
 
-
+### Training Single or Multiple GPUs
+You can set how many GPUs for training by changing the Flags
+We will Support distributed multi-nodes(machines) traning soon 
 
 
 ### Models
 
-
-
 ### Transferring to Object Detection
 
 See [./detection](detection).
+
+
+## Checkout Guideline for Contribution
+
+Awesome! Thank You for being a part this project > > 
+Before you start to contribute for this repository, please quick go through [Guidelines](contribution_guideline.md).
+
+
+### See Also
+
+* [MASSRL.Pytorch-lightning](https://github.com/TranNhiem/MA_SSRL_Pytorch): A Pytorch-Lightning official implementation.
 
 ## Citation for Our Paper
 ```
@@ -80,16 +115,4 @@ See [./detection](detection).
   year    = {2022},
 }
 ```
-
-### Checkout Guideline for Contribution
-
-Awesome! Thank You for being a part this project > > 
-Before you start to contribute for this repository, please quick go through [Guidelines](contribution_guideline.md).
-
-### License
-
-### See Also
-
-* [MASSRL.Pytorch-lightning](https://github.com/TranNhiem/MA_SSRL_Pytorch): A Pytorch-Lightning official implementation.
-* [Colab notebook]([https:/test.ipynb](https://colab.research.google.com/drive/1fquGOr_psJfDXxOmdFVkfrbedGfi1t-X?usp=sharing): Multi-Augmentation demo on Colab GPU.
 
