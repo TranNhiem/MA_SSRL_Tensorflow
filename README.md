@@ -55,13 +55,7 @@ ImageNet Linear Evaluation
 With a pre-trained model, to train a supervised linear classifier on frozen features/weights in an 1-gpu machine, run:
 
 ```
-python main_lincls.py \
-  -a resnet50 \
-  --lr 30.0 \
-  --batch-size 256 \
-  --pretrained [your checkpoint path]/checkpoint_0199.pth.tar \
-  --dist-url 'tcp://localhost:10001' --multiprocessing-distributed --world-size 1 --rank 0 \
-  [your imagenet-folder with train and val folders]
+
 ```
 
 Linear classification results on ImageNet using this repo with 8 NVIDIA A100 GPUs :
@@ -93,7 +87,6 @@ Awesome! Thank You for being a part this project > >
 Before you start to contribute for this repository, please quick go through [Guidelines](contribution_guideline.md).
 
 ### License
-This project is under the CC-BY-NC 4.0 license. See [LICENSE](LICENSE) for details.
 
 ### See Also
 
