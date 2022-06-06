@@ -73,34 +73,25 @@ for 1-gpu training, we recommend following the [linear lr scaling recipe](https:
 #### Downloading ImageNet-1K dataset (https://www.image-net.org/download.php).
 
 #### Using your own dataset 
-
-Consider dataset folder structure setup for Pytorch `ImageFolder` and `DataLoader`principle
+*Update Soon*
 
 #### Changing dataset path(your path) in pretraining Flags: 
+*Update Soon*
 
 ### Hyperparameter Setting 
-You can change 
+*Update Soon* 
 
 ### Number Augmentation Strategies Implementation
-You can select the number of Augmentation you want by setting the Flags
+*Update Soon* 
 
 ### Training Single or Multiple GPUs
-You can set how many GPUs for training by changing the Flags
-We will Support distributed multi-nodes(machines) traning soon 
-
-
-### Models
-
-### Transferring to Object Detection
-
-See [./detection](detection).
-
+*Update Soon* 
 
 ## Checkout Guideline for Contribution
 
 Awesome! Thank You for being a part this project > > 
 Before you start to contribute for this repository, please quick go through [Guidelines](contribution_guideline.md).
-
+*Update Soon* 
 
 ### See Also
 
